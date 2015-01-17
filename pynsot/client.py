@@ -7,7 +7,7 @@ Simple Python API client for NSoT REST API
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright 2014 Dropbox'
+__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
 import slumber
