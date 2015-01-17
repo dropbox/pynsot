@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
 """
-pynsot.py - Simple Python API client for NSoT REST API
+Simple Python API client for NSoT REST API
 """
 
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright 2014 Dropbox'
-__version__ = '0.1'
 
 
 import slumber
@@ -17,7 +16,7 @@ import slumber
 AUTH_HEADER = 'X-NSoT-Email'
 
 
-class API(slumber.API):
+class Client(slumber.API):
     """
     Magic REST API client for NSoT.
     """
@@ -26,16 +25,15 @@ class API(slumber.API):
         email = kwargs.pop('email', None)
         auth_header = kwargs.pop('auth_header', AUTH_HEADER)
 
-        super(API, self).__init__(*args, **kwargs)
+        super(Client, self).__init__(*args, **kwargs)
 
         # Hard-code disable trailing slash
         self._store['append_slash'] = False # No slashes!
 
         # If email is provided, use this to set auth header
+        self._auth_header = auth_header
         if email is not None:
             self.auth(email=email)
-
-        self._auth_header = auth_header
 
     def auth(self, *args, **kwargs):
         """Set the auth header."""
@@ -45,13 +43,13 @@ class API(slumber.API):
         s = self._store['session']
         s.headers.update({self._auth_header: email})
 
+
 if __name__ == '__main__':
-    #url = 'http://localhost:8888/api'
     import json
 
     url = 'http://localhost:8990/api'
     email = 'jathan@localhost'
-    api = API(url)
+    api = Client(url)
     api.auth(email=email)
 
     print 'GET /sites'
