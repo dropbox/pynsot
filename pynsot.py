@@ -17,7 +17,7 @@ import slumber
 AUTH_HEADER = 'X-NSoT-Email'
 
 
-class NsotAPI(slumber.API):
+class API(slumber.API):
     """
     Magic REST API client for NSoT.
     """
@@ -26,7 +26,7 @@ class NsotAPI(slumber.API):
         email = kwargs.pop('email', None)
         auth_header = kwargs.pop('auth_header', AUTH_HEADER)
 
-        super(NsotAPI, self).__init__(*args, **kwargs)
+        super(API, self).__init__(*args, **kwargs)
 
         # Hard-code disable trailing slash
         self._store['append_slash'] = False # No slashes!
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     url = 'http://localhost:8990/api'
     email = 'jathan@localhost'
-    api = NsotAPI(url)
+    api = API(url)
     api.auth(email=email)
 
     print 'GET /sites'
