@@ -43,6 +43,9 @@ class Client(slumber.API):
         s = self._store['session']
         s.headers.update({self._auth_header: email})
 
+    def __repr__(self):
+        return '<Client(url=%s)>' % (self._store['base_url'],)
+
 
 if __name__ == '__main__':
     import json
@@ -52,8 +55,12 @@ if __name__ == '__main__':
     api = Client(url)
     api.auth(email=email)
 
+    #print 'POST /sites {"name": "Foo", "description": "Foo site"}
+    #new_site = {'name': 'Foo', 'description': 'Foo site'}
+    #print json.dumps(api.sites.post(new_site), indent=4)
+
     print 'GET /sites'
-    print json.dumps(api.sites().get(), indent=4)
+    print json.dumps(api.sites.get(), indent=4)
     print
 
     print 'GET /sites/1/networks'
@@ -63,3 +70,7 @@ if __name__ == '__main__':
     print 'GET /sites/1/network_attributes'
     print json.dumps(api.sites(1).network_attributes.get(), indent=4)
     print
+
+    # Pin a site object to Site 1
+    site = api.sites(1)
+    print site.networks.get()
