@@ -67,8 +67,8 @@ if __name__ == '__main__':
     print json.dumps(api.sites(1).networks.get(), indent=4)
     print
 
-    print 'GET /sites/1/network_attributes'
-    print json.dumps(api.sites(1).network_attributes.get(), indent=4)
+    print 'GET /sites/1/attributes'
+    print json.dumps(api.sites(1).attributes.get(), indent=4)
     print
 
     # Pin a site object to Site 1

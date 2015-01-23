@@ -16,7 +16,7 @@ import collections
 
 
 # Valid top-level types.
-TYPES = ['network', 'network_attribute', 'user', 'site']
+TYPES = ['network', 'attribute', 'user', 'site']
 
 
 class ApiModel(collections.MutableMapping):
