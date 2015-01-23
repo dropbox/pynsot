@@ -15,4 +15,4 @@ All of the endpoints are dynamic, so it's like magic. Literally::
     >>> api = Client(url, email=email)
     >>> print api.users.get()
     >>> print api.sites(1).get()
-    >>> print api.sites(1).network_attributes.get()
+    >>> print api.sites(1).attributes.get()
