@@ -39,3 +39,5 @@ nosetests.xml
 .pydevproject
 
 docs/_build
+.*sw?
+bin/pynsot
