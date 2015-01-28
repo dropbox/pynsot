@@ -109,15 +109,22 @@ def main():
             m = ApiModel(result)
             print 'Successfully added %s (id: %d) with args: %s!' % (obj_single, m.id, pretty_dict)
 
-    # Add behavior
+    # List behavior
     elif action == 'list':
         if result:
             #print result
             import tabulate
             objects = result['data'][obj]
-            headers = objects[0].keys()
-            tabular_data = [o.values() for o in objects]
-            print tabulate.tabulate(tabular_data, headers)
+            headers = 'keys'
+            tablefmt = 'simple'
+
+            # TODO: make me a flag or something
+            no_headers = False
+            if no_headers:
+                headers = []
+                tablefmt = 'plain'
+
+            print tabulate.tabulate(objects, headers=headers, tablefmt=tablefmt)
         else:
             print 'No %s found matching args: %s!' % (obj, pretty_dict)
 
