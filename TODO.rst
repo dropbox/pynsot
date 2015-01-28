@@ -14,3 +14,4 @@ CLI
 ===
 
 + Implement dotfile for storing user defaults and API token information.
++ Add ``--no-header`` for text-processing tools when dispalying tabulated results.
