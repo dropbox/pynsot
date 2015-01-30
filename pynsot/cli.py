@@ -258,5 +258,6 @@ def app(ctx, verbose):
     # This is the "app" object attached to all contexts.
     ctx.obj = App(URL, email=EMAIL, ctx=ctx, verbose=verbose)
 
+
 if __name__ == '__main__':
     app()

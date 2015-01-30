@@ -21,7 +21,10 @@ kwargs = {
     'license': 'Apache',
     'install_requires': required,
     'url': 'https://github.com/dropbox/pynsot',
-    'scripts': ['bin/nsot'],
+    'entry_points': """
+        [console_scripts]
+        nsot=pynsot.cli:app
+    """,
     #'download_url': 'https://github.com/dropbox/pynsot/archive/master.tar.gz',
     'classifiers': [
         'Programming Language :: Python',
