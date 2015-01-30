@@ -26,7 +26,7 @@ import click
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """Site objects"""
+    """Site objects."""
     if ctx.obj.verbose:
         print 'I am:', ctx.info_name
         print 'my parent is:', ctx.parent.info_name
@@ -39,7 +39,12 @@ def cli(ctx):
               required=True)
 @click.pass_context
 def add(ctx, name, description):
-    """Add a site"""
+    """
+    Add a new site.
+
+    When adding a new site, you must provide values for both the -n/--name and
+    -d/--description options.
+    """
     data = ctx.params
     ctx.obj.add(data)
 
@@ -49,7 +54,12 @@ def add(ctx, name, description):
 @click.option('-n', '--name', metavar='NAME', help='Filter by site name')
 @click.pass_context
 def list(ctx, name):
-    """List sites"""
+    """
+    List existing sites.
+
+    When listing sites all sites are displayed by default. You may optionally
+    lookup a single site by name using the -n/--name option.
+    """
     data = ctx.params
     ctx.obj.list(data)
 
@@ -60,7 +70,14 @@ def list(ctx, name):
               required=True)
 @click.pass_context
 def remove(ctx, id):
-    """Remove a site"""
+    """
+    Remove a site.
+
+    When removing a site, you must provide the unique ID using -i/--id. You may
+    retrieve the id for a site by looking it up by name using:
+
+        nsot sites list --name <name>
+    """
     data = ctx.params
     ctx.obj.remove(**data)
 
@@ -73,7 +90,12 @@ def remove(ctx, id):
 @click.option('-d', '--description', metavar='DESC', help='Site description')
 @click.pass_context
 def update(ctx, id, name, description):
-    """Update a site"""
+    """
+    Update a site.
+
+    When updating a site you must provide the unique ID (-i/--id) and at least
+    one of the -n/--name or -d/--description options.
+    """
     if name is None and description is None:
         msg = 'You must supply at least one of --name or --description'
         raise click.UsageError(msg)

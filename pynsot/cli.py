@@ -162,7 +162,6 @@ class App(object):
         obj_id = data['id']
         #log.debug('removing %s' % obj_id)
         try:
-
             result = self.resource(obj_id).delete()
         except HttpClientError as err:
             self.handle_error(action, data, err)
