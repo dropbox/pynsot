@@ -1,2 +1,4 @@
+click==3.3
 slumber==0.6.2
+requests==2.5.1
 tabulate==0.7.3
