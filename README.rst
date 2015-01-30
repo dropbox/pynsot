@@ -21,12 +21,15 @@ All of the endpoints are dynamic, so it's like magic. Literally::
 CLI Exampless
 =============
 
-::
+Sites
+-----
+
+Adding a site::
 
     $ ./nsot sites add --name Spam --description 'Spam Site'
     Successfully added site (id: 4) with args: description='Spam Site', name='Spam'!
 
-::
+Listing all sites::
 
     $ ./nsot sites list
     description    name      id
@@ -36,8 +39,24 @@ CLI Exampless
     Baz Site       Baz        3
     Spam Site      Spam       4
 
-::
+Listing a single site::
 
     $ ./nsot sites list --name Foo
     description    name      id
     -------------  ------  ----
+    Foo site        Foo        1
+
+Removing a site::
+
+    $ ./nsot sites remove -i 1
+    Successfully removeed site with args: id=u'1'!
+
+Networks
+--------
+
+NYI
+
+Attributes
+----------
+
+NYI

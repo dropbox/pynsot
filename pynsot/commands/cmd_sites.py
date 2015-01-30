@@ -22,6 +22,10 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 import click
 
 
+# Fields to display when printing a list of items
+display_fields = ('id', 'name', 'description')
+
+
 # Main group
 @click.group()
 @click.pass_context
@@ -61,7 +65,7 @@ def list(ctx, name):
     lookup a single site by name using the -n/--name option.
     """
     data = ctx.params
-    ctx.obj.list(data)
+    ctx.obj.list(data, display_fields)
 
 
 # Remove

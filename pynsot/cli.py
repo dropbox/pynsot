@@ -43,6 +43,15 @@ ACTION_MAP = {
     'update': 'patch',
 }
 
+# Mapping of objec field names to their human-readable form used when calling
+# .print_list() for an object type.
+FIELDS_MAP = {
+    'id': 'ID',
+    'name': 'Name',
+    'description': 'Description',
+}
+
+
 # Where to find the command plugins.
 CMD_FOLDER = os.path.abspath(os.path.join(
                              os.path.dirname(__file__), 'commands'))
@@ -85,7 +94,6 @@ class App(object):
         self.ctx = ctx
         self.verbose = verbose
         self.resource_name = self.ctx.invoked_subcommand
-        self.action = self.ctx.info_name
 
     @property
     def singular(self):
@@ -106,6 +114,7 @@ class App(object):
         return pretty
 
     def handle_error(self, action, data, err):
+        """Handle error API response."""
         pretty_dict = self.pretty_dict(data)
         resp = getattr(err, 'response', None)
         obj_single = self.singular
@@ -115,17 +124,60 @@ class App(object):
                         pretty_dict)
         else:
             msg = '[FATAL] %s' % err
-        click.echo(msg)
-        self.ctx.exit(2)
+        self.ctx.exit(msg)
 
     def handle_response(self, action, data, result):
+        """Handle positive API response."""
         pretty_dict = self.pretty_dict(data)
         t_ = 'Successfully %sed %s with args: %s!'
         msg = t_ % (action, self.singular,  pretty_dict)
         click.echo(msg)
 
-    def print_list(self, objects):
-        print tabulate.tabulate(objects, headers='keys')
+    def map_fields(self, fields, fields_map):
+        """Map ``fields`` using ``fields_map``."""
+        try:
+            headers = [fields_map[f] for f in fields]
+        except KeyError:
+            self.ctx.exit('Could not map field %r when displaying results.')
+        return headers
+
+    def print_list(self, objects, fields=None, fields_map=None):
+        """
+        Print objects in a table format.
+
+        :param objects:
+            List of object dicts
+
+        :param fields:
+            List of field names to display in order
+
+        :param fields_map:
+            Mapping used to translate field names for display
+        """
+        # Default to using all fields
+        if fields is None:
+            first_obj = objects[0]  # This better be a list/tuple!
+            fields = first_obj.keys()  # This better be a dict!
+
+        # Set the field mapping
+        if fields_map is None:
+            fields_map = FIELDS_MAP
+
+        # Human-readable field headings as they will be displayed
+        tablefmt='simple'
+        headers = self.map_fields(fields, fields_map)
+
+        # Order the object key/val by the order in display fields
+        table_data = [[obj[f] for f in fields] for obj in objects]
+        table = tabulate.tabulate(table_data, headers=headers,
+                                  tablefmt=tablefmt)
+
+        # Only paginate if table is longer than terminal.
+        t_height, _ = click.get_terminal_size()
+        if len(table_data) > t_height:
+            click.echo_via_pager(table)
+        else:
+            click.echo(table)
 
     def add(self, data):
         action = 'add'
@@ -137,10 +189,9 @@ class App(object):
         else:
             self.handle_response(action, data, result)
 
-    def list(self, data):
+    def list(self, data, fields=None):
         action = 'list'
         #log.debug('listing %s' % data)
-        #return self.resource.get(**data)
         try:
             result = self.resource.get(**data)
         except HttpClientError as err:
@@ -150,7 +201,7 @@ class App(object):
             if result:
                 objects = result['data'][self.resource_name]
             if objects:
-                self.print_list(objects)
+                self.print_list(objects, fields)
             else:
                 pretty_dict = self.pretty_dict(data)
                 t_ = 'No %s found matching args: %s!'
