@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from pynsot.cli import main
+from pynsot.cli import app
+
 
 if __name__ == '__main__':
-    main()
+    app()

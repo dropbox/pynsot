@@ -19,6 +19,17 @@ import collections
 TYPES = ['network', 'attribute', 'user', 'site']
 
 
+# What an error response looks like:
+'''
+{
+    "status": "error",
+    "error": {
+        "code": 404,
+        "message": "Resource not found."
+    }
+}
+'''
+
 class ApiModel(collections.MutableMapping):
     """
     Simple class to make an API response dict into an object.

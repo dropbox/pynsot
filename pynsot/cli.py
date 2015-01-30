@@ -1,15 +1,39 @@
 # -*- coding: utf-8 -*-
 
 """
-Command-line interface internals.
+Base CLI commands for all objects. Model-specific objects and argument parsers
+will be defined in subclasses or by way of factory methods.
 """
 
-import pynsot
-from pynsot.client import Client
-from pynsot.models import ApiModel
-import argparse
-import sys
+__author__ = 'Jathan McCollum'
+__maintainer__ = 'Jathan McCollum'
+__email__ = 'jathan@dropbox.com'
+__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
+
+import click
+import logging
+import sys
+import tabulate
+import os
+
+from slumber.exceptions import HttpClientError
+import pynsot
+from pynsot.client import Client, ClientError
+from pynsot.models import ApiModel
+
+
+# Constants/Globals
+log = logging.getLogger(__name__)
+
+# Let's hard code these for now until we have dotfile system in place.
+URL = 'http://localhost:8990/api'
+EMAIL = 'jathan@localhost'
+
+# Make the --help option also have -h
+CONTEXT_SETTINGS = dict(
+    help_option_names=['-h', '--help'],
+)
 
 # Used to map human-readable action names to API calls.
 ACTION_MAP = {
@@ -19,114 +43,170 @@ ACTION_MAP = {
     'update': 'patch',
 }
 
-
-def parse_args(argv=None):
-    if argv is None:
-        argv = sys.argv[1:]
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--version', '-V', action='version',
-            version='%(prog)s ' + pynsot.__version__)
-    parser.add_argument('--verbose', '-v', action='store_true',
-            help='toggle verbosity')
-
-    subparsers = parser.add_subparsers(help='Help for objects',
-                                       title='Objects',
-                                       description='Valid objects')
-
-    # Create the parser for sites. This is an example of how generation
-    # of the parsers can be done using a factory method.
-    parser_sites = subparsers.add_parser('sites', help='Sites')
-    sites_subparsers = parser_sites.add_subparsers(help='Actions for network objects',
-                                                title='Actions',
-                                                description='Valid actions')
-    sites_actions = {}
-    for a in ACTION_MAP:
-        sites_actions[a] = sites_subparsers.add_parser(a, help=a.title() + ' a site')
-        sites_actions[a].add_argument('--name', '-n', type=str, help='Site name')  # , required=True)
-        sites_actions[a].add_argument('--description', '-d', type=str, help='Site description')  # , required=True)
-        sites_actions[a].set_defaults(which='sites.' + a)
-        # Need a way to set required arguments on some args, something like,
-        # although these are incorrect:
-        #sites_actions['add'].name.required = True
-        #sites_actions['add'].description.required = True
-
-    #sites_actions['list'].add_argument('--id', '-i', type=int, help='Site id')
-
-    # Create the parser for network
-    parser_networks = subparsers.add_parser('networks', help='Network objects')
-    parser_networks.add_argument('--cidr', '-c', type=str, help='Network address')
-
-    parser_attributes = subparsers.add_parser('attributes', help='Attributes')
-    #parser_devices = subparsers.add_parser('devices', help='Devices')
-    #parser_users = subparsers.add_parser('users', help='Users')
-
-    args = parser.parse_args(argv)
-    return args
+# Where to find the command plugins.
+CMD_FOLDER = os.path.abspath(os.path.join(
+                             os.path.dirname(__file__), 'commands'))
 
 
-def main():
-    args = parse_args()
+class CLI(click.MultiCommand):
+    """
+    Base command object used to define object-specific command-line parsers.
 
-    url = 'http://localhost:8990/api'
-    email = 'jathan@localhost'
+    This will load command plugins from the "commands" folder
 
-    api = Client(url, email=email)
-    api._store['args'] = args
+    Plugins must be named "cmd_{foo}.py"
+    """
+    def list_commands(self, ctx):
+        """List all commands from python modules in plugin folder."""
+        rv = []
+        for filename in os.listdir(CMD_FOLDER):
+            if filename.endswith('.py') and filename.startswith('cmd_'):
+                rv.append(filename[4:-3])
+        rv.sort()
+        return rv
 
-    args = api._store['args']
-    # nsot sites add --name Bar --description 'Bar site'
-    # => Namespace(description='Bar Site', name='Bar', verbose=False, which='sites.add')
-    obj, action = args.which.split('.')  # => 'sites', 'add'
-    api_method = getattr(api, obj)  # => api.sites
-    api_verb = ACTION_MAP[action]  # => get
-    api_call = getattr(api_method, api_verb)
+    def get_command(self, ctx, name):
+        """Import a command module and return it."""
+        try:
+            if sys.version_info[0] == 2:
+                name = name.encode('ascii', 'replace')
+            mod = __import__('pynsot.commands.cmd_' + name,
+                             None, None, ['app'])
+        except ImportError as err:
+            print err
+            return None
+        return mod.cli
 
-    # Need a way to mapp these fields and
-    skipped_args = ('verbose', 'which')
-    data = {k: v for k, v in args.__dict__.items() if k not in skipped_args and v is not None}
 
-    obj_single = obj[:-1]
-    pretty_dict = ', '.join('%s=%r' % (k, v) for k, v in data.items())
-    try:
-        #print data
-        #print api_method._store
-        if action == 'list':
-            result = api_call(**data)  # GET expects **kwargs
-        else:
-            result = api_call(data)  # POST/PATCH expects data=data
-    except Exception as err:
+class App(object):
+    """Context object for holding state data."""
+    def __init__(self, url, email, ctx, verbose=False):
+        self.api = Client(url, email=email)
+        self.ctx = ctx
+        self.verbose = verbose
+        self.resource_name = self.ctx.invoked_subcommand
+        self.action = self.ctx.info_name
+
+    @property
+    def singular(self):
+        """Return singular form of resource name."""
+        resource_name = self.resource_name
+        if resource_name.endswith('s'):
+            resource_name = resource_name[:-1]
+        return resource_name
+
+    @property
+    def resource(self):
+        """Return an API resource method."""
+        return self.api.get_resource(self.resource_name)
+
+    def pretty_dict(self, data):
+        """Return a dict in k=v format."""
+        pretty = ', '.join('%s=%r' % (k, v) for k, v in data.items())
+        return pretty
+
+    def handle_error(self, action, data, err):
+        pretty_dict = self.pretty_dict(data)
         resp = getattr(err, 'response', None)
+        obj_single = self.singular
         if resp is not None:
-            print 'FATAL', resp.status_code, resp.reason, 'trying to', action, obj_single, 'with args:', pretty_dict
+            t_ = '[FATAL] %s %s trying to %s %s with args: %s'
+            msg = t_ % (resp.status_code, resp.reason, action, obj_single,
+                        pretty_dict)
         else:
-            print 'FATAL', err
-        sys.exit(2)
+            msg = '[FATAL] %s' % err
+        click.echo(msg)
+        self.ctx.exit(2)
 
-    # Add behavior
-    if action == 'add':
-        if result:
-            m = ApiModel(result)
-            print 'Successfully added %s (id: %d) with args: %s!' % (obj_single, m.id, pretty_dict)
+    def handle_response(self, action, data, result):
+        pretty_dict = self.pretty_dict(data)
+        t_ = 'Successfully %sed %s with args: %s!'
+        msg = t_ % (action, self.singular,  pretty_dict)
+        click.echo(msg)
 
-    # List behavior
-    elif action == 'list':
-        if result:
-            #print result
-            import tabulate
-            objects = result['data'][obj]
-            headers = 'keys'
-            tablefmt = 'simple'
+    def print_list(self, objects):
+        print tabulate.tabulate(objects, headers='keys')
 
-            # TODO: make me a flag or something
-            no_headers = False
-            if no_headers:
-                headers = []
-                tablefmt = 'plain'
-
-            print tabulate.tabulate(objects, headers=headers, tablefmt=tablefmt)
+    def add(self, data):
+        action = 'add'
+        #log.debug('adding %s %s' % data)
+        try:
+            result = self.resource.post(data)
+        except HttpClientError as err:
+            self.handle_error(action, data, err)
         else:
-            print 'No %s found matching args: %s!' % (obj, pretty_dict)
+            self.handle_response(action, data, result)
 
-    # And... scene.
-    sys.exit(0)
+    def list(self, data):
+        action = 'list'
+        #log.debug('listing %s' % data)
+        #return self.resource.get(**data)
+        try:
+            result = self.resource.get(**data)
+        except HttpClientError as err:
+            self.handle_error(action, data, err)
+        else:
+            objects = []
+            if result:
+                objects = result['data'][self.resource_name]
+            if objects:
+                self.print_list(objects)
+            else:
+                pretty_dict = self.pretty_dict(data)
+                t_ = 'No %s found matching args: %s!'
+                msg = t_ % (self.singular, pretty_dict)
+                click.echo(msg)
+
+    def remove(self, **data):
+        action = 'remove'
+        obj_id = data['id']
+        #log.debug('removing %s' % obj_id)
+        try:
+
+            result = self.resource(obj_id).delete()
+        except HttpClientError as err:
+            self.handle_error(action, data, err)
+        else:
+            self.handle_response(action, data, result)
+
+    def update(self, data):
+        action = 'update'
+        obj_id = data.pop('id')
+        #log.debug('updating %s' % data)
+
+        # Get the original object by id first so that we can keep any existing
+        # values without resetting them.
+        try:
+            obj = self.resource(obj_id).get()
+        except HttpClientError as err:
+            self.handle_error(action, data, err)
+        else:
+            model = ApiModel(obj)
+            payload = dict(model)
+            payload.pop('id')  # We don't want id when doing a PUT
+
+        # Update the payload from the CLI params if the value isn't null..
+        for k, v in data.items():
+            if v is not None:
+                payload[k] = v
+
+        # And now we call PUT
+        try:
+            result = self.resource(obj_id).put(payload)
+        except HttpClientError as err:
+            self.handle_error(action, data, err)
+        else:
+            self.handle_response(action, data, result)
+
+
+@click.command(cls=CLI, context_settings=CONTEXT_SETTINGS)
+@click.version_option(version=pynsot.__version__)
+@click.option('-v', '--verbose', is_flag=True, help='Toggle verbosity.')
+@click.pass_context
+def app(ctx, verbose):
+    """NSoT command-line utility."""
+    # This is the "app" object attached to all contexts.
+    ctx.obj = App(URL, email=EMAIL, ctx=ctx, verbose=verbose)
+
+if __name__ == '__main__':
+    app()

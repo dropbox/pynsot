@@ -10,11 +10,23 @@ __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
+import logging
 import slumber
+from slumber.exceptions import HttpClientError
 
 
+# Logger
+log = logging.getLogger(__name__)
+
+# Header used for passthrough authentication.
 AUTH_HEADER = 'X-NSoT-Email'
 
+
+class ClientError(HttpClientError):
+    """Generic client error."""
+
+class LoginFailed(ClientError):
+    """Raised when login fails for some reason."""
 
 class Client(slumber.API):
     """
@@ -39,9 +51,18 @@ class Client(slumber.API):
         """Set the auth header."""
         email = kwargs.get('email')
         if email is None:
-            raise RuntimeError('You must provide an email!')
+            raise LoginFailed('You must provide an email!')
         s = self._store['session']
         s.headers.update({self._auth_header: email})
+
+    def get_resource(self, resource_name):
+        """
+        Return a single resource object.
+
+        :param resource_name:
+            Name of resource
+        """
+        return getattr(self, resource_name)
 
     def __repr__(self):
         return '<Client(url=%s)>' % (self._store['base_url'],)
