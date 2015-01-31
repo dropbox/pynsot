@@ -119,19 +119,19 @@ class App(object):
         resp = getattr(err, 'response', None)
         obj_single = self.singular
         if resp is not None:
-            t_ = '[FATAL] %s %s trying to %s %s with args: %s'
+            t_ = '%s %s trying to %s %s with args: %s'
             msg = t_ % (resp.status_code, resp.reason, action, obj_single,
                         pretty_dict)
         else:
-            msg = '[FATAL] %s' % err
-        self.ctx.exit(msg)
+            msg = str(err)
+        self.ctx.exit(click.style('[FAILURE] ', fg='red') + msg)
 
     def handle_response(self, action, data, result):
         """Handle positive API response."""
         pretty_dict = self.pretty_dict(data)
-        t_ = 'Successfully %sed %s with args: %s!'
+        t_ = '%sed %s with args: %s!'
         msg = t_ % (action, self.singular,  pretty_dict)
-        click.echo(msg)
+        click.echo(click.style('[SUCCESS] ', fg='green') + msg)
 
     def map_fields(self, fields, fields_map):
         """Map ``fields`` using ``fields_map``."""
