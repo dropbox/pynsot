@@ -24,6 +24,7 @@ kwargs = {
     'entry_points': """
         [console_scripts]
         nsot=pynsot.cli:app
+        snot=pynsot.cli:app
     """,
     #'download_url': 'https://github.com/dropbox/pynsot/archive/master.tar.gz',
     'classifiers': [

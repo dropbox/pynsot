@@ -164,7 +164,7 @@ class App(object):
             fields_map = FIELDS_MAP
 
         # Human-readable field headings as they will be displayed
-        tablefmt='simple'
+        tablefmt = 'simple'
         headers = self.map_fields(fields, fields_map)
 
         # Order the object key/val by the order in display fields
