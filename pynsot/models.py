@@ -16,7 +16,7 @@ import collections
 
 
 # Valid top-level types.
-TYPES = ['network', 'attribute', 'user', 'site']
+TYPES = ('network', 'attribute', 'user', 'site')
 
 
 # What an error response looks like:
@@ -29,6 +29,7 @@ TYPES = ['network', 'attribute', 'user', 'site']
     }
 }
 '''
+
 
 class ApiModel(collections.MutableMapping):
     """
@@ -64,7 +65,8 @@ class ApiModel(collections.MutableMapping):
         >>> nw_obj = ApiModel(nw1)
         >>> nw_obj
         <Network(is_ip=False, network_address=u'10.0.0.0', site_id=1,
-         parent_id=None, prefix_length=8, ip_version=u'4', attributes={}, id=1)>
+         parent_id=None, prefix_length=8, ip_version=u'4', attributes={},
+         id=1)>
         >>> nw_obj.network_address
         u'10.0.0.0'
     """

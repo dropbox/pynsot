@@ -12,7 +12,6 @@ kwargs = {
     'name': 'pynsot',
     'version': str(__version__),
     'packages': find_packages(exclude=['tests']),
-    #'scripts': ['bin/nsot-server', 'bin/nsot-ctl'],
     'description': 'Python interface for Network Source of Truth (nsot)',
     'author': 'Jathan McCollum',
     'maintainer': 'Jathan McCollum',
@@ -23,10 +22,9 @@ kwargs = {
     'url': 'https://github.com/dropbox/pynsot',
     'entry_points': """
         [console_scripts]
-        nsot=pynsot.cli:app
-        snot=pynsot.cli:app
+        nsot=pynsot.app:app
+        snot=pynsot.app:app
     """,
-    #'download_url': 'https://github.com/dropbox/pynsot/archive/master.tar.gz',
     'classifiers': [
         'Programming Language :: Python',
         'Topic :: Software Development',

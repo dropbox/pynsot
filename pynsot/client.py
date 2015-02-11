@@ -10,7 +10,9 @@ __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
+import json
 import logging
+from requests.auth import AuthBase
 import slumber
 from slumber.exceptions import HttpClientError
 
@@ -25,35 +27,53 @@ AUTH_HEADER = 'X-NSoT-Email'
 class ClientError(HttpClientError):
     """Generic client error."""
 
+
 class LoginFailed(ClientError):
     """Raised when login fails for some reason."""
 
-class Client(slumber.API):
+
+class BaseClient(slumber.API):
     """
     Magic REST API client for NSoT.
     """
-    def __init__(self, *args, **kwargs):
-        kwargs.pop('auth', None) # Ditch default auth
-        email = kwargs.pop('email', None)
-        auth_header = kwargs.pop('auth_header', AUTH_HEADER)
+    def __init__(self, base_url=None, **kwargs):
+        auth = kwargs.pop('auth', None)  # Ditch default auth
 
-        super(Client, self).__init__(*args, **kwargs)
+        # Override the auth method if we have defined .get_auth()
+        if auth is None:
+            # Set these as object attributes so that they can be mutated in the
+            # subclass .get_auth() method
+            self._kwargs = kwargs
+            auth = self.get_auth(base_url)
 
-        # Hard-code disable trailing slash
-        self._store['append_slash'] = False # No slashes!
+        kwargs['auth'] = auth
+        kwargs['append_slash'] = False  # No slashes!
+        super(BaseClient, self).__init__(base_url, **kwargs)
 
-        # If email is provided, use this to set auth header
-        self._auth_header = auth_header
-        if email is not None:
-            self.auth(email=email)
+    def get_auth(self, base_url=None):
+        """
+        Subclasses should references kwargs from ``self._kwargs``.
 
-    def auth(self, *args, **kwargs):
-        """Set the auth header."""
-        email = kwargs.get('email')
-        if email is None:
-            raise LoginFailed('You must provide an email!')
-        s = self._store['session']
-        s.headers.update({self._auth_header: email})
+        :param base_url:
+            Base API URL
+        """
+        raise NotImplementedError('SUBCLASS ME OR SOMETHING!')
+
+    def error(self, exc):
+        """
+        Take errors and make them human-readable.
+
+        :param exc:
+            Exception instance
+        """
+        log.debug('Processing error: %r' % (exc,))
+        # If it's a HTTP response, format the JSON
+        try:
+            err = exc.response.json()['error']
+            msg = '%s %s' % (err['code'], err['message'])
+        except AttributeError:
+            msg = str(exc)
+        raise ClientError(msg)
 
     def get_resource(self, resource_name):
         """
@@ -65,33 +85,88 @@ class Client(slumber.API):
         return getattr(self, resource_name)
 
     def __repr__(self):
-        return '<Client(url=%s)>' % (self._store['base_url'],)
+        cls_name = self.__class__.__name__
+        return '<%s(url=%s)>' % (cls_name, self._store['base_url'])
 
 
-if __name__ == '__main__':
-    import json
+class EmailHeaderAuthentication(AuthBase):
+    """Special authentication that sets the email auth header."""
+    def __init__(self, email=None, auth_header=AUTH_HEADER):
+        if email is None:
+            raise LoginFailed('You must provide an email!')
+        self.email = email
+        self.auth_header = auth_header
 
-    url = 'http://localhost:8990/api'
-    email = 'jathan@localhost'
-    api = Client(url)
-    api.auth(email=email)
+    def __call__(self, r):
+        """Set the auth header."""
+        r.headers[self.auth_header] = self.email
+        return r
 
-    #print 'POST /sites {"name": "Foo", "description": "Foo site"}
-    #new_site = {'name': 'Foo', 'description': 'Foo site'}
-    #print json.dumps(api.sites.post(new_site), indent=4)
 
-    print 'GET /sites'
-    print json.dumps(api.sites.get(), indent=4)
-    print
+class EmailHeaderClient(BaseClient):
+    """Default client using email auth header method."""
+    def get_auth(self, base_url):
+        kwargs = self._kwargs
+        email = kwargs.pop('email', None)
+        auth_header = kwargs.pop('auth_header', AUTH_HEADER)
+        return EmailHeaderAuthentication(email, auth_header)
 
-    print 'GET /sites/1/networks'
-    print json.dumps(api.sites(1).networks.get(), indent=4)
-    print
 
-    print 'GET /sites/1/attributes'
-    print json.dumps(api.sites(1).attributes.get(), indent=4)
-    print
+class AuthTokenAuthentication(AuthBase):
+    """
+    Special authentication that utilizes auth_tokens.
 
-    # Pin a site object to Site 1
-    site = api.sites(1)
-    print site.networks.get()
+    Adds header for "Authorization: ApiToken {email}:{auth_token}"
+    """
+    def __init__(self, email=None, auth_token=None):
+        self.email = email
+        self.auth_token = auth_token
+
+    def __call__(self, r):
+        header = 'AuthToken %s:%s' % (self.email, self.auth_token)
+        r.headers['Authorization'] = header
+        return r
+
+
+class AuthTokenClient(BaseClient):
+    """Client that uses auth_token method."""
+    def get_token(self, base_url, email, secret_key):
+        """
+        Currently ghetto: Hit the API to get an auth_token.
+
+        :param base_url:
+            API URL
+
+        :param email:
+            User's email
+
+        :param secret_key:
+            User's secret_key
+        """
+        data = {'email': email, 'secret_key': secret_key}
+        log.debug('Getting token for user data: %r' % (data,))
+        try:
+            url = base_url + '/authenticate'
+            headers = {'content-type': 'application/json'}
+            r = slumber.requests.post(url, data=json.dumps(data),
+                                      headers=headers)
+        except Exception as err:
+            log.debug('Got error: %s' % (err,))
+            self.error(err)
+
+        if r.ok:
+            log.debug('Got response: %r' % (r,))
+            return r.json()['data']['auth_token']
+        else:
+            msg = 'Failed to fetch auth_token'
+            err = HttpClientError(msg, response=r, content=r.content)
+            self.error(err)
+
+    def get_auth(self, base_url):
+        kwargs = self._kwargs
+        email = kwargs.pop('email', None)
+        secret_key = kwargs.pop('secret_key', None)
+        auth_token = self.get_token(base_url, email, secret_key)
+        auth = AuthTokenAuthentication(email, auth_token)
+        return auth
+Client = AuthTokenClient  # Default client is auth_token
