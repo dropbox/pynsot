@@ -2,6 +2,12 @@
 Handle the read, write, and generation of the .pynsotrc config file.
 """
 
+__author__ = 'Jathan McCollum'
+__maintainer__ = 'Jathan McCollum'
+__email__ = 'jathan@dropbox.com'
+__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
+
+
 from ConfigParser import RawConfigParser
 import click
 import logging
@@ -58,7 +64,7 @@ class Dotfile(object):
 
         # Validate the permissions and presence of fields in the dotfile
         self.validate_perms()
-        config = rcfile.rcfile('pynsot')
+        config = rcfile.rcfile(SECTION_NAME)
         self.validate_fields(config)
 
         return config
@@ -69,7 +75,7 @@ class Dotfile(object):
         s = os.stat(self.filepath)
         if s.st_uid != os.getuid():
             msg = '%s: %s must be owned by you' % (DOTFILE_NAME, self.filepath)
-            raise DotfilError(msg)
+            raise DotfileError(msg)
 
         # Permissions
         self.enforce_perms()

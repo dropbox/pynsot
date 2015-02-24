@@ -23,7 +23,7 @@ import click
 
 
 # Fields to display when printing a list of items
-display_fields = ('id', 'name', 'description')
+DISPLAY_FIELDS = ('id', 'name', 'description')
 
 
 # Main group
@@ -69,7 +69,7 @@ def list(ctx, name, limit):
 
     """
     data = ctx.params
-    ctx.obj.list(data, display_fields)
+    ctx.obj.list(data, fields=DISPLAY_FIELDS)
 
 
 # Remove
