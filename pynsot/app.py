@@ -19,28 +19,25 @@ import os
 
 from slumber.exceptions import HttpClientError
 import pynsot
-from pynsot.client import Client, ClientError
-from pynsot.models import ApiModel
+from . import client
+from . import dotfile
+from .models import ApiModel
 
 
 # Constants/Globals
+if os.getenv('DEBUG'):
+    logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
-
-# Let's hard code these for now until we have dotfile system in place.
-URL = 'http://localhost:8990/api'
-EMAIL = 'jathan@localhost'
 
 # Make the --help option also have -h
 CONTEXT_SETTINGS = dict(
     help_option_names=['-h', '--help'],
 )
 
-# Used to map human-readable action names to API calls.
-ACTION_MAP = {
-    'add': 'post',
-    'list': 'get',
-    'remove': 'delete',
-    'update': 'patch',
+# Mapping to our two (2) hard-coded auth methods for now.
+AUTH_CLIENTS = {
+    'auth_header': client.EmailHeaderClient,
+    'auth_token': client.AuthTokenClient,
 }
 
 # Mapping of objec field names to their human-readable form used when calling
@@ -51,13 +48,12 @@ FIELDS_MAP = {
     'description': 'Description',
 }
 
-
 # Where to find the command plugins.
 CMD_FOLDER = os.path.abspath(os.path.join(
                              os.path.dirname(__file__), 'commands'))
 
 
-class CLI(click.MultiCommand):
+class NsotCLI(click.MultiCommand):
     """
     Base command object used to define object-specific command-line parsers.
 
@@ -89,11 +85,43 @@ class CLI(click.MultiCommand):
 
 class App(object):
     """Context object for holding state data."""
-    def __init__(self, url, email, ctx, verbose=False):
-        self.api = Client(url, email=email)
+    def __init__(self, client_args, ctx, verbose=False):
+        self.client_args = client_args
         self.ctx = ctx
         self.verbose = verbose
         self.resource_name = self.ctx.invoked_subcommand
+
+    def get_api_client(self, auth_method=None, url=None, email=None,
+                       secret_key=None):
+        """
+        Safely create an API client so that users don't see tracebacks.
+        """
+        try:
+            client_class = AUTH_CLIENTS[auth_method]
+        except KeyError:
+            raise click.UsageError('Invalid auth_method: %s' % (auth_method,))
+
+        # This is hard-coded to the two primary auth methods (still not
+        # pluggable.)
+        try:
+            if auth_method == 'auth_token':
+                api_client = client_class(url, email=email,
+                                          secret_key=secret_key)
+            else:
+                api_client = client_class(url, email=email)
+        except client.ClientError as err:
+            msg = str(err)
+            if 'Connection refused' in msg:
+                msg = 'Could not connect to server: %s' % (url,)
+            raise click.UsageError(msg)
+        return api_client
+
+    @property
+    def api(self):
+        """This way the API client is not created until called."""
+        if not hasattr(self, '_api'):
+            self._api = self.get_api_client(**self.client_args)
+        return self._api
 
     @property
     def singular(self):
@@ -108,7 +136,8 @@ class App(object):
         """Return an API resource method."""
         return self.api.get_resource(self.resource_name)
 
-    def pretty_dict(self, data):
+    @staticmethod
+    def pretty_dict(data):
         """Return a dict in k=v format."""
         pretty = ', '.join('%s=%r' % (k, v) for k, v in data.items())
         return pretty
@@ -181,7 +210,7 @@ class App(object):
 
     def add(self, data):
         action = 'add'
-        #log.debug('adding %s %s' % data)
+        log.debug('adding %s' % data)
         try:
             result = self.resource.post(data)
         except HttpClientError as err:
@@ -191,7 +220,7 @@ class App(object):
 
     def list(self, data, fields=None):
         action = 'list'
-        #log.debug('listing %s' % data)
+        log.debug('listing %s' % data)
         try:
             result = self.resource.get(**data)
         except HttpClientError as err:
@@ -211,7 +240,7 @@ class App(object):
     def remove(self, **data):
         action = 'remove'
         obj_id = data['id']
-        #log.debug('removing %s' % obj_id)
+        log.debug('removing %s' % obj_id)
         try:
             result = self.resource(obj_id).delete()
         except HttpClientError as err:
@@ -222,7 +251,7 @@ class App(object):
     def update(self, data):
         action = 'update'
         obj_id = data.pop('id')
-        #log.debug('updating %s' % data)
+        log.debug('updating %s' % data)
 
         # Get the original object by id first so that we can keep any existing
         # values without resetting them.
@@ -249,14 +278,23 @@ class App(object):
             self.handle_response(action, data, result)
 
 
-@click.command(cls=CLI, context_settings=CONTEXT_SETTINGS)
+@click.command(cls=NsotCLI, context_settings=CONTEXT_SETTINGS)
 @click.version_option(version=pynsot.__version__)
 @click.option('-v', '--verbose', is_flag=True, help='Toggle verbosity.')
 @click.pass_context
 def app(ctx, verbose):
     """NSoT command-line utility."""
     # This is the "app" object attached to all contexts.
-    ctx.obj = App(URL, email=EMAIL, ctx=ctx, verbose=verbose)
+
+    # Read the dotfile
+    try:
+        config = dotfile.Dotfile()
+    except dotfile.DotfileError as err:
+        raise click.UsageError(err.message)
+
+    # Construct the App!
+    client_args = config.config
+    ctx.obj = App(client_args=client_args, ctx=ctx, verbose=verbose)
 
 
 if __name__ == '__main__':

@@ -47,7 +47,7 @@ def add(ctx, name, description):
     Add a new site.
 
     When adding a new site, you must provide values for both the -n/--name and
-    -d/--description options.
+    -d/--description arguments.
     """
     data = ctx.params
     ctx.obj.add(data)
@@ -55,14 +55,18 @@ def add(ctx, name, description):
 
 # List
 @cli.command()
-@click.option('-n', '--name', metavar='NAME', help='Filter by site name')
+@click.option('-n', '--name', metavar='NAME', help='Filter by site name.')
+@click.option('-l', '--limit', metavar='LIMIT', help='Number of items.')
 @click.pass_context
-def list(ctx, name):
+def list(ctx, name, limit):
     """
     List existing sites.
 
-    When listing sites all sites are displayed by default. You may optionally
-    lookup a single site by name using the -n/--name option.
+    When listing sites, all sites are displayed by default. You may optionally
+    lookup a single site by name using the -n/--name argument.
+
+    You may limit the number of results using the -l/--limit argument.
+
     """
     data = ctx.params
     ctx.obj.list(data, display_fields)
@@ -98,7 +102,7 @@ def update(ctx, id, name, description):
     Update a site.
 
     When updating a site you must provide the unique ID (-i/--id) and at least
-    one of the -n/--name or -d/--description options.
+    one of the -n/--name or -d/--description arguments.
     """
     if name is None and description is None:
         msg = 'You must supply at least one of --name or --description'
