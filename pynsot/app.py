@@ -13,14 +13,13 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 import click
 import logging
+from slumber.exceptions import HttpClientError
+import os
 import sys
 import tabulate
-import os
 
-from slumber.exceptions import HttpClientError
 import pynsot
-from . import client
-from . import dotfile
+from . import client, dotfile
 from .models import ApiModel
 
 
@@ -30,9 +29,9 @@ if os.getenv('DEBUG'):
 log = logging.getLogger(__name__)
 
 # Make the --help option also have -h
-CONTEXT_SETTINGS = dict(
-    help_option_names=['-h', '--help'],
-)
+CONTEXT_SETTINGS = {
+    'help_option_names': ['-h', '--help'],
+}
 
 # Mapping to our two (2) hard-coded auth methods for now.
 AUTH_CLIENTS = {
@@ -95,6 +94,18 @@ class App(object):
                        secret_key=None):
         """
         Safely create an API client so that users don't see tracebacks.
+
+        :param auth_method:
+            Auth method used by the client
+
+        :param url:
+            API URL
+
+        :param email:
+            User's email
+
+        :param secret_key:
+            User's secret_key
         """
         try:
             client_class = AUTH_CLIENTS[auth_method]
@@ -138,12 +149,28 @@ class App(object):
 
     @staticmethod
     def pretty_dict(data):
-        """Return a dict in k=v format."""
+        """
+        Return a dict in k=v format.
+
+        :param dict:
+            A dict
+        """
         pretty = ', '.join('%s=%r' % (k, v) for k, v in data.items())
         return pretty
 
     def handle_error(self, action, data, err):
-        """Handle error API response."""
+        """
+        Handle error API response.
+
+        :param action:
+            The action name
+
+        :param data:
+            Dict of arguments
+
+        :param err:
+            Exception object
+        """
         pretty_dict = self.pretty_dict(data)
         resp = getattr(err, 'response', None)
         obj_single = self.singular
@@ -156,14 +183,36 @@ class App(object):
         self.ctx.exit(click.style('[FAILURE] ', fg='red') + msg)
 
     def handle_response(self, action, data, result):
-        """Handle positive API response."""
+        """
+        Handle positive API response.
+
+        :param action:
+            The action name
+
+        :param data:
+            Dict of arguments
+
+        :param result:
+            Dict containing result
+        """
         pretty_dict = self.pretty_dict(data)
-        t_ = '%sed %s with args: %s!'
+        t_ = '%s %s with args: %s!'
+        if action.endswith('e'):
+            action = action[:-1]  # "remove" -> "remov"
+        action = action + 'ed'  # "remove" -> "removed"
         msg = t_ % (action, self.singular,  pretty_dict)
         click.echo(click.style('[SUCCESS] ', fg='green') + msg)
 
     def map_fields(self, fields, fields_map):
-        """Map ``fields`` using ``fields_map``."""
+        """
+        Map ``fields`` using ``fields_map`` for table display.
+
+        :param fields:
+            List of field names
+
+        :param fields_map:
+            Mapping of field names to translations
+        """
         try:
             headers = [fields_map[f] for f in fields]
         except KeyError:
@@ -209,6 +258,7 @@ class App(object):
             click.echo(table)
 
     def add(self, data):
+        """POST"""
         action = 'add'
         log.debug('adding %s' % data)
         try:
@@ -219,6 +269,7 @@ class App(object):
             self.handle_response(action, data, result)
 
     def list(self, data, fields=None):
+        """GET"""
         action = 'list'
         log.debug('listing %s' % data)
         try:
@@ -238,6 +289,7 @@ class App(object):
                 click.echo(msg)
 
     def remove(self, **data):
+        """DELETE"""
         action = 'remove'
         obj_id = data['id']
         log.debug('removing %s' % obj_id)
@@ -249,6 +301,7 @@ class App(object):
             self.handle_response(action, data, result)
 
     def update(self, data):
+        """PUT"""
         action = 'update'
         obj_id = data.pop('id')
         log.debug('updating %s' % data)
@@ -264,7 +317,7 @@ class App(object):
             payload = dict(model)
             payload.pop('id')  # We don't want id when doing a PUT
 
-        # Update the payload from the CLI params if the value isn't null..
+        # Update the payload from the CLI params if the value isn't null.
         for k, v in data.items():
             if v is not None:
                 payload[k] = v
