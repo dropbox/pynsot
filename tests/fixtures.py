@@ -12,7 +12,16 @@ except ImportError:
     raise
 
 
+# Constants and stuff
 fake = faker.Factory.create()
+
+# Dummy config data used for testing dotfile and client
+CONFIG_DATA = {
+    'email': 'jathan@localhost',
+    'url': 'http://localhost:8990/api',
+    'auth_method': 'auth_token',
+    'secret_key': 'MJMOl9W7jqQK3h-quiUR-cSUeuyDRhbn2ca5E31sH_I=',
+}
 
 
 def generate_site_data(num_items=100):

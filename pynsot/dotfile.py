@@ -49,9 +49,8 @@ class Dotfile(object):
     """Create, read, and write a dotfile."""
     def __init__(self, filepath=DOTFILE_PATH, **kwargs):
         self.filepath = filepath
-        self.config = self.read()
 
-    def read(self):
+    def read(self, **kwargs):
         """
         Read ``~/.pynsotrc`` and return it as a dict.
         """
@@ -59,14 +58,16 @@ class Dotfile(object):
         if not os.path.exists(self.filepath):
             p = '%s not found; would you like to create it?' % (self.filepath,)
             if click.confirm(p, default=True, abort=True):
-                config_data = self.get_config_data()
+                config_data = self.get_config_data(**kwargs)
                 self.write(config_data)
 
         # Validate the permissions and presence of fields in the dotfile
         self.validate_perms()
-        config = rcfile.rcfile(SECTION_NAME)
+        config = rcfile.rcfile(SECTION_NAME, args={'config': self.filepath})
         self.validate_fields(config)
 
+        config.pop('config', None)  # We don't need this field in here.
+        self.config = config
         return config
 
     def validate_perms(self):
@@ -87,7 +88,7 @@ class Dotfile(object):
         :param field_names:
             List of field names to validate
         """
-        for rname in REQUIRED_FIELDS:
+        for rname in sorted(REQUIRED_FIELDS):
             if rname not in field_names:
                 msg = '%s: Missing required field: %s' % (DOTFILE_NAME, rname)
                 raise DotfileError(msg)
@@ -102,16 +103,18 @@ class Dotfile(object):
         log.debug('Enforcing permissions %o on %s' % (perms, self.filepath))
         os.chmod(self.filepath, perms)
 
-    def write(self, config_data):
+    def write(self, config_data, filepath=None):
         """
         Create a dotfile from keyword arguments.
 
-        :param filepath:
-            Where to write the config data
-
-        :param kwargs:
+        :param config_data:
             Dict of config settings
+
+        :param filepath:
+            (Optional) Path to write
         """
+        if filepath is None:
+            filepath = self.filepath
         config = RawConfigParser()
         section = SECTION_NAME
         config.add_section(section)
@@ -120,11 +123,11 @@ class Dotfile(object):
         for key, val in config_data.iteritems():
             config.set(section, key, val)
 
-        with open(self.filepath, 'wb') as dotfile:
+        with open(filepath, 'wb') as dotfile:
             config.write(dotfile)
 
         self.enforce_perms()
-        log.debug('wrote %s' % self.filepath)
+        log.debug('wrote %s' % filepath)
 
     @staticmethod
     def get_config_data(required_fields=REQUIRED_FIELDS, **kwargs):

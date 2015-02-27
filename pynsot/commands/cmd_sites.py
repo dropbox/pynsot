@@ -38,16 +38,28 @@ def cli(ctx):
 
 # Add
 @cli.command()
-@click.option('-n', '--name', metavar='NAME', help='Site name', required=True)
-@click.option('-d', '--description', metavar='DESC', help='Site description',
-              required=True)
+@click.option(
+    '-d',
+    '--description',
+    metavar='DESC',
+    help='A helpful description for the Site.',
+)
+@click.option(
+    '-n',
+    '--name',
+    metavar='NAME',
+    help='The name of the Site.',
+    required=True,
+)
 @click.pass_context
-def add(ctx, name, description):
+def add(ctx, description, name):
     """
-    Add a new site.
+    Add a new Site.
 
-    When adding a new site, you must provide values for both the -n/--name and
-    -d/--description arguments.
+    When adding a Site, you must provide a name using the -n/--name option.
+
+    You may provide a helpful description for the Site using the
+    -d/--description option.
     """
     data = ctx.params
     ctx.obj.add(data)
@@ -55,18 +67,27 @@ def add(ctx, name, description):
 
 # List
 @cli.command()
-@click.option('-n', '--name', metavar='NAME', help='Filter by site name.')
+@click.option(
+    '-i',
+    '--id',
+    metavar='ID',
+    help='Unique ID of the Site to retrieve.',
+)
 @click.option('-l', '--limit', metavar='LIMIT', help='Number of items.')
+@click.option('-n', '--name', metavar='NAME', help='Filter by site name.')
 @click.pass_context
-def list(ctx, name, limit):
+def list(ctx, id, limit, name):
     """
     List existing sites.
 
     When listing sites, all sites are displayed by default. You may optionally
-    lookup a single site by name using the -n/--name argument.
+    lookup a single Site by name using the -n/--name option or by ID using the
+    -i/--id option.
 
-    You may limit the number of results using the -l/--limit argument.
+    You may limit the number of results using the -l/--limit option.
 
+    NOTE: The -i/--id option will take precedence causing all other options
+    to be ignored.
     """
     data = ctx.params
     ctx.obj.list(data, fields=DISPLAY_FIELDS)
@@ -74,15 +95,20 @@ def list(ctx, name, limit):
 
 # Remove
 @cli.command()
-@click.option('-i', '--id', metavar='ID', help='Unique ID for site',
-              required=True)
+@click.option(
+    '-i',
+    '--id',
+    metavar='ID',
+    help='Unique ID of the Site that should be removed.',
+    required=True,
+)
 @click.pass_context
 def remove(ctx, id):
     """
     Remove a site.
 
     When removing a site, you must provide the unique ID using -i/--id. You may
-    retrieve the id for a site by looking it up by name using:
+    retrieve the ID for a site by looking it up by name using:
 
         nsot sites list --name <name>
     """
@@ -92,12 +118,27 @@ def remove(ctx, id):
 
 # Update
 @cli.command()
-@click.option('-i', '--id', metavar='ID', help='Unique ID for site',
-              required=True)
-@click.option('-n', '--name', metavar='NAME', help='Site name')
-@click.option('-d', '--description', metavar='DESC', help='Site description')
+@click.option(
+    '-d',
+    '--description',
+    metavar='DESC',
+    help='A helpful description for the Site.',
+)
+@click.option(
+    '-i',
+    '--id',
+    metavar='ID',
+    help='Unique ID of the Site that should be updated.',
+    required=True,
+)
+@click.option(
+    '-n',
+    '--name',
+    metavar='NAME',
+    help='The name of the Site.',
+)
 @click.pass_context
-def update(ctx, id, name, description):
+def update(ctx, description, id, name):
     """
     Update a site.
 
@@ -105,7 +146,7 @@ def update(ctx, id, name, description):
     one of the -n/--name or -d/--description arguments.
     """
     if name is None and description is None:
-        msg = 'You must supply at least one of --name or --description'
+        msg = 'You must supply at least one of -n/--name or -d/--description'
         raise click.UsageError(msg)
 
     data = ctx.params
