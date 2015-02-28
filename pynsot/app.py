@@ -13,8 +13,8 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 import click
 import logging
-from slumber.exceptions import HttpClientError
 import os
+from slumber.exceptions import HttpClientError
 import sys
 import tabulate
 
@@ -28,6 +28,9 @@ if os.getenv('DEBUG'):
     logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
+# We want no padding on the table columns
+tabulate.MIN_PADDING = 0
+
 # Make the --help option also have -h
 CONTEXT_SETTINGS = {
     'help_option_names': ['-h', '--help'],
@@ -39,14 +42,6 @@ AUTH_CLIENTS = {
     'auth_token': client.AuthTokenClient,
 }
 
-# Mapping of objec field names to their human-readable form used when calling
-# .print_list() for an object type.
-FIELDS_MAP = {
-    'id': 'ID',
-    'name': 'Name',
-    'description': 'Description',
-}
-
 # Where to find the command plugins.
 CMD_FOLDER = os.path.abspath(os.path.join(
                              os.path.dirname(__file__), 'commands'))
@@ -56,9 +51,9 @@ class NsotCLI(click.MultiCommand):
     """
     Base command object used to define object-specific command-line parsers.
 
-    This will load command plugins from the "commands" folder
+    This will load command plugins from the "commands" folder.
 
-    Plugins must be named "cmd_{foo}.py"
+    Plugins must be named "cmd_{foo}.py".
     """
     def list_commands(self, ctx):
         """List all commands from python modules in plugin folder."""
@@ -83,7 +78,7 @@ class NsotCLI(click.MultiCommand):
 
 
 class App(object):
-    """Context object for holding state data."""
+    """Context object for holding state data for the CLI app."""
     def __init__(self, client_args, ctx, verbose=False):
         self.client_args = client_args
         self.ctx = ctx
@@ -108,18 +103,15 @@ class App(object):
             User's secret_key
         """
         try:
-            client_class = AUTH_CLIENTS[auth_method]
+            client_class, arg_names = client.get_auth_client_info(auth_method)
         except KeyError:
             raise click.UsageError('Invalid auth_method: %s' % (auth_method,))
 
-        # This is hard-coded to the two primary auth methods (still not
-        # pluggable.)
+        # Construct kwargs to pass to the client_class
+        local_vars = locals()
+        kwargs = {arg_name: local_vars[arg_name] for arg_name in arg_names}
         try:
-            if auth_method == 'auth_token':
-                api_client = client_class(url, email=email,
-                                          secret_key=secret_key)
-            else:
-                api_client = client_class(url, email=email)
+            api_client = client_class(url, **kwargs)
         except client.ClientError as err:
             msg = str(err)
             if 'Connection refused' in msg:
@@ -136,7 +128,7 @@ class App(object):
 
     @property
     def singular(self):
-        """Return singular form of resource name."""
+        """Return singular form of resource_name. (e.g. "sites" -> "site")"""
         resource_name = self.resource_name
         if resource_name.endswith('s'):
             resource_name = resource_name[:-1]
@@ -144,19 +136,33 @@ class App(object):
 
     @property
     def resource(self):
-        """Return an API resource method."""
+        """
+        Return an API resource method for calling endpoints.
+
+        For example if ``resource_name`` is ``networks``, this is equivalent to
+        calling ``self.api.networks``.
+        """
         return self.api.get_resource(self.resource_name)
 
     @staticmethod
-    def pretty_dict(data):
+    def pretty_dict(data, sep=', '):
         """
         Return a dict in k=v format.
 
         :param dict:
             A dict
+
+        :param sep:
+            Character used to separate items
         """
-        pretty = ', '.join('%s=%r' % (k, v) for k, v in data.items())
+        pretty = sep.join('%s=%r' % (k, v) for k, v in data.iteritems())
         return pretty
+
+    def format_message(self, obj_single, message):
+        """Attempt to make messages human-readable."""
+        if 'UNIQUE constraint failed' in message:
+            message = '%s object already exists.' % (obj_single.title(),)
+        return message
 
     def handle_error(self, action, data, err):
         """
@@ -171,15 +177,33 @@ class App(object):
         :param err:
             Exception object
         """
-        pretty_dict = self.pretty_dict(data)
         resp = getattr(err, 'response', None)
         obj_single = self.singular
+        extra = '\n'
+
+        # If it's an API error, format it all pretty-like for human eyes.
         if resp is not None:
-            t_ = '%s %s trying to %s %s with args: %s'
-            msg = t_ % (resp.status_code, resp.reason, action, obj_single,
-                        pretty_dict)
+            body = resp.json()
+
+            msg = body['error']['message']
+            msg = self.format_message(obj_single, msg)
+
+            # Add the status code and reason to the output
+            if self.verbose:
+                t_ = '%s %s'
+                reason = resp.reason.upper()
+                extra += t_ % (resp.status_code, reason)
         else:
             msg = str(err)
+
+        # If we're being verbose, print some extra context.
+        if self.verbose:
+            t_ = ' trying to %s %s with args: %s'
+            pretty_dict = self.pretty_dict(data)
+            extra += t_ % (action, obj_single, pretty_dict)
+            msg += extra
+
+        # Colorize the failure text as red.
         self.ctx.exit(click.style('[FAILURE] ', fg='red') + msg)
 
     def handle_response(self, action, data, result):
@@ -199,8 +223,10 @@ class App(object):
         t_ = '%s %s with args: %s!'
         if action.endswith('e'):
             action = action[:-1]  # "remove" -> "remov"
-        action = action + 'ed'  # "remove" -> "removed"
+        action = action.title() + 'ed'  # "remove" -> "removed"
         msg = t_ % (action, self.singular,  pretty_dict)
+
+        # Colorize the success text as green.
         click.echo(click.style('[SUCCESS] ', fg='green') + msg)
 
     def map_fields(self, fields, fields_map):
@@ -213,40 +239,49 @@ class App(object):
         :param fields_map:
             Mapping of field names to translations
         """
+        log.debug('MAP_FIELDS FIELDS = %r' % (fields,))
+        log.debug('MAP_FIELDS FIELDS_MAP = %r' % (fields_map,))
         try:
             headers = [fields_map[f] for f in fields]
-        except KeyError:
-            self.ctx.exit('Could not map field %r when displaying results.')
+        except KeyError as err:
+            msg = 'Could not map field %s when displaying results.' % (err,)
+            self.ctx.exit(msg)
         return headers
 
-    def print_list(self, objects, fields=None, fields_map=None):
+    def print_list(self, objects, display_fields):
         """
-        Print objects in a table format.
+        Print a list of objects in a table format.
 
         :param objects:
             List of object dicts
 
-        :param fields:
-            List of field names to display in order
-
-        :param fields_map:
-            Mapping used to translate field names for display
+        :param display_fields:
+            Ordered list of 2-tuples of (field, display_name) used
+            to translate field names for display
         """
-        # Default to using all fields
-        if fields is None:
-            first_obj = objects[0]  # This better be a list/tuple!
-            fields = first_obj.keys()  # This better be a dict!
-
-        # Set the field mapping
-        if fields_map is None:
-            fields_map = FIELDS_MAP
+        # Extract the field names and create a mapping used for translation
+        fields = [f[0] for f in display_fields]  # Field names are 1st item
+        fields_map = dict(display_fields)
 
         # Human-readable field headings as they will be displayed
         tablefmt = 'simple'
         headers = self.map_fields(fields, fields_map)
 
         # Order the object key/val by the order in display fields
-        table_data = [[obj[f] for f in fields] for obj in objects]
+        table_data = []
+
+        # We're doing all of this just so we can pretty print dicts as k=v
+        for obj in objects:
+            obj_list = []
+            for f in fields:
+                field_data = obj[f]
+                # If the field is a dict, pretty_dict it!
+                if isinstance(field_data, dict):
+                    field_data = self.pretty_dict(field_data)
+                obj_list.append(field_data)
+            table_data.append(obj_list)
+
+        # table_data = [[obj[f] for f in fields] for obj in objects]
         table = tabulate.tabulate(table_data, headers=headers,
                                   tablefmt=tablefmt)
 
@@ -257,10 +292,19 @@ class App(object):
         else:
             click.echo(table)
 
+    def rebase(self, data):
+        """If this is not a site object, then rebase the API URL."""
+        site_id = data.pop('site_id', None)
+        if site_id is not None:
+            log.debug('Got site_id: %s; rebasing API URL!' % site_id)
+            self.api._store['base_url'] += '/sites/' + site_id
+
     def add(self, data):
         """POST"""
         action = 'add'
         log.debug('adding %s' % data)
+        self.rebase(data)
+
         try:
             result = self.resource.post(data)
         except HttpClientError as err:
@@ -268,11 +312,13 @@ class App(object):
         else:
             self.handle_response(action, data, result)
 
-    def list(self, data, fields=None):
+    def list(self, data, display_fields=None):
         """GET"""
         action = 'list'
         log.debug('listing %s' % data)
         obj_id = data.get('id')  # If obj_id, it's a single object
+        self.rebase(data)
+
         try:
             # Try getting a single object first
             if obj_id:
@@ -293,7 +339,7 @@ class App(object):
                 objects = result['data'][self.resource_name]
 
             if objects:
-                self.print_list(objects, fields)
+                self.print_list(objects, display_fields)
             else:
                 pretty_dict = self.pretty_dict(data)
                 t_ = 'No %s found matching args: %s!'
@@ -305,6 +351,8 @@ class App(object):
         action = 'remove'
         obj_id = data['id']
         log.debug('removing %s' % obj_id)
+        self.rebase(data)
+
         try:
             result = self.resource(obj_id).delete()
         except HttpClientError as err:
@@ -317,6 +365,7 @@ class App(object):
         action = 'update'
         obj_id = data.pop('id')
         log.debug('updating %s' % data)
+        self.rebase(data)
 
         # Get the original object by id first so that we can keep any existing
         # values without resetting them.
@@ -330,7 +379,7 @@ class App(object):
             payload.pop('id')  # We don't want id when doing a PUT
 
         # Update the payload from the CLI params if the value isn't null.
-        for k, v in data.items():
+        for k, v in data.iteritems():
             if v is not None:
                 payload[k] = v
 
@@ -344,8 +393,8 @@ class App(object):
 
 
 @click.command(cls=NsotCLI, context_settings=CONTEXT_SETTINGS)
-@click.version_option(version=pynsot.__version__)
 @click.option('-v', '--verbose', is_flag=True, help='Toggle verbosity.')
+@click.version_option(version=pynsot.__version__)
 @click.pass_context
 def app(ctx, verbose):
     """NSoT command-line utility."""
