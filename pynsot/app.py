@@ -272,14 +272,26 @@ class App(object):
         """GET"""
         action = 'list'
         log.debug('listing %s' % data)
+        obj_id = data.get('id')  # If obj_id, it's a single object
         try:
-            result = self.resource.get(**data)
+            # Try getting a single object first
+            if obj_id:
+                result = self.resource(obj_id).get()
+            # Or get all of them.
+            else:
+                result = self.resource.get(**data)
         except HttpClientError as err:
             self.handle_error(action, data, err)
         else:
             objects = []
-            if result:
+            # Turn a single object into a list
+            if obj_id:
+                obj = result['data'][self.singular]
+                objects = [obj]
+            # Or just list all of them.
+            elif result:
                 objects = result['data'][self.resource_name]
+
             if objects:
                 self.print_list(objects, fields)
             else:
@@ -341,12 +353,11 @@ def app(ctx, verbose):
 
     # Read the dotfile
     try:
-        config = dotfile.Dotfile()
+        client_args = dotfile.Dotfile().read()
     except dotfile.DotfileError as err:
         raise click.UsageError(err.message)
 
     # Construct the App!
-    client_args = config.config
     ctx.obj = App(client_args=client_args, ctx=ctx, verbose=verbose)
 
 

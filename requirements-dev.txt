@@ -1,0 +1,8 @@
+click==3.3
+fake-factory==0.4.2
+mock==1.0.1
+py==1.4.26
+rcfile==0.1.4
+requests==2.5.1
+slumber==0.6.2
+tabulate==0.7.3
