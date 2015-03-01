@@ -170,3 +170,20 @@ class AuthTokenClient(BaseClient):
         auth = AuthTokenAuthentication(email, auth_token)
         return auth
 Client = AuthTokenClient  # Default client is auth_token
+
+
+# Mapping to our two (2) hard-coded auth methods and their required arguments.
+AUTH_CLIENTS = {
+    'auth_header': (EmailHeaderClient, ('email',)),
+    'auth_token': (AuthTokenClient, ('email', 'secret_key')),
+}
+
+
+def get_auth_client_info(auth_method):
+    """
+    Return the proper Client class and required args.
+
+    :param auth_method:
+        Auth method used by the client
+    """
+    return AUTH_CLIENTS[auth_method]

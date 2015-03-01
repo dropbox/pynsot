@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Sub-command for sites.
+Sub-command for Sites.
 
 In all cases ``data = ctx.params`` when calling the appropriate action method
 on ``ctx.obj``. (e.g. ``ctx.obj.add(ctx.params)``)
@@ -22,8 +22,13 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 import click
 
 
-# Fields to display when printing a list of items
-DISPLAY_FIELDS = ('id', 'name', 'description')
+# Ordered list of 2-tuples of (field, display_name) used to translate object
+# field names oto their human-readable form when calling .print_list().
+DISPLAY_FIELDS = (
+    ('id', 'ID'),
+    ('name', 'Name'),
+    ('description', 'Description'),
+)
 
 
 # Main group
@@ -78,9 +83,9 @@ def add(ctx, description, name):
 @click.pass_context
 def list(ctx, id, limit, name):
     """
-    List existing sites.
+    List existing Sites.
 
-    When listing sites, all sites are displayed by default. You may optionally
+    When listing Sites, all Sites are displayed by default. You may optionally
     lookup a single Site by name using the -n/--name option or by ID using the
     -i/--id option.
 
@@ -90,7 +95,7 @@ def list(ctx, id, limit, name):
     to be ignored.
     """
     data = ctx.params
-    ctx.obj.list(data, fields=DISPLAY_FIELDS)
+    ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
 
 
 # Remove
@@ -105,10 +110,10 @@ def list(ctx, id, limit, name):
 @click.pass_context
 def remove(ctx, id):
     """
-    Remove a site.
+    Remove a Site.
 
     When removing a site, you must provide the unique ID using -i/--id. You may
-    retrieve the ID for a site by looking it up by name using:
+    retrieve the ID for a Site by looking it up by name using:
 
         nsot sites list --name <name>
     """
@@ -140,9 +145,9 @@ def remove(ctx, id):
 @click.pass_context
 def update(ctx, description, id, name):
     """
-    Update a site.
+    Update a Site.
 
-    When updating a site you must provide the unique ID (-i/--id) and at least
+    When updating a Site you must provide the unique ID (-i/--id) and at least
     one of the -n/--name or -d/--description arguments.
     """
     if name is None and description is None:
