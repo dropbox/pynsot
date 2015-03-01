@@ -36,12 +36,6 @@ CONTEXT_SETTINGS = {
     'help_option_names': ['-h', '--help'],
 }
 
-# Mapping to our two (2) hard-coded auth methods for now.
-AUTH_CLIENTS = {
-    'auth_header': client.EmailHeaderClient,
-    'auth_token': client.AuthTokenClient,
-}
-
 # Where to find the command plugins.
 CMD_FOLDER = os.path.abspath(os.path.join(
                              os.path.dirname(__file__), 'commands'))
@@ -159,7 +153,15 @@ class App(object):
         return pretty
 
     def format_message(self, obj_single, message):
-        """Attempt to make messages human-readable."""
+        """
+        Attempt to make messages human-readable.
+
+        :param obj_single:
+            Singular object name
+
+        :param message:
+            Dat message tho!
+        """
         if 'UNIQUE constraint failed' in message:
             message = '%s object already exists.' % (obj_single.title(),)
         return message
@@ -293,7 +295,12 @@ class App(object):
             click.echo(table)
 
     def rebase(self, data):
-        """If this is not a site object, then rebase the API URL."""
+        """
+        If this is not a site object, then rebase the API URL.
+
+        :param data:
+            Dict of query arguments
+        """
         site_id = data.pop('site_id', None)
         if site_id is not None:
             log.debug('Got site_id: %s; rebasing API URL!' % site_id)
