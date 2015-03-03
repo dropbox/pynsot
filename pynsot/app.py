@@ -12,11 +12,12 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
 import click
+import datetime
 import logging
 import os
 from slumber.exceptions import HttpClientError
 import sys
-import tabulate
+import prettytable
 
 import pynsot
 from . import client, dotfile
@@ -27,9 +28,6 @@ from .models import ApiModel
 if os.getenv('DEBUG'):
     logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
-
-# We want no padding on the table columns
-tabulate.MIN_PADDING = 0
 
 # Make the --help option also have -h
 CONTEXT_SETTINGS = {
@@ -139,7 +137,7 @@ class App(object):
         return self.api.get_resource(self.resource_name)
 
     @staticmethod
-    def pretty_dict(data, sep=', '):
+    def pretty_dict(data, delim='=', sep=', '):
         """
         Return a dict in k=v format.
 
@@ -149,7 +147,8 @@ class App(object):
         :param sep:
             Character used to separate items
         """
-        pretty = sep.join('%s=%r' % (k, v) for k, v in data.iteritems())
+        pretty = sep.join('%s%s%s' % (k, delim, v) for k, v in
+            data.iteritems())
         return pretty
 
     def format_message(self, obj_single, message):
@@ -165,6 +164,17 @@ class App(object):
         if 'UNIQUE constraint failed' in message:
             message = '%s object already exists.' % (obj_single.title(),)
         return message
+
+    def format_timestamp(self, ts):
+        """
+        Take a UNIX timestamp and make it a datetime string.
+
+        :param ts:
+            UNIX timestamp
+        """
+        ts = int(ts)
+        dt = datetime.datetime.fromtimestamp(ts)
+        return str(dt)
 
     def handle_error(self, action, data, err):
         """
@@ -248,7 +258,45 @@ class App(object):
         except KeyError as err:
             msg = 'Could not map field %s when displaying results.' % (err,)
             self.ctx.exit(msg)
+        log.debug('MAP_FIELDS HEADERS = %r' % (headers,))
         return headers
+
+    def format_field(self, field, field_data):
+        """
+        Specially format a field.
+
+        :param field:
+            Field name
+
+        :param field_data:
+            Field data dict
+        """
+        # If it's a user field, only show the email
+        if field == 'user':
+            field_data = field_data['email']
+
+        # If the field is a dict, pretty_dict it!
+        if isinstance(field_data, dict):
+            # If this is an inner dict, prettify it, too.
+            for sub_field in ('attributes', 'constraints'):
+                if sub_field in field_data:
+                    field_data[sub_field] = self.pretty_dict(
+                        field_data[sub_field], sep='\n')
+
+            # This is so that k=v looks better when printing a resource's
+            # contents
+            if field == 'resource':
+                delim = ':'
+            # Otherwise we just fallback to standard k=v
+            else:
+                delim = '='
+            field_data = self.pretty_dict(field_data, delim=delim, sep='\n')
+
+        # If it's the 'change_at' field, make it human-readable
+        elif field == 'change_at':  # Timestamp
+            field_data = self.format_timestamp(field_data)
+
+        return field_data
 
     def print_list(self, objects, display_fields):
         """
@@ -266,7 +314,6 @@ class App(object):
         fields_map = dict(display_fields)
 
         # Human-readable field headings as they will be displayed
-        tablefmt = 'simple'
         headers = self.map_fields(fields, fields_map)
 
         # Order the object key/val by the order in display fields
@@ -275,20 +322,24 @@ class App(object):
         # We're doing all of this just so we can pretty print dicts as k=v
         for obj in objects:
             obj_list = []
-            for f in fields:
-                field_data = obj[f]
-                # If the field is a dict, pretty_dict it!
-                if isinstance(field_data, dict):
-                    field_data = self.pretty_dict(field_data)
+            for field in fields:
+                field_data = obj[field]
+
+                # Attempt to format the field
+                field_data = self.format_field(field, field_data)
+
                 obj_list.append(field_data)
             table_data.append(obj_list)
 
-        # table_data = [[obj[f] for f in fields] for obj in objects]
-        table = tabulate.tabulate(table_data, headers=headers,
-                                  tablefmt=tablefmt)
+        # Prepare the table object
+        table = prettytable.PrettyTable(headers)
+        table.vrules = prettytable.FRAME  # Display table in a frame
+        table.align = 'l'  # Left-align everything
+        for row in table_data:
+            table.add_row(row)
 
         # Only paginate if table is longer than terminal.
-        t_height, _ = click.get_terminal_size()
+        _, t_height, = click.get_terminal_size()
         if len(table_data) > t_height:
             click.echo_via_pager(table)
         else:
