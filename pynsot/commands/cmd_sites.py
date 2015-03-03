@@ -78,16 +78,32 @@ def add(ctx, description, name):
     metavar='ID',
     help='Unique ID of the Site to retrieve.',
 )
-@click.option('-l', '--limit', metavar='LIMIT', help='Number of items.')
-@click.option('-n', '--name', metavar='NAME', help='Filter by site name.')
+@click.option(
+    '-l',
+    '--limit',
+    metavar='LIMIT',
+    help='Limit results to N resources.',
+)
+@click.option(
+    '-n',
+    '--name',
+    metavar='NAME',
+    help='Filter by Site name.'
+)
+@click.option(
+    '-o',
+    '--offset',
+    metavar='OFFSET',
+    help='Skip the first N resources.',
+)
 @click.pass_context
-def list(ctx, id, limit, name):
+def list(ctx, id, limit, name, offset):
     """
     List existing Sites.
 
-    When listing Sites, all Sites are displayed by default. You may optionally
-    lookup a single Site by name using the -n/--name option or by ID using the
-    -i/--id option.
+    When listing Sites, all objects are displayed by default. You may
+    optionally lookup a single Site by name using the -n/--name option or by ID
+    using the -i/--id option.
 
     You may limit the number of results using the -l/--limit option.
 

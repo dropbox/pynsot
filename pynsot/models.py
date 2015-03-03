@@ -16,7 +16,7 @@ import collections
 
 
 # Valid top-level types.
-TYPES = ('network', 'attribute', 'user', 'site')
+TYPES = ('network', 'attribute', 'user', 'site', 'device')
 
 
 # What an error response looks like:
