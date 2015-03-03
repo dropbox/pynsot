@@ -173,8 +173,9 @@ def list(ctx, id, display, limit, multi, name, offset, required, resource_name,
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When listing Attributes, all objects are displayed by default.
-    lookup a single site by ID using the -i/--id option.
+    When listing Attributes, all objects are displayed by default. You may
+    optionally lookup a single Attribute by name using the -n/--name option or
+    by ID using the -i/--id option.
 
     You may limit the number of results using the -l/--limit option.
     """
@@ -205,8 +206,8 @@ def remove(ctx, id, site_id):
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When removing a Attribute, you must provide the unique ID using -i/--id.
-    You may retrieve the ID for a Attribute by looking it up by name for a
+    When removing an Attribute, you must provide the unique ID using -i/--id.
+    You may retrieve the ID for an Attribute by looking it up by name for a
     given Site:
 
         nsot attributes list --name <name> --site <site_id>
@@ -259,7 +260,7 @@ def update(ctx, description, display, id, multi, required, site_id):
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When updating a Attribute you must provide the unique ID (-i/--id) and at
+    When updating an Attribute you must provide the unique ID (-i/--id) and at
     least one of the optional arguments.
     """
     click.echo(ctx.params)

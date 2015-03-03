@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Sub-command for Networks.
+Sub-command for Devices.
 
 In all cases ``data = ctx.params`` when calling the appropriate action method
 on ``ctx.obj``. (e.g. ``ctx.obj.add(ctx.params)``)
@@ -26,12 +26,8 @@ import click
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
-    ('network_address', 'Network'),
-    ('prefix_length', 'Prefix'),
+    ('hostname', 'Hostname'),
     # ('site_id': 'Site ID'),
-    ('is_ip', 'Is IP?'),
-    ('ip_version', 'IP Ver.'),
-    ('parent_id', 'Parent ID'),
     ('attributes', 'Attributes'),
 )
 
@@ -40,7 +36,7 @@ DISPLAY_FIELDS = (
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """Network objects."""
+    """Device objects."""
 
 
 def transform_attributes(ctx, param, value):
@@ -61,32 +57,32 @@ def transform_attributes(ctx, param, value):
     '-a',
     '--attributes',
     metavar='ATTRS',
-    help='A key/value pair attached to this Network (format: key=value).',
+    help='A key/value pair attached to this network (format: key=value).',
     multiple=True,
     callback=transform_attributes,
 )
 @click.option(
-    '-c',
-    '--cidr',
-    metavar='CIDR',
-    help='A network or IP address in CIDR notation.',
+    '-H',
+    '--hostname',
+    metavar='HOSTNAME',
+    help='The hostname of the Device.',
     required=True,
 )
 @click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Network is under.',
+    help='Unique ID of the Site this Device is under.',
     required=True,
 )
 @click.pass_context
-def add(ctx, cidr, attributes, site_id):
+def add(ctx, attributes, hostname, site_id):
     """
-    Add a new Network.
+    Add a new Device.
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When adding a new Network, you must provide a value for the -c/--cidr
+    When adding a new Device, you must provide a value for the -h/--hostname
     option.
 
     If you wish to add attributes, you may specify the -a/--attributes
@@ -102,7 +98,7 @@ def add(ctx, cidr, attributes, site_id):
     '-i',
     '--id',
     metavar='ID',
-    help='Unique ID of the Network being retrieved.',
+    help='Unique ID of the Device being retrieved.',
 )
 @click.option(
     '-l',
@@ -120,18 +116,18 @@ def add(ctx, cidr, attributes, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Network is under.',
+    help='Unique ID of the Site this Device is under.',
     required=True,
 )
 @click.pass_context
 def list(ctx, id, limit, offset, site_id):
     """
-    List existing Networks for a Site.
+    List existing Devices for a Site.
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When listing Networks, all objects are displayed by default. You optionally
-    may lookup a single Network by ID using the -i/--id option.
+    When listing Devices, all objects are displayed by default. You may
+    optionally lookup a single Device by ID using the -i/--id option.
 
     You may limit the number of results using the -l/--limit option.
     """
@@ -145,28 +141,28 @@ def list(ctx, id, limit, offset, site_id):
     '-i',
     '--id',
     metavar='ID',
-    help='Unique ID of the Network being deleted.',
+    help='Unique ID of the Device being deleted.',
     required=True,
 )
 @click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Network is under.',
+    help='Unique ID of the Site this Device is under.',
     required=True,
 )
 @click.pass_context
 def remove(ctx, id, site_id):
     """
-    Remove a Network.
+    Remove a Device.
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When removing a Network, you must provide the unique ID using -i/--id. You
-    may retrieve the ID for a Network by parsing it from the list of Networks
+    When removing a Device, you must provide the unique ID using -i/--id. You
+    may retrieve the ID for a Device by parsing it from the list of Devices
     for a given Site:
 
-        nsot networks list --site <site_id> | grep <network>
+        nsot devices list --site <site_id> | grep <hostname>
     """
     data = ctx.params
     ctx.obj.remove(**data)
@@ -178,35 +174,41 @@ def remove(ctx, id, site_id):
     '-a',
     '--attributes',
     metavar='ATTRS',
-    help='A key/value pair attached to this Network (format: key=value).',
+    help='A key/value pair attached to this network (format: key=value).',
     multiple=True,
     callback=transform_attributes,
+)
+@click.option(
+    '-H',
+    '--hostname',
+    metavar='HOSTNAME',
+    help='The hostname of the Device.',
 )
 @click.option(
     '-i',
     '--id',
     metavar='ID',
-    help='Unique ID of the Network being updated.',
+    help='Unique ID of the Device being updated.',
     required=True,
 )
 @click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Network is under.',
+    help='Unique ID of the Site this Device is under.',
     required=True,
 )
 @click.pass_context
-def update(ctx, attributes, id, site_id):
+def update(ctx, attributes, hostname, id, site_id):
     """
-    Update a Network.
+    Update a Device.
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When updating a Network you must provide the unique ID (-i/--id) and at
+    When updating a Device you must provide the unique ID (-i/--id) and at
     least one of the optional arguments.
     """
-    if not any([attributes]):
+    if not any([attributes, hostname]):
         msg = 'You must supply at least one of the optional arguments.'
         raise click.UsageError(msg)
 
