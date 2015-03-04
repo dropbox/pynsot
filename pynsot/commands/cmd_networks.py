@@ -41,7 +41,14 @@ DISPLAY_FIELDS = (
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """Network objects."""
+    """
+    Network objects.
+
+    A Network resource can represent an IP Network and an IP Address. Working
+    with networks is usually done with CIDR notation.
+
+    Networks can have any number of arbitrary attributes as defined below.
+    """
 
 
 # Add
@@ -65,6 +72,7 @@ def cli(ctx):
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Network is under.  [required]',
     callback=callbacks.process_site_id,
 )
@@ -86,11 +94,12 @@ def add(ctx, cidr, attributes, site_id):
 
 
 # List
-@cli.command()
+@cli.group(invoke_without_command=True)
 @click.option(
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Network being retrieved.',
 )
 @click.option(
@@ -125,7 +134,51 @@ def list(ctx, id, limit, offset, site_id):
     You may limit the number of results using the -l/--limit option.
     """
     data = ctx.params
-    ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
+
+    # If we aren't passing a sub-command, just call list(), otherwise let it
+    # fallback to default behavior.
+    if ctx.invoked_subcommand is None:
+        ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
+
+
+@list.command()
+@click.option(
+    '-d',
+    '--direct',
+    is_flag=True,
+    help='Return only direct subnets.',
+    default=None,
+)
+@click.option(
+    '--include-networks/--no-include-networks',
+    is_flag=True,
+    help='Include non-IP networks.',
+    default=None,
+)
+@click.option(
+    '--include-ips/--no-include-ips',
+    is_flag=True,
+    help='Include IP addresses.',
+    default=None,
+)
+@click.pass_context
+def subnets(ctx, *args, **kwargs):
+    """Get subnets of a Network."""
+    callbacks.list_endpoint(ctx, display_fields=DISPLAY_FIELDS)
+
+
+@list.command()
+@click.option(
+    '-d',
+    '--direct',
+    is_flag=True,
+    help='Return only direct supernets.',
+    default=None,
+)
+@click.pass_context
+def supernets(ctx, *args, **kwargs):
+    """Get supernets of a Network."""
+    callbacks.list_endpoint(ctx, display_fields=DISPLAY_FIELDS)
 
 
 # Remove
@@ -134,6 +187,7 @@ def list(ctx, id, limit, offset, site_id):
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Network being deleted.',
     required=True,
 )
@@ -141,6 +195,7 @@ def list(ctx, id, limit, offset, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Network is under.  [required]',
     callback=callbacks.process_site_id,
 )
@@ -175,6 +230,7 @@ def remove(ctx, id, site_id):
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Network being updated.',
     required=True,
 )
@@ -182,6 +238,7 @@ def remove(ctx, id, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Network is under.  [required]',
     callback=callbacks.process_site_id,
 )

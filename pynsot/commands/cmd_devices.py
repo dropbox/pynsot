@@ -37,7 +37,14 @@ DISPLAY_FIELDS = (
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """Device objects."""
+    """
+    Device objects.
+
+    A device represents various hardware components on your network such as
+    routers, switches, console servers, PDUs, servers, etc.
+
+    Devices also support arbitrary attributes similar to Networks.
+    """
 
 
 # Add
@@ -61,6 +68,7 @@ def cli(ctx):
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Device is under.  [required]',
     callback=callbacks.process_site_id,
 )
@@ -87,12 +95,14 @@ def add(ctx, attributes, hostname, site_id):
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Device being retrieved.',
 )
 @click.option(
     '-l',
     '--limit',
     metavar='LIMIT',
+    type=int,
     help='Limit result to N resources.',
 )
 @click.option(
@@ -105,6 +115,7 @@ def add(ctx, attributes, hostname, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Device is under.  [required]',
     callback=callbacks.process_site_id,
 )
@@ -130,6 +141,7 @@ def list(ctx, id, limit, offset, site_id):
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Device being deleted.',
     required=True,
 )
@@ -137,6 +149,7 @@ def list(ctx, id, limit, offset, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Device is under.  [required]',
     callback=callbacks.process_site_id,
 )
@@ -177,6 +190,7 @@ def remove(ctx, id, site_id):
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Device being updated.',
     required=True,
 )
@@ -184,6 +198,7 @@ def remove(ctx, id, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Device is under.  [required]',
     callback=callbacks.process_site_id,
 )

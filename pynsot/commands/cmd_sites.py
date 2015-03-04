@@ -35,10 +35,20 @@ DISPLAY_FIELDS = (
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """Site objects."""
-    if ctx.obj.verbose:
-        print 'I am:', ctx.info_name
-        print 'my parent is:', ctx.parent.info_name
+    """
+    Site objects.
+
+    Sites are the top-level resource from which all other resources descend. In
+    other words, Sites contain Attributes, Changes, Devices, and Networks.
+
+    Sites function as unique namespaces that can contain other resources. Sites
+    allow an organization to have multiple instances of potentially conflicting
+    resources. This could be beneficial for isolating corporeate vs. production
+    environments, or pulling in the IP space of an acquisition.
+    """
+    # if ctx.obj.verbose:
+    #     print 'I am:', ctx.info_name
+    #     print 'my parent is:', ctx.parent.info_name
 
 
 # Add
@@ -76,12 +86,14 @@ def add(ctx, description, name):
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Site to retrieve.',
 )
 @click.option(
     '-l',
     '--limit',
     metavar='LIMIT',
+    type=int,
     help='Limit results to N resources.',
 )
 @click.option(
@@ -94,6 +106,7 @@ def add(ctx, description, name):
     '-o',
     '--offset',
     metavar='OFFSET',
+    type=int,
     help='Skip the first N resources.',
 )
 @click.pass_context
@@ -120,6 +133,7 @@ def list(ctx, id, limit, name, offset):
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Site that should be removed.',
     required=True,
 )
@@ -149,6 +163,7 @@ def remove(ctx, id):
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Site that should be updated.',
     required=True,
 )

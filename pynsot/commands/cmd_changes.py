@@ -28,16 +28,21 @@ from . import callbacks
 DISPLAY_FIELDS = (
     ('id', 'ID'),
     ('change_at', 'Change At'),
+    ('user', 'User'),
     ('event', 'Event'),
     ('resource_name', 'Resource'),
-    ('user', 'User'),
     ('resource_id', 'Obj'),
     # ('site_id', 'Site ID'),
     # ('site', 'Site'),
 )
 
 # Fields to display when viewing a single record.
-VERBOSE_FIELDS = DISPLAY_FIELDS + (
+VERBOSE_FIELDS = (
+    ('change_at', 'Change At'),
+    ('user', 'User'),
+    ('event', 'Event'),
+    ('resource_name', 'Resource'),
+    ('resource_id', 'ID'),
     ('resource', 'Data'),
 )
 
@@ -46,7 +51,14 @@ VERBOSE_FIELDS = DISPLAY_FIELDS + (
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """Change events."""
+    """
+    Change events.
+
+    All add, remove, and update events are logged as a Change. A Change
+    includes information such as the change time, user, and the full resource
+    after modification. Changes are immutable and can only be removed by
+    deleting the entire Site.
+    """
 
 
 # List
@@ -62,24 +74,28 @@ def cli(ctx):
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Change being retrieved.',
 )
 @click.option(
     '-l',
     '--limit',
     metavar='LIMIT',
+    type=int,
     help='Limit result to N resources.',
 )
 @click.option(
     '-o',
     '--offset',
     metavar='OFFSET',
+    type=int,
     help='Skip the first N resources.',
 )
 @click.option(
     '-R',
     '--resource-id',
     metavar='RESOURCE_ID',
+    type=int,
     help='Filter to Changes for a specific resource ID (e.g. Network ID 1',
 )
 @click.option(
@@ -93,6 +109,7 @@ def cli(ctx):
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Change is under.  [required]',
     callback=callbacks.process_site_id,
 )
