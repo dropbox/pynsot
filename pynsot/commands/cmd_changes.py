@@ -20,6 +20,7 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
 import click
+from . import callbacks
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -30,15 +31,15 @@ DISPLAY_FIELDS = (
     ('event', 'Event'),
     ('resource_name', 'Resource'),
     ('user', 'User'),
-    ('resource_id', 'R ID'),
+    ('resource_id', 'Obj'),
     # ('site_id', 'Site ID'),
     # ('site', 'Site'),
 )
 
+# Fields to display when viewing a single record.
 VERBOSE_FIELDS = DISPLAY_FIELDS + (
     ('resource', 'Data'),
 )
-
 
 
 # Main group
@@ -48,20 +49,6 @@ def cli(ctx):
     """Change events."""
 
 
-def transform_event(ctx, param, value):
-    """Callback to transform event into title case."""
-    if value is not None:
-        return value.title()
-    return value
-
-
-def transform_resource_name(ctx, param, value):
-    """Callback to transform resource_name into title case."""
-    if value is not None:
-        return value.title()
-    return value
-
-
 # List
 @cli.command()
 @click.option(
@@ -69,7 +56,7 @@ def transform_resource_name(ctx, param, value):
     '--event',
     metavar='EVENT',
     help='Filter result to specific event.',
-    callback=transform_event,
+    callback=callbacks.transform_event,
 )
 @click.option(
     '-i',
@@ -100,23 +87,23 @@ def transform_resource_name(ctx, param, value):
     '--resource-name',
     metavar='RESOURCE_NAME',
     help='Filter to Changes for a specific resource name (e.g. Network)',
-    callback=transform_resource_name,
+    callback=callbacks.transform_resource_name,
 )
 @click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='ID of the Site to retrieve Changes from.',
-    required=True,
+    help='Unique ID of the Site this Change is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def list(ctx, event, id, limit, offset, resource_id, resource_name, site_id):
     """
-    List existing Changes for a Site.
+    List Change events for a Site.
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When listing Changes, all objects are displayed by default. You may
+    When listing Changes, all events are displayed by default. You may
     optionally lookup a single Change by ID using the -i/--id option.
 
     You may limit the number of results using the -l/--limit option.

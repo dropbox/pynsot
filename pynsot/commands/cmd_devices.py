@@ -20,6 +20,7 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
 import click
+from . import callbacks
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -39,18 +40,6 @@ def cli(ctx):
     """Device objects."""
 
 
-def transform_attributes(ctx, param, value):
-    """Callback to turn attributes arguments into a dict."""
-    attrs = {}
-    for attr in value:
-        key, _, val = attr.partition('=')
-        if not all([key, val]):
-            msg = 'Invalid attribute: %s; format should be key=value' % (attr,)
-            raise click.UsageError(msg)
-        attrs[key] = val
-    return attrs
-
-
 # Add
 @cli.command()
 @click.option(
@@ -59,7 +48,7 @@ def transform_attributes(ctx, param, value):
     metavar='ATTRS',
     help='A key/value pair attached to this network (format: key=value).',
     multiple=True,
-    callback=transform_attributes,
+    callback=callbacks.transform_attributes,
 )
 @click.option(
     '-H',
@@ -72,8 +61,8 @@ def transform_attributes(ctx, param, value):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Device is under.',
-    required=True,
+    help='Unique ID of the Site this Device is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def add(ctx, attributes, hostname, site_id):
@@ -116,8 +105,8 @@ def add(ctx, attributes, hostname, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Device is under.',
-    required=True,
+    help='Unique ID of the Site this Device is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def list(ctx, id, limit, offset, site_id):
@@ -148,8 +137,8 @@ def list(ctx, id, limit, offset, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Device is under.',
-    required=True,
+    help='Unique ID of the Site this Device is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def remove(ctx, id, site_id):
@@ -162,7 +151,7 @@ def remove(ctx, id, site_id):
     may retrieve the ID for a Device by parsing it from the list of Devices
     for a given Site:
 
-        nsot devices list --site <site_id> | grep <hostname>
+        nsot devices list --site-id <site_id> | grep <hostname>
     """
     data = ctx.params
     ctx.obj.remove(**data)
@@ -176,7 +165,7 @@ def remove(ctx, id, site_id):
     metavar='ATTRS',
     help='A key/value pair attached to this network (format: key=value).',
     multiple=True,
-    callback=transform_attributes,
+    callback=callbacks.transform_attributes,
 )
 @click.option(
     '-H',
@@ -195,8 +184,8 @@ def remove(ctx, id, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Device is under.',
-    required=True,
+    help='Unique ID of the Site this Device is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def update(ctx, attributes, hostname, id, site_id):

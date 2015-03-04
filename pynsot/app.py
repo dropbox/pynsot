@@ -78,7 +78,7 @@ class App(object):
         self.resource_name = self.ctx.invoked_subcommand
 
     def get_api_client(self, auth_method=None, url=None, email=None,
-                       secret_key=None):
+                       secret_key=None, default_site=None):
         """
         Safely create an API client so that users don't see tracebacks.
 
@@ -93,6 +93,9 @@ class App(object):
 
         :param secret_key:
             User's secret_key
+
+        :param default_site:
+            User's default site_id
         """
         try:
             client_class, arg_names = client.get_auth_client_info(auth_method)
@@ -102,6 +105,7 @@ class App(object):
         # Construct kwargs to pass to the client_class
         local_vars = locals()
         kwargs = {arg_name: local_vars[arg_name] for arg_name in arg_names}
+        log.debug('APP KWARGS = %r' % (kwargs,))
         try:
             api_client = client_class(url, **kwargs)
         except client.ClientError as err:
@@ -147,8 +151,10 @@ class App(object):
         :param sep:
             Character used to separate items
         """
-        pretty = sep.join('%s%s%s' % (k, delim, v) for k, v in
-            data.iteritems())
+        pretty = sep.join(
+            '%s%s%s' % (k, delim, v) for k, v in
+            data.iteritems()
+        )
         return pretty
 
     def format_message(self, obj_single, message):
@@ -352,9 +358,15 @@ class App(object):
         :param data:
             Dict of query arguments
         """
+        # Prefer site_id from args, or default to API client's default_site
+        # provided in user's config.
         site_id = data.pop('site_id', None)
+        if site_id is None and self.resource_name != 'sites':
+            site_id = self.api.default_site
+
+        log.debug('Got site_id: %s' % site_id)
         if site_id is not None:
-            log.debug('Got site_id: %s; rebasing API URL!' % site_id)
+            log.debug('Site_id found; rebasing API URL!')
             self.api._store['base_url'] += '/sites/' + site_id
 
     def add(self, data):

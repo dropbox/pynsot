@@ -38,6 +38,7 @@ class BaseClient(slumber.API):
     """
     def __init__(self, base_url=None, **kwargs):
         auth = kwargs.pop('auth', None)  # Ditch default auth
+        self.default_site = kwargs.pop('default_site', None)  # Default site_id
 
         # Override the auth method if we have defined .get_auth()
         if auth is None:
@@ -174,8 +175,8 @@ Client = AuthTokenClient  # Default client is auth_token
 
 # Mapping to our two (2) hard-coded auth methods and their required arguments.
 AUTH_CLIENTS = {
-    'auth_header': (EmailHeaderClient, ('email',)),
-    'auth_token': (AuthTokenClient, ('email', 'secret_key')),
+    'auth_header': (EmailHeaderClient, ('email', 'default_site')),
+    'auth_token': (AuthTokenClient, ('email', 'secret_key', 'default_site')),
 }
 
 

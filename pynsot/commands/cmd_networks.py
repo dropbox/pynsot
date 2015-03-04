@@ -20,6 +20,7 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
 import click
+from . import callbacks
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -43,18 +44,6 @@ def cli(ctx):
     """Network objects."""
 
 
-def transform_attributes(ctx, param, value):
-    """Callback to turn attributes arguments into a dict."""
-    attrs = {}
-    for attr in value:
-        key, _, val = attr.partition('=')
-        if not all([key, val]):
-            msg = 'Invalid attribute: %s; format should be key=value' % (attr,)
-            raise click.UsageError(msg)
-        attrs[key] = val
-    return attrs
-
-
 # Add
 @cli.command()
 @click.option(
@@ -63,7 +52,7 @@ def transform_attributes(ctx, param, value):
     metavar='ATTRS',
     help='A key/value pair attached to this Network (format: key=value).',
     multiple=True,
-    callback=transform_attributes,
+    callback=callbacks.transform_attributes,
 )
 @click.option(
     '-c',
@@ -76,8 +65,8 @@ def transform_attributes(ctx, param, value):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Network is under.',
-    required=True,
+    help='Unique ID of the Site this Network is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def add(ctx, cidr, attributes, site_id):
@@ -120,8 +109,8 @@ def add(ctx, cidr, attributes, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Network is under.',
-    required=True,
+    help='Unique ID of the Site this Network is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def list(ctx, id, limit, offset, site_id):
@@ -152,8 +141,8 @@ def list(ctx, id, limit, offset, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Network is under.',
-    required=True,
+    help='Unique ID of the Site this Network is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def remove(ctx, id, site_id):
@@ -166,7 +155,7 @@ def remove(ctx, id, site_id):
     may retrieve the ID for a Network by parsing it from the list of Networks
     for a given Site:
 
-        nsot networks list --site <site_id> | grep <network>
+        nsot networks list --site-id <site_id> | grep <network>
     """
     data = ctx.params
     ctx.obj.remove(**data)
@@ -180,7 +169,7 @@ def remove(ctx, id, site_id):
     metavar='ATTRS',
     help='A key/value pair attached to this Network (format: key=value).',
     multiple=True,
-    callback=transform_attributes,
+    callback=callbacks.transform_attributes,
 )
 @click.option(
     '-i',
@@ -193,8 +182,8 @@ def remove(ctx, id, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Network is under.',
-    required=True,
+    help='Unique ID of the Site this Network is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def update(ctx, attributes, id, site_id):

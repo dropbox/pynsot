@@ -20,6 +20,7 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
 import click
+from . import callbacks
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -41,13 +42,6 @@ DISPLAY_FIELDS = (
 @click.pass_context
 def cli(ctx):
     """Attribute objects."""
-
-
-def transform_resource_name(ctx, param, value):
-    """Callback to transform resource_name into title case."""
-    if value is not None:
-        return value.title()
-    return value
 
 
 # Add
@@ -86,14 +80,14 @@ def transform_resource_name(ctx, param, value):
     metavar='RESOURCE',
     help='The type of resource this Attribute is for (e.g. Network)',
     required=True,
-    callback=transform_resource_name,
+    callback=callbacks.transform_resource_name,
 )
 @click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site where this should be created.',
-    required=True,
+    help='Unique ID of the Site this Attribute is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def add(ctx, description, display, multi, name, resource_name, required,
@@ -156,14 +150,14 @@ def add(ctx, description, display, multi, name, resource_name, required,
     '--resource-name',
     metavar='RESOURCE',
     help='Filter to Attributes for a specific resource (e.g. Network)',
-    callback=transform_resource_name,
+    callback=callbacks.transform_resource_name,
 )
 @click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='ID of the Site to retrieve Attributes from.',
-    required=True,
+    help='Unique ID of the Site this Attribute is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def list(ctx, id, display, limit, multi, name, offset, required, resource_name,
@@ -196,8 +190,8 @@ def list(ctx, id, display, limit, multi, name, offset, required, resource_name,
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Attribute is under.',
-    required=True,
+    help='Unique ID of the Site this Attribute is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def remove(ctx, id, site_id):
@@ -250,8 +244,8 @@ def remove(ctx, id, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Attribute is under.',
-    required=True,
+    help='Unique ID of the Site this Attribute is under.  [required]',
+    callback=callbacks.process_site_id,
 )
 @click.pass_context
 def update(ctx, description, display, id, multi, required, site_id):
