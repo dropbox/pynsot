@@ -45,7 +45,8 @@ class NsotCLI(click.MultiCommand):
 
     This will load command plugins from the "commands" folder.
 
-    Plugins must be named "cmd_{foo}.py".
+    Plugins must be named "cmd_{foo}.py" and must have a top-level command
+    named "cli".
     """
     def list_commands(self, ctx):
         """List all commands from python modules in plugin folder."""
@@ -66,7 +67,7 @@ class NsotCLI(click.MultiCommand):
         except ImportError as err:
             print err
             return None
-        return mod.cli
+        return mod.cli  # Each cmd_ plugin defines top-level "cli" command
 
 
 class App(object):
@@ -382,20 +383,25 @@ class App(object):
         else:
             self.handle_response(action, data, result)
 
-    def list(self, data, display_fields=None):
+    def list(self, data, display_fields=None, resource=None):
         """GET"""
         action = 'list'
         log.debug('listing %s' % data)
         obj_id = data.get('id')  # If obj_id, it's a single object
-        self.rebase(data)
+
+        # If a resource object is provided, call it instead, and only rebase if
+        # we haven't provided our own resource.
+        if resource is None:
+            self.rebase(data)  # Rebase first
+            resource = self.resource
 
         try:
             # Try getting a single object first
             if obj_id:
-                result = self.resource(obj_id).get()
+                result = resource(obj_id).get()
             # Or get all of them.
             else:
-                result = self.resource.get(**data)
+                result = resource.get(**data)
         except HttpClientError as err:
             self.handle_error(action, data, err)
         else:
@@ -467,7 +473,11 @@ class App(object):
 @click.version_option(version=pynsot.__version__)
 @click.pass_context
 def app(ctx, verbose):
-    """NSoT command-line utility."""
+    """
+    Network Source of Truth (NSoT) command-line utility.
+
+    For detailed documentation, please visit https://nsot.readthedocs.org
+    """
     # This is the "app" object attached to all contexts.
 
     # Read the dotfile

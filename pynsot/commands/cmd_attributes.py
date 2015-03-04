@@ -41,7 +41,14 @@ DISPLAY_FIELDS = (
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """Attribute objects."""
+    """
+    Attribute objects.
+
+    Attributes are arbitrary key/value pairs that can be assigned to various
+    resources. If an attribute is required then additions/updates for that
+    resource will require that attribute be present. Existing resources will
+    not be forcefully validated until update.
+    """
 
 
 # Add
@@ -86,6 +93,7 @@ def cli(ctx):
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Attribute is under.  [required]',
     callback=callbacks.process_site_id,
 )
@@ -121,6 +129,7 @@ def add(ctx, description, display, multi, name, resource_name, required,
     '-l',
     '--limit',
     metavar='LIMIT',
+    type=int,
     help='Limit result to N resources.',
 )
 @click.option(
@@ -138,6 +147,7 @@ def add(ctx, description, display, multi, name, resource_name, required,
     '-o',
     '--offset',
     metavar='OFFSET',
+    type=int,
     help='Skip the first N resources.',
 )
 @click.option(
@@ -156,6 +166,7 @@ def add(ctx, description, display, multi, name, resource_name, required,
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Attribute is under.  [required]',
     callback=callbacks.process_site_id,
 )
@@ -183,6 +194,7 @@ def list(ctx, id, display, limit, multi, name, offset, required, resource_name,
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Attribute being deleted.',
     required=True,
 )
@@ -190,6 +202,7 @@ def list(ctx, id, display, limit, multi, name, offset, required, resource_name,
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Attribute is under.  [required]',
     callback=callbacks.process_site_id,
 )
@@ -227,6 +240,7 @@ def remove(ctx, id, site_id):
     '-i',
     '--id',
     metavar='ID',
+    type=int,
     help='Unique ID of the Attribute being updated.',
     required=True,
 )
@@ -244,6 +258,7 @@ def remove(ctx, id, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
+    type=int,
     help='Unique ID of the Site this Attribute is under.  [required]',
     callback=callbacks.process_site_id,
 )
@@ -257,7 +272,6 @@ def update(ctx, description, display, id, multi, required, site_id):
     When updating an Attribute you must provide the unique ID (-i/--id) and at
     least one of the optional arguments.
     """
-    click.echo(ctx.params)
     optional = (description, display, multi, required)
     provided = []
     for opt in optional:
