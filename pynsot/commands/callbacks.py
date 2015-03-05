@@ -74,13 +74,14 @@ def list_endpoint(ctx, display_fields):
     if parent_id is None:
         raise click.UsageError('You must provide -i/--id')
 
-    # Use our name, parent's name, and API object to retrive the endpoint
-    # resource used to call this endpoint.
-    my_name = ctx.info_name
-    parent_name = ctx.parent.info_name
+    # Use our name, parent's command name, and the API object to retrieve the
+    # endpoint resource used to call this endpoint.
     api = ctx.obj.api
+    parent_name = ctx.obj.parent_name  # e.g. 'networks'
+    my_name = ctx.info_name  # e.g. 'supernets'
 
     # e.g. /api/sites/1/networks/5/supernets
-    my_resource = getattr(api.sites(site_id).networks(parent_id), my_name)
+    parent_resource = getattr(api.sites(site_id), parent_name)
+    my_resource = getattr(parent_resource(parent_id), my_name)
 
     ctx.obj.list(data, display_fields=display_fields, resource=my_resource)
