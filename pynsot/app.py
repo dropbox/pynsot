@@ -15,9 +15,9 @@ import click
 import datetime
 import logging
 import os
+import prettytable
 from slumber.exceptions import HttpClientError
 import sys
-import prettytable
 
 import pynsot
 from . import client, dotfile
@@ -489,6 +489,10 @@ def app(ctx, verbose):
     # Construct the App!
     ctx.obj = App(client_args=client_args, ctx=ctx, verbose=verbose)
 
+    # Store the invoked_subcommand (e.g. 'networks') name as parent_name so that
+    # descendent sub-commands can reference where they came from, such as when
+    # calling callbacks.list_endpoint()
+    ctx.obj.parent_name = ctx.invoked_subcommand
 
 if __name__ == '__main__':
     app()
