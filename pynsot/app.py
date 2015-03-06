@@ -158,7 +158,7 @@ class App(object):
         )
         return pretty
 
-    def format_message(self, obj_single, message):
+    def format_message(self, obj_single, message=''):
         """
         Attempt to make messages human-readable.
 
@@ -168,6 +168,7 @@ class App(object):
         :param message:
             Dat message tho!
         """
+        log.debug('FORMATTING MESSAGE: %r' % (message,))
         if 'UNIQUE constraint failed' in message:
             message = '%s object already exists.' % (obj_single.title(),)
         return message
@@ -203,15 +204,19 @@ class App(object):
         # If it's an API error, format it all pretty-like for human eyes.
         if resp is not None:
             body = resp.json()
+            log.debug('API ERROR: %r' % (body,))
 
             msg = body['error']['message']
             msg = self.format_message(obj_single, msg)
 
             # Add the status code and reason to the output
-            if self.verbose:
+            log.debug('ERROR MESSAGE = %r' % (msg,))
+            if self.verbose or not msg:
                 t_ = '%s %s'
                 reason = resp.reason.upper()
                 extra += t_ % (resp.status_code, reason)
+            if not msg:
+                msg = extra.strip()
         else:
             msg = str(err)
 
