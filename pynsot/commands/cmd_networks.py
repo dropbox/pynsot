@@ -62,11 +62,20 @@ def cli(ctx):
     callback=callbacks.transform_attributes,
 )
 @click.option(
+    '-b',
+    '--bulk-add',
+    metavar='FILENAME',
+    help='Bulk add Networks from the specified colon-delimited file.',
+    type=click.File('rb'),
+    callback=callbacks.process_bulk_add,
+)
+@click.option(
     '-c',
     '--cidr',
     metavar='CIDR',
-    help='A network or IP address in CIDR notation.',
-    required=True,
+    #help='A network or IP address in CIDR notation.',
+    #required=True,
+    help='A network or IP address in CIDR notation.  [required]',
 )
 @click.option(
     '-s',
@@ -77,7 +86,7 @@ def cli(ctx):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def add(ctx, cidr, attributes, site_id):
+def add(ctx, attributes, bulk_add, cidr, site_id):
     """
     Add a new Network.
 
@@ -89,7 +98,12 @@ def add(ctx, cidr, attributes, site_id):
     If you wish to add attributes, you may specify the -a/--attributes
     option once for each key/value pair.
     """
-    data = ctx.params
+    data = bulk_add or ctx.params
+
+    # Enforce required options
+    if bulk_add is None:
+        if cidr is None:
+            raise click.UsageError('Missing option "-c" / "--cidr"')
     ctx.obj.add(data)
 
 

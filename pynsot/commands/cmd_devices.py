@@ -58,11 +58,20 @@ def cli(ctx):
     callback=callbacks.transform_attributes,
 )
 @click.option(
+    '-b',
+    '--bulk-add',
+    metavar='FILENAME',
+    help='Bulk add Devices from the specified colon-delimited file.',
+    type=click.File('rb'),
+    callback=callbacks.process_bulk_add,
+)
+@click.option(
     '-H',
     '--hostname',
     metavar='HOSTNAME',
-    help='The hostname of the Device.',
-    required=True,
+    #help='The hostname of the Device.',
+    #required=True,  # What to do about required flags!
+    help='The hostname of the Device.  [required]',
 )
 @click.option(
     '-s',
@@ -73,7 +82,7 @@ def cli(ctx):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def add(ctx, attributes, hostname, site_id):
+def add(ctx, attributes, bulk_add, hostname, site_id):
     """
     Add a new Device.
 
@@ -85,7 +94,13 @@ def add(ctx, attributes, hostname, site_id):
     If you wish to add attributes, you may specify the -a/--attributes
     option once for each key/value pair.
     """
-    data = ctx.params
+    data = bulk_add or ctx.params
+
+    # Enforce required options
+    if bulk_add is None:
+        if hostname is None:
+            raise click.UsageError('Missing option "-H" / "--hostname".')
+
     ctx.obj.add(data)
 
 

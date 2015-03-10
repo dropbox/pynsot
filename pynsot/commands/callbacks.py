@@ -2,11 +2,16 @@
 Callbacks used in handling command plugins.
 """
 
+import ast
 import click
+import csv
 import logging
 
 
 log = logging.getLogger(__name__)
+
+# Objects that do not have attribtues
+NO_ATTRIBUTES = ('attributes',)
 
 
 def process_site_id(ctx, param, value):
@@ -21,7 +26,7 @@ def process_site_id(ctx, param, value):
     if value is None:
         default_site = ctx.obj.api.default_site
         if default_site is None:
-            raise click.UsageError('Missing option "-s" / "--site-id"')
+            raise click.UsageError('Missing option "-s" / "--site-id".')
         value = default_site
 
     return value
@@ -30,6 +35,11 @@ def process_site_id(ctx, param, value):
 def transform_attributes(ctx, param, value):
     """Callback to turn attributes arguments into a dict."""
     attrs = {}
+
+    # If value is a string, we'll assume that it's comma-separated.
+    if isinstance(value, basestring):
+        value = value.split(',')
+
     for attr in value:
         key, _, val = attr.partition('=')
         if not all([key, val]):
@@ -53,6 +63,55 @@ def transform_resource_name(ctx, param, value):
     return value
 
 
+def process_bulk_add(ctx, param, value):
+    """
+    Callback to parse bulk addition of objects from a colon-delimited file.
+
+    Format:
+
+    + The first line of the file must be the field names.
+    + Attribute pairs must be commma-separated, and in format k=v
+    + The attributes must exist!
+    """
+    if value is None:
+        return value
+
+    # This is our object name (e.g. 'devices')
+    parent_name = ctx.obj.parent_name
+    objects = []
+
+    # Value is already an open file handle
+    reader = csv.DictReader(value, delimiter=':')
+    for r in reader:
+        lineno = reader.line_num
+
+        # Make sure the file is correctly formatted.
+        if len(r) != len(reader.fieldnames):
+            msg = 'File has wrong number of fields on line %d' % (lineno,)
+            raise click.BadParameter(msg)
+
+        # Transform attributes for eligible resource types
+        if parent_name not in NO_ATTRIBUTES:
+            attributes = transform_attributes(
+                ctx, param, r['attributes']
+            )
+            r['attributes'] = attributes
+
+        # Transform True, False into booleans
+        for k, v in r.iteritems():
+            if not isinstance(v, basestring):
+                msg = 'Error parsing file on line %d' % (lineno,)
+                raise click.BadParameter(msg)
+            if v.title() in ('True', 'False'):
+                r[k] = ast.literal_eval(v)
+        objects.append(r)
+
+    log.debug('PARSED BULK DATA = %r' % (objects,))
+
+    # Return a dict keyed by calling object name
+    return {parent_name: objects}
+
+
 def list_endpoint(ctx, display_fields):
     """
     Determine params and a resource object to pass to ``ctx.obj.list()``
@@ -72,7 +131,7 @@ def list_endpoint(ctx, display_fields):
 
     # Make sure that parent_id is provided.
     if parent_id is None:
-        raise click.UsageError('You must provide -i/--id')
+        raise click.UsageError('Missing option "-i" / "--id".')
 
     # Use our name, parent's command name, and the API object to retrieve the
     # endpoint resource used to call this endpoint.

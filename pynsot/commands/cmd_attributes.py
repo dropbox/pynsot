@@ -54,6 +54,14 @@ def cli(ctx):
 # Add
 @cli.command()
 @click.option(
+    '-b',
+    '--bulk-add',
+    metavar='FILENAME',
+    help='Bulk add Attributes from the specified colon-delimited file.',
+    type=click.File('rb'),
+    callback=callbacks.process_bulk_add,
+)
+@click.option(
     '-d',
     '--description',
     metavar='DESC',
@@ -73,8 +81,9 @@ def cli(ctx):
     '-n',
     '--name',
     metavar='NAME',
-    help='The name of the Attribute',
-    required=True,
+    #help='The name of the Attribute',
+    #required=True,
+    help='The name of the Attribute.  [required]',
 )
 @click.option(
     '--required',
@@ -85,8 +94,9 @@ def cli(ctx):
     '-r',
     '--resource-name',
     metavar='RESOURCE',
-    help='The type of resource this Attribute is for (e.g. Network)',
-    required=True,
+    #help='The type of resource this Attribute is for (e.g. Network)',
+    #required=True,
+    help='The resource type this Attribute is for (e.g. Device).  [required]',
     callback=callbacks.transform_resource_name,
 )
 @click.option(
@@ -98,8 +108,8 @@ def cli(ctx):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def add(ctx, description, display, multi, name, resource_name, required,
-        site_id):
+def add(ctx, bulk_add, description, display, multi, name, resource_name,
+        required, site_id):
     """
     Add a new Attribute.
 
@@ -108,7 +118,15 @@ def add(ctx, description, display, multi, name, resource_name, required,
     When adding a new Attribute, you must provide a value for the -n/--name
     and -r/--resource-name options.
     """
-    data = ctx.params
+    data = bulk_add or ctx.params
+
+    # Enforce required options
+    if bulk_add is None:
+        if name is None:
+            raise click.UsageError('Missing option "-n" / "--name".')
+        if resource_name is None:
+            raise click.UsageError('Missing option "-r" / "--resource-name".')
+
     ctx.obj.add(data)
 
 
