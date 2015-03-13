@@ -69,8 +69,6 @@ def cli(ctx):
     '-H',
     '--hostname',
     metavar='HOSTNAME',
-    #help='The hostname of the Device.',
-    #required=True,  # What to do about required flags!
     help='The hostname of the Device.  [required]',
 )
 @click.option(
@@ -127,6 +125,12 @@ def add(ctx, attributes, bulk_add, hostname, site_id):
     help='Skip the first N resources.',
 )
 @click.option(
+    '-q',
+    '--query',
+    metavar='QUERY',
+    help='Perform a set query using Attributes and output matching hostnames.',
+)
+@click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
@@ -135,7 +139,7 @@ def add(ctx, attributes, bulk_add, hostname, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, id, limit, offset, site_id):
+def list(ctx, id, limit, offset, query, site_id):
     """
     List existing Devices for a Site.
 
@@ -147,7 +151,15 @@ def list(ctx, id, limit, offset, site_id):
     You may limit the number of results using the -l/--limit option.
     """
     data = ctx.params
-    ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
+
+    if query:
+        results = ctx.obj.api.sites(site_id).devices.query.get(query=query)
+        objects = results['data']['devices']
+        # log.debug('QUERY OBJECTS = %r' % (objects,))
+        devices = sorted(d['hostname'] for d in objects)
+        click.echo('\n'.join(devices))
+    else:
+        ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
 
 
 # Remove

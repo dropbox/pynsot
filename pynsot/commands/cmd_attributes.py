@@ -36,6 +36,20 @@ DISPLAY_FIELDS = (
     ('description', 'Description'),
 )
 
+# Fields to display when viewing a single record.
+VERBOSE_FIELDS = (
+    ('name', 'Name'),
+    ('resource_name', 'Resource'),
+    ('required', 'Required?'),
+    ('display', 'Display?'),
+    ('multi', 'Multi?'),
+    ('constraints', 'Constraints'),
+    ('description', 'Description'),
+)
+
+# Sub-fields for Attribute constraints
+CONSTRAINT_FIELDS = ('allow_empty', 'pattern', 'valid_values')
+
 
 # Main group
 @click.group()
@@ -53,6 +67,11 @@ def cli(ctx):
 
 # Add
 @cli.command()
+@click.option(
+    '--allow-empty',
+    help='Whether to allow this Attribute to have an empty value.',
+    is_flag=True,
+)
 @click.option(
     '-b',
     '--bulk-add',
@@ -81,9 +100,13 @@ def cli(ctx):
     '-n',
     '--name',
     metavar='NAME',
-    #help='The name of the Attribute',
-    #required=True,
     help='The name of the Attribute.  [required]',
+)
+@click.option(
+    '-p',
+    '--pattern',
+    help='Constrain attribute values to this regex pattern.',
+    default='',
 )
 @click.option(
     '--required',
@@ -94,8 +117,6 @@ def cli(ctx):
     '-r',
     '--resource-name',
     metavar='RESOURCE',
-    #help='The type of resource this Attribute is for (e.g. Network)',
-    #required=True,
     help='The resource type this Attribute is for (e.g. Device).  [required]',
     callback=callbacks.transform_resource_name,
 )
@@ -107,9 +128,16 @@ def cli(ctx):
     help='Unique ID of the Site this Attribute is under.  [required]',
     callback=callbacks.process_site_id,
 )
+@click.option(
+    '-V',
+    '--valid-values',
+    metavar='VALUE',
+    help='Valid values for this Attribute. May be specified multiple times.',
+    multiple=True,
+)
 @click.pass_context
-def add(ctx, bulk_add, description, display, multi, name, resource_name,
-        required, site_id):
+def add(ctx, allow_empty, bulk_add, description, display, multi, name, pattern,
+        resource_name, required, valid_values, site_id):
     """
     Add a new Attribute.
 
@@ -127,6 +155,10 @@ def add(ctx, bulk_add, description, display, multi, name, resource_name,
         if resource_name is None:
             raise click.UsageError('Missing option "-r" / "--resource-name".')
 
+    # Handle the constraint fields
+    data = callbacks.process_constraints(
+        data, constraint_fields=CONSTRAINT_FIELDS
+    )
     ctx.obj.add(data)
 
 
@@ -203,7 +235,14 @@ def list(ctx, id, display, limit, multi, name, offset, required, resource_name,
     You may limit the number of results using the -l/--limit option.
     """
     data = ctx.params
-    ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
+
+    # If we provide ID, be verbose
+    if id is not None:
+        display_fields = VERBOSE_FIELDS
+    else:
+        display_fields = DISPLAY_FIELDS
+
+    ctx.obj.list(data, display_fields=display_fields)
 
 
 # Remove
@@ -244,6 +283,10 @@ def remove(ctx, id, site_id):
 # Update
 @cli.command()
 @click.option(
+    '--allow-empty/--no-allow-empty',
+    help='Whether to allow this Attribute to have an empty value.',
+)
+@click.option(
     '-d',
     '--description',
     metavar='DESC',
@@ -268,6 +311,12 @@ def remove(ctx, id, site_id):
     default=None,
 )
 @click.option(
+    '-p',
+    '--pattern',
+    help='Constrain attribute values to this regex pattern.',
+    default='',
+)
+@click.option(
     '--required/--no-required',
     help='Whether this Attribute should be required.',
     default=None,
@@ -280,8 +329,16 @@ def remove(ctx, id, site_id):
     help='Unique ID of the Site this Attribute is under.  [required]',
     callback=callbacks.process_site_id,
 )
+@click.option(
+    '-V',
+    '--valid-values',
+    metavar='VALUE',
+    help='Valid values for this Attribute. May be specified multiple times.',
+    multiple=True,
+)
 @click.pass_context
-def update(ctx, description, display, id, multi, required, site_id):
+def update(ctx, allow_empty, description, display, id, multi, pattern,
+           required, site_id, valid_values):
     """
     Update an Attribute.
 
@@ -290,7 +347,8 @@ def update(ctx, description, display, id, multi, required, site_id):
     When updating an Attribute you must provide the unique ID (-i/--id) and at
     least one of the optional arguments.
     """
-    optional = (description, display, multi, required)
+    optional = (allow_empty, description, display, multi, pattern, required,
+                valid_values)
     provided = []
     for opt in optional:
         if opt in (True, False) or isinstance(opt, basestring):
@@ -301,5 +359,9 @@ def update(ctx, description, display, id, multi, required, site_id):
         msg = 'You must supply at least one the optional arguments.'
         raise click.UsageError(msg)
 
-    data = ctx.params
+    # Handle the constraint fields
+    data = callbacks.process_constraints(
+        ctx.params, constraint_fields=CONSTRAINT_FIELDS
+    )
+
     ctx.obj.update(data)
