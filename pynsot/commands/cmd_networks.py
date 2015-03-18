@@ -73,8 +73,6 @@ def cli(ctx):
     '-c',
     '--cidr',
     metavar='CIDR',
-    #help='A network or IP address in CIDR notation.',
-    #required=True,
     help='A network or IP address in CIDR notation.  [required]',
 )
 @click.option(
@@ -129,6 +127,12 @@ def add(ctx, attributes, bulk_add, cidr, site_id):
     help='Skip the first N resources.',
 )
 @click.option(
+    '-q',
+    '--query',
+    metavar='QUERY',
+    help='Perform a set query using Attributes and output matching Networks.',
+)
+@click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
@@ -136,7 +140,7 @@ def add(ctx, attributes, bulk_add, cidr, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, id, limit, offset, site_id):
+def list(ctx, id, limit, offset, query, site_id):
     """
     List existing Networks for a Site.
 
@@ -152,7 +156,18 @@ def list(ctx, id, limit, offset, site_id):
     # If we aren't passing a sub-command, just call list(), otherwise let it
     # fallback to default behavior.
     if ctx.invoked_subcommand is None:
-        ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
+        if query:
+            results = ctx.obj.api.sites(
+                site_id).networks.query.get(query=query)
+            objects = results['data']['networks']
+            # log.debug('QUERY OBJECTS = %r' % (objects,))
+            networks = sorted(
+                '%s/%s' % (d['network_address'], d['prefix_length'])
+                for d in objects
+            )
+            click.echo('\n'.join(networks))
+        else:
+            ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
 
 
 @list.command()

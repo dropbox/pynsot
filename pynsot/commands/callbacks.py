@@ -5,6 +5,7 @@ Callbacks used in handling command plugins.
 import ast
 import click
 import csv
+import json
 import logging
 
 
@@ -32,9 +33,28 @@ def process_site_id(ctx, param, value):
     return value
 
 
+def process_constraints(data, constraint_fields):
+    """
+    Callback to move constrained fields from incoming data into a 'constraints'
+    key.
+
+    :param data:
+        Incoming argument dict
+
+    :param constraint_fields:
+        Constrained fields to move into 'constraints' dict
+    """
+    constraints = {}
+    for c_field in constraint_fields:
+        constraints[c_field] = data.pop(c_field)
+    data['constraints'] = constraints
+    return data
+
+
 def transform_attributes(ctx, param, value):
     """Callback to turn attributes arguments into a dict."""
     attrs = {}
+    log.debug('TRANSFORM_ATTRIBUTES [IN]: %r' % (value,))
 
     # If value is a string, we'll assume that it's comma-separated.
     if isinstance(value, basestring):
@@ -42,10 +62,17 @@ def transform_attributes(ctx, param, value):
 
     for attr in value:
         key, _, val = attr.partition('=')
-        if not all([key, val]):
+        if not key:
             msg = 'Invalid attribute: %s; format should be key=value' % (attr,)
             raise click.UsageError(msg)
+        try:
+            val = json.loads(val)
+        except ValueError:
+            pass
+        log.debug(' name = %r', key)
+        log.debug('value = %r', val)
         attrs[key] = val
+    log.debug('TRANSFORM_ATTRIBUTES [OUT]: %r' % (attrs,))
     return attrs
 
 

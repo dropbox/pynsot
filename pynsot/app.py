@@ -144,7 +144,7 @@ class App(object):
     @staticmethod
     def pretty_dict(data, delim='=', sep=', '):
         """
-        Return a dict in k=v format.
+        Return a dict in k=v format. And also make it nice to look at.
 
         :param dict:
             A dict
@@ -152,11 +152,17 @@ class App(object):
         :param sep:
             Character used to separate items
         """
-        pretty = sep.join(
-            '%s%s%s' % (k, delim, v) for k, v in
-            data.iteritems()
-        )
-        return pretty
+        pretty = ''
+        for key, val in data.iteritems():
+            if isinstance(val, list):
+                # Sort, add a newline and indent so that nested value items
+                # look better.
+                val = '\n'.join(' ' + i for i in sorted(val))
+                if val:
+                    val = '\n' + val  # Prefix it w/ newline for readability
+            pretty += '%s%s%s%s' % (key, delim, val, sep)
+
+        return pretty.rstrip(sep)  # Drop the trailing separator
 
     def format_message(self, obj_single, message=''):
         """
@@ -494,9 +500,9 @@ def app(ctx, verbose):
     # Construct the App!
     ctx.obj = App(client_args=client_args, ctx=ctx, verbose=verbose)
 
-    # Store the invoked_subcommand (e.g. 'networks') name as parent_name so that
-    # descendent sub-commands can reference where they came from, such as when
-    # calling callbacks.list_endpoint()
+    # Store the invoked_subcommand (e.g. 'networks') name as parent_name so
+    # that descendent sub-commands can reference where they came from, such as
+    # when calling callbacks.list_endpoint()
     ctx.obj.parent_name = ctx.invoked_subcommand
 
 if __name__ == '__main__':

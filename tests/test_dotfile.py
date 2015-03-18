@@ -59,7 +59,9 @@ class TestDotFile(unittest.TestCase):
         err = 'Missing required field: '
         for field in fields:
             with self.assertRaisesRegexp(
-                dotfile.DotfileError, err + field):
+                dotfile.DotfileError,
+                err + field
+            ):
                 config.read()
 
             my_config[field] = self.config_data[field]

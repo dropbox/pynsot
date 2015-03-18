@@ -52,7 +52,7 @@ By default, the ``nsot`` command-line utility will read your settings from
     $ cat ~/.pynsotrc
     [pynsot]
     url = http://localhost:8990/api
-    email = jathan@localhost    
+    email = jathan@localhost
     secret_key = qONJrNpTX0_9v7H_LN1JlA0u4gdTs4rRMQklmQF9WF4=
     auth_method = auth_token
 
@@ -181,6 +181,80 @@ Each resource's ``list`` action supports ``-i/--id``, ``-l/--limit`` and
 + The ``-l/--limit`` option will limit the set of results to ``N`` resources.
 + The ``-o/--offset`` option will skip the first ``N`` resources.
 
+Set Queries
+~~~~~~~~~~~
+
+The Device and Network resources support a ``-q/--query`` option that is a
+representation of set operations for matching attribute/value pairs.
+
+The operations are evaluated from left-to-right, where the first character indicates the
+set operation:
+
++ "+" indicates a set union
++ "-" indicates a set difference
++ no marker indicates a set intersection
+
+For example
+
++ ``-q "foo=bar"`` would return the set intersection of objects with ``foo=bar``.
++ ``-q "foo=bar -owner=jathan"`` would return the set difference of all objects
+  with ``foo=bar`` (that is all ``foo=bar`` where ``owner`` is not ``jathan``.
++ ``-q "foo=bar +foo=baz`` would return the set union of all objects with
+  ``foo=bar`` or ``foo=baz`` (that is all objects matching either).
+
+The ordering of these operations is important. If you are not familiar with set
+operations, please check out `Basic set theory concepts and notation
+<http://en.wikipedia.org/wiki/Set_theory#Basic_concepts_and_notation>`_
+(Wikipedia).
+
+Bulk Addition of Objects
+------------------------
+
+Attributes, Devices, and Networks may be created in bulk by using the
+``-b/--bulk-add`` option and specifying a filepath to a colon-delimited file.
+
+The format of this file must adhere to the following format:
+
++ The first line of the file must be the field names.
++ All required fields must be present, however, the order of any of the fields
+  does not matter.
++ Repeat: The fields may be in any order so long as the required fields are
+  present! Missing fields will fallback to their defaults!
++ Attribute pairs must be commma-separated, and in format k=v and the
+  attributes must exist!
++ For any fields that require Boolean values, the following applies:
+
+  - You may specify ``True`` or ``False`` and they will be evaluated
+  - If the value for a field is not set it will evaluate to ``False``
+  - Any other value for a field will evaluate to ``True``
+
+Attributes
+~~~~~~~~~~
+
+Sample file for ``nsot devices add --bulk-add /tmp/attributes``::
+
+    name:resource_name:required:description:multi:display
+    owner:Network:True:Network owner:True:True
+    metro:Device:False:Device metro:False:True
+
+Devices
+~~~~~~~
+
+Sample file for ``nsot devices add --bulk-add /tmp/devices``::
+
+    hostname:attributes
+    device5:foo=bar,owner=team-networking
+    device6:foo=bar,owner=team-networking
+
+Networks
+~~~~~~~~
+
+Sample file for ``nsot networks add --bulk-add /tmp/networks``::
+
+    cidr:attributes
+    10.20.30.0/24:foo=bar,owner=team-networking
+    10.20.31.0/24:foo=bar,owner=team-networking
+
 Working with Resources
 ======================
 
@@ -249,7 +323,7 @@ Attributes
 ----------
 
 Attributes are flexible key/value pairs or tags you may use to assign arbitrary
-data to objects. 
+data to objects.
 
 .. note::
     Before you may assign Attributes to other resources, you must create the
@@ -280,6 +354,17 @@ You may also list Attributes by name::
     | 3    owner   Device     False       True       False    Owner of a device.  |
     | 2    owner   Network    False       False      False    Owner of a network. |
     +-----------------------------------------------------------------------------+
+
+When listing a single Attribute by ID, you get more detail::
+
+    $ nsot attributes list --site-id 1 --id 3
+    +--------------------------------------------------------------------------------------+
+    | Name    Resource   Required?   Display?   Multi?   Constraints         Description   |
+    +--------------------------------------------------------------------------------------+
+    | owner   Device     False       False      False    pattern=            Device owner. |
+    |                                                    valid_values=                     |
+    |                                                    allow_empty=False                 |
+    +--------------------------------------------------------------------------------------+
 
 Updating an Attribute::
 
@@ -322,6 +407,12 @@ Listing Networks::
     | 4    10.0.0.0      24       False    4         2                        |
     | 5    10.1.0.0      24       False    4         2                        |
     +-------------------------------------------------------------------------+
+
+Performing a set query on Networks by attribute/value::
+
+    $ nsot networks list --site-id --query owner=jathan
+    10.0.0.0/16
+    192.168.0.0/16
 
 Updating a Network (``-a/--attributes`` can be provide once for each Attribute)::
 
@@ -418,11 +509,17 @@ Listing Devices::
     +------------------------------+
     | ID   Hostname   Attributes   |
     +------------------------------+
-    | 1    foo-bar1   owner=neteng |
+    | 1    foo-bar1   owner=jathan |
     | 2    foo-bar2   owner=neteng |
-    | 3    bar-baz1   owner=neteng |
+    | 3    bar-baz1   owner=jathan |
     | 4    bar-baz2   owner=neteng |
     +------------------------------+
+
+Performing a set query on Device by attribute/value::
+
+    $ nsot networks list --site-id 1 --query owner=neteng
+    bar-baz2
+    foo-bar2
 
 Updating a Device::
 
