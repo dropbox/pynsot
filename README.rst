@@ -410,7 +410,7 @@ Listing Networks::
 
 Performing a set query on Networks by attribute/value::
 
-    $ nsot networks list --site-id --query owner=jathan
+    $ nsot networks list --site-id 1 --query owner=jathan
     10.0.0.0/16
     192.168.0.0/16
 

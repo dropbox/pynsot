@@ -157,8 +157,8 @@ def list(ctx, id, limit, offset, query, site_id):
     # fallback to default behavior.
     if ctx.invoked_subcommand is None:
         if query:
-            results = ctx.obj.api.sites(
-                site_id).networks.query.get(query=query)
+            results = ctx.obj.api.sites(site_id).networks.query.get(
+                query=query, limit=limit, offset=offset)
             objects = results['data']['networks']
             # log.debug('QUERY OBJECTS = %r' % (objects,))
             networks = sorted(
