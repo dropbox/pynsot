@@ -153,7 +153,8 @@ def list(ctx, id, limit, offset, query, site_id):
     data = ctx.params
 
     if query:
-        results = ctx.obj.api.sites(site_id).devices.query.get(query=query)
+        results = ctx.obj.api.sites(site_id).devices.query.get(
+            query=query, limit=limit, offset=offset)
         objects = results['data']['devices']
         # log.debug('QUERY OBJECTS = %r' % (objects,))
         devices = sorted(d['hostname'] for d in objects)
