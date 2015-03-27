@@ -53,7 +53,7 @@ def cli(ctx):
     '-a',
     '--attributes',
     metavar='ATTRS',
-    help='A key/value pair attached to this network (format: key=value).',
+    help='A key/value pair attached to this Device (format: key=value).',
     multiple=True,
     callback=callbacks.transform_attributes,
 )
@@ -105,6 +105,19 @@ def add(ctx, attributes, bulk_add, hostname, site_id):
 # List
 @cli.command()
 @click.option(
+    '-a',
+    '--attributes',
+    metavar='ATTRS',
+    help='Filter Devices by matching attributes (format: key=value).',
+    multiple=True,
+)
+@click.option(
+    '-H',
+    '--hostname',
+    metavar='HOSTNAME',
+    help='Filter by hostname of the Device.',
+)
+@click.option(
     '-i',
     '--id',
     metavar='ID',
@@ -139,7 +152,7 @@ def add(ctx, attributes, bulk_add, hostname, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, id, limit, offset, query, site_id):
+def list(ctx, attributes, hostname, id, limit, offset, query, site_id):
     """
     List existing Devices for a Site.
 
