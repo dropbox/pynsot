@@ -70,8 +70,13 @@ class BaseClient(slumber.API):
         log.debug('Processing error: %r' % (exc,))
         # If it's a HTTP response, format the JSON
         try:
-            err = exc.response.json()['error']
-            msg = '%s %s' % (err['code'], err['message'])
+            try:
+                err = exc.response.json()['error']
+            except ValueError:
+                # This is probably a JSON decoding error
+                msg = exc.message
+            else:
+                msg = '%s %s' % (err['code'], err['message'])
         except AttributeError:
             msg = str(exc)
         raise ClientError(msg)
@@ -159,7 +164,7 @@ class AuthTokenClient(BaseClient):
             log.debug('Got response: %r' % (r,))
             return r.json()['data']['auth_token']
         else:
-            msg = 'Failed to fetch auth_token'
+            msg = 'Failed to fetch auth_token from %s' % base_url
             err = HttpClientError(msg, response=r, content=r.content)
             self.error(err)
 
