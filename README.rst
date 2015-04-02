@@ -198,7 +198,7 @@ For example
 
 + ``-q "foo=bar"`` would return the set intersection of objects with ``foo=bar``.
 + ``-q "foo=bar -owner=jathan"`` would return the set difference of all objects
-  with ``foo=bar`` (that is all ``foo=bar`` where ``owner`` is not ``jathan``.
+  with ``foo=bar`` (that is all ``foo=bar`` where ``owner`` is not ``jathan``).
 + ``-q "foo=bar +foo=baz`` would return the set union of all objects with
   ``foo=bar`` or ``foo=baz`` (that is all objects matching either).
 
@@ -211,7 +211,7 @@ Bulk Addition of Objects
 ------------------------
 
 Attributes, Devices, and Networks may be created in bulk by using the
-``-b/--bulk-add`` option and specifying a filepath to a colon-delimited file.
+``-b/--bulk-add`` option and specifying a file path to a colon-delimited file.
 
 The format of this file must adhere to the following format:
 
@@ -386,8 +386,8 @@ Removing an Attribute::
 Networks
 --------
 
-A Network resource can represent an IP Network and an IP Address. Working with
-networks is usually done with CIDR notation.Networks can have any number of
+A Network resource can represent an IP Network or an IP Address. Working with
+networks is usually done with CIDR notation. Networks can have any number of
 arbitrary Attributes.
 
 Adding a Network::
@@ -407,6 +407,30 @@ Listing Networks::
     | 4    10.0.0.0      24       False    4         2                        |
     | 5    10.1.0.0      24       False    4         2                        |
     +-------------------------------------------------------------------------+
+
+You may also optionally include IP addresses with ``--include-ips``::
+
+    $ nsot networks list --side-id 1 --include-ips
+    +-------------------------------------------------------------------------+
+    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
+    +-------------------------------------------------------------------------+
+    | 1    192.168.0.0   16       False    4         None        owner=jathan |
+    | 2    10.0.0.0      16       False    4         None        owner=jathan |
+    | 3    172.16.0.0    12       False    4         None                     |
+    | 4    10.0.0.0      24       False    4         2                        |
+    | 5    10.1.0.0      24       False    4         2                        |
+    | 6    192.168.0.1   32       True     4         1                        |
+    +-------------------------------------------------------------------------+
+
+Or, you may show only IP adddresses by using ``--include-ips`` with
+``--no-include-networks``::
+
+    $ nsot networks list --site-id 1 --include-ips --no-include-networks
+    +-----------------------------------------------------------------------+
+    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
+    +-----------------------------------------------------------------------+
+    | 6    192.168.0.1   32       True     4         1                      |
+    +-----------------------------------------------------------------------+
 
 Performing a set query on Networks by attribute/value::
 
@@ -435,60 +459,39 @@ Removing a Network::
 Supernets
 ~~~~~~~~~
 
-Given a Network ``10.1.0.0/24``::
+Given a Network ``192.168.0.0/24``::
 
-
-    $ nsot networks list --site-id 1 --id 5
-    +--------------------------------------------------------------------+
-    | ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
-    +--------------------------------------------------------------------+
-    | 5    10.1.0.0   24       False    4         1                      |
-    +--------------------------------------------------------------------+
+    $ nsot networks list --site-id 1 --id 6
+    +-----------------------------------------------------------------------+
+    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
+    +-----------------------------------------------------------------------+
+    | 6    192.168.0.0   24       False    4         1                      |
+    +-----------------------------------------------------------------------+
 
 You may view the networks that contain that Network (aka supernets)::
 
     $ nsot networks list --site-id 1 --id 5 supernets
-    +----------------------------------------------------------------------+
-    | ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
-    +----------------------------------------------------------------------+
-    | 1    10.0.0.0   8        False    4         None        owner=jathan |
-    |                                                         foo=bar      |
-    +----------------------------------------------------------------------+
+    +-------------------------------------------------------------------------+
+    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
+    +-------------------------------------------------------------------------+
+    | 1    192.168.0.0   16       False    4         None        owner=jathan |
+    |                                                            cluster=     |
+    |                                                            foo=baz      |
+    +-------------------------------------------------------------------------+
 
 Subnets
 ~~~~~~~
 
-Given the parent Network from the above example (``10.0.0.0/8``), you may the
-view Networks it contains (aka subnets)::
+Given the parent Network from the above example (``192.168.0.0/16``), you may
+the view Networks it contains (aka subnets)::
 
     $ nsot networks list --site-id 1 --id 1 subnets
-    +--------------------------------------------------------------------+
-    | ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
-    +--------------------------------------------------------------------+
-    | 4    10.0.0.0   24       False    4         1                      |
-    | 5    10.1.0.0   24       False    4         1                      |
-    +--------------------------------------------------------------------+
-
-You may also optionally include host addresses with ``--include-ips``::
-
-    $ nsot networks list --site-id 1 --id 1 subnets --include-ips
-    +--------------------------------------------------------------------+
-    | ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
-    +--------------------------------------------------------------------+
-    | 4    10.0.0.0   24       False    4         1                      |
-    | 7    10.0.0.1   32       True     4         4                      |
-    | 5    10.1.0.0   24       False    4         1                      |
-    +--------------------------------------------------------------------+
-
-Or if you want to only show host addresses and exclude Networks, also pass
-``--no-include-networks``::
-
-    $ nsot networks list -s 1 -i 1 subnets --include-ips --no-include-networks
-    +--------------------------------------------------------------------+
-    | ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
-    +--------------------------------------------------------------------+
-    | 7    10.0.0.1   32       True     4         4                      |
-    +--------------------------------------------------------------------+
+    +-----------------------------------------------------------------------+
+    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
+    +-----------------------------------------------------------------------+
+    | 6    192.168.0.0   24       False    4         1                      |
+    | 7    192.168.0.0   25       False    4         6                      |
+    +-----------------------------------------------------------------------+
 
 Devices
 -------

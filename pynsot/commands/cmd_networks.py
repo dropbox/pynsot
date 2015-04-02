@@ -108,11 +108,41 @@ def add(ctx, attributes, bulk_add, cidr, site_id):
 # List
 @cli.group(invoke_without_command=True)
 @click.option(
+    '-a',
+    '--attributes',
+    metavar='ATTRS',
+    help='A key/value pair attached to this Network (format: key=value).',
+    multiple=True,
+)
+@click.option(
+    '-c',
+    '--cidr',
+    metavar='CIDR',
+    help=(
+        'Filter to Networks matching this CIDR. If provided, this overrides '
+        '-n/--network-address and -p/--prefix-length.'
+    ),
+)
+@click.option(
     '-i',
     '--id',
     metavar='ID',
     type=int,
     help='Unique ID of the Network being retrieved.',
+)
+@click.option(
+    '--include-networks/--no-include-networks',
+    is_flag=True,
+    help='Include/exclude non-IP networks.',
+    default=True,
+    show_default=True,
+)
+@click.option(
+    '--include-ips/--no-include-ips',
+    is_flag=True,
+    help='Include/exclude IP addresses.',
+    default=False,
+    show_default=True,
 )
 @click.option(
     '-l',
@@ -121,16 +151,37 @@ def add(ctx, attributes, bulk_add, cidr, site_id):
     help='Limit result to N resources.',
 )
 @click.option(
+    '-n',
+    '--network-address',
+    metavar='NETWORK',
+    help='Filter to Networks matching this network address.',
+)
+@click.option(
     '-o',
     '--offset',
     metavar='OFFSET',
     help='Skip the first N resources.',
 )
 @click.option(
+    '-p',
+    '--prefix-length',
+    metavar='PREFIX',
+    type=int,
+    help='Filter to Networks matching this prefix length.',
+)
+@click.option(
     '-q',
     '--query',
     metavar='QUERY',
     help='Perform a set query using Attributes and output matching Networks.',
+)
+@click.option(
+    '-r',
+    '--root-only',
+    is_flag=True,
+    help='Filter to root Networks.',
+    default=False,
+    show_default=True,
 )
 @click.option(
     '-s',
@@ -140,7 +191,8 @@ def add(ctx, attributes, bulk_add, cidr, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, id, limit, offset, query, site_id):
+def list(ctx, attributes, cidr, id, include_ips, include_networks, limit,
+         network_address, offset, prefix_length, query, root_only, site_id):
     """
     List existing Networks for a Site.
 
@@ -176,19 +228,8 @@ def list(ctx, id, limit, offset, query, site_id):
     '--direct',
     is_flag=True,
     help='Return only direct subnets.',
-    default=None,
-)
-@click.option(
-    '--include-networks/--no-include-networks',
-    is_flag=True,
-    help='Include non-IP networks.',
-    default=None,
-)
-@click.option(
-    '--include-ips/--no-include-ips',
-    is_flag=True,
-    help='Include IP addresses.',
-    default=None,
+    default=False,
+    show_default=True,
 )
 @click.pass_context
 def subnets(ctx, *args, **kwargs):
@@ -202,7 +243,8 @@ def subnets(ctx, *args, **kwargs):
     '--direct',
     is_flag=True,
     help='Return only direct supernets.',
-    default=None,
+    default=False,
+    show_default=True,
 )
 @click.pass_context
 def supernets(ctx, *args, **kwargs):
