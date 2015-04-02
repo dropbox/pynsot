@@ -150,7 +150,10 @@ class AuthTokenClient(BaseClient):
             User's secret_key
         """
         data = {'email': email, 'secret_key': secret_key}
-        log.debug('Getting token for user data: %r' % (data,))
+        debug_data = data.copy()  # For debug display
+        debug_data['secret_key'] = 'X' * 8
+
+        log.debug('Getting token for user data: %r' % (debug_data,))
         try:
             url = base_url + '/authenticate'
             headers = {'content-type': 'application/json'}

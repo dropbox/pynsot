@@ -106,7 +106,6 @@ class App(object):
         # Construct kwargs to pass to the client_class
         local_vars = locals()
         kwargs = {arg_name: local_vars[arg_name] for arg_name in arg_names}
-        log.debug('APP KWARGS = %r' % (kwargs,))
         try:
             api_client = client_class(url, **kwargs)
         except client.ClientError as err:
