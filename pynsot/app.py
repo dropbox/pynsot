@@ -16,7 +16,7 @@ import datetime
 import logging
 import os
 import prettytable
-from slumber.exceptions import HttpClientError
+from slumber.exceptions import (HttpClientError, HttpServerError)
 import sys
 
 import pynsot
@@ -27,12 +27,13 @@ from .models import ApiModel
 # Constants/Globals
 if os.getenv('DEBUG'):
     logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
-
 # Make the --help option also have -h
 CONTEXT_SETTINGS = {
     'help_option_names': ['-h', '--help'],
 }
+
+# Tuple of HTTP errors used for exception handling
+HTTP_ERRORS = (HttpClientError, HttpServerError)
 
 # Where to find the command plugins.
 CMD_FOLDER = os.path.abspath(os.path.join(
@@ -388,7 +389,7 @@ class App(object):
 
         try:
             result = self.resource.post(data)
-        except HttpClientError as err:
+        except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
         else:
             self.handle_response(action, data, result)
@@ -412,7 +413,7 @@ class App(object):
             # Or get all of them.
             else:
                 result = resource.get(**data)
-        except HttpClientError as err:
+        except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
         else:
             objects = []
@@ -441,7 +442,7 @@ class App(object):
 
         try:
             result = self.resource(obj_id).delete()
-        except HttpClientError as err:
+        except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
         else:
             self.handle_response(action, data, result)
@@ -457,7 +458,7 @@ class App(object):
         # values without resetting them.
         try:
             obj = self.resource(obj_id).get()
-        except HttpClientError as err:
+        except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
         else:
             model = ApiModel(obj)
@@ -472,7 +473,7 @@ class App(object):
         # And now we call PUT
         try:
             result = self.resource(obj_id).put(payload)
-        except HttpClientError as err:
+        except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
         else:
             self.handle_response(action, data, result)
