@@ -27,6 +27,8 @@ from .models import ApiModel
 # Constants/Globals
 if os.getenv('DEBUG'):
     logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
+
 # Make the --help option also have -h
 CONTEXT_SETTINGS = {
     'help_option_names': ['-h', '--help'],
