@@ -69,8 +69,14 @@ def transform_attributes(ctx, param, value):
             val = json.loads(val)
         except ValueError:
             pass
+
+        # Cast integers to strings (fix #24)
+        if isinstance(val, int):
+            val = str(val)
+
         log.debug(' name = %r', key)
         log.debug('value = %r', val)
+
         attrs[key] = val
     log.debug('TRANSFORM_ATTRIBUTES [OUT]: %r' % (attrs,))
     return attrs
