@@ -209,8 +209,7 @@ def list(ctx, attributes, cidr, id, include_ips, include_networks, limit,
     # fallback to default behavior.
     if ctx.invoked_subcommand is None:
         if query:
-            results = ctx.obj.api.sites(site_id).networks.query.get(
-                query=query, limit=limit, offset=offset)
+            results = ctx.obj.api.sites(site_id).networks.query.get(**data)
             objects = results['data']['networks']
             # log.debug('QUERY OBJECTS = %r' % (objects,))
             networks = sorted(
