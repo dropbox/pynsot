@@ -13,7 +13,6 @@ import click
 import logging
 import os
 import rcfile
-import stat
 
 
 # Logging object
@@ -39,6 +38,11 @@ DOTFILE_PERMS = 0600  # -rw-------
 
 # Config section name
 SECTION_NAME = 'pynsot'
+
+
+__all__ = (
+    'DotfileError', 'Dotfile',
+)
 
 
 class DotfileError(Exception):

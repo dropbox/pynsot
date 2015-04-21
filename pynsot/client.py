@@ -1,7 +1,16 @@
 # -*- coding: utf-8 -*-
 
 """
-Simple Python API client for NSoT REST API
+Simple Python API client for NSoT REST API.
+
+The easiest way to get a client is to call ``get_api_client()`` with no
+arguments. This will read the user's ``~/.pynsotrc`` file and pass the values
+to the client constructor::
+
+    >>> from pynsot.client import get_api_client
+    >>> api = get_api_client()
+    >>> api
+    AuthTokenClient(url=http://localhost:8990/api)>
 """
 
 __author__ = 'Jathan McCollum'
@@ -10,11 +19,14 @@ __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
+import click
 import json
 import logging
 from requests.auth import AuthBase
 import slumber
 from slumber.exceptions import HttpClientError
+
+from . import dotfile
 
 
 # Logger
@@ -22,6 +34,13 @@ log = logging.getLogger(__name__)
 
 # Header used for passthrough authentication.
 AUTH_HEADER = 'X-NSoT-Email'
+
+
+__all__ = (
+    'ClientError', 'LoginFailed', 'BaseClient', 'EmailHeaderAuthentication',
+    'EmailHeaderClient', 'AuthTokenAuthentication', 'AuthTokenClient',
+    'get_auth_client_info', 'get_api_client'
+)
 
 
 class ClientError(HttpClientError):
@@ -196,3 +215,66 @@ def get_auth_client_info(auth_method):
         Auth method used by the client
     """
     return AUTH_CLIENTS[auth_method]
+
+
+def get_api_client(auth_method=None, url=None, email=None,
+                   secret_key=None, default_site=None):
+    """
+    Safely create an API client so that users don't see tracebacks.
+
+    Any arguments taht aren't explicitly passed will be replaced by the
+    contents of the user's dotfile.
+
+    :param auth_method:
+        Auth method used by the client
+
+    :param url:
+        API URL
+
+    :param email:
+        User's email
+
+    :param secret_key:
+        User's secret_key
+
+    :param default_site:
+        User's default site_id
+    """
+    # Read the dotfile
+    try:
+        log.debug('Reading dotfile.')
+        client_args = dotfile.Dotfile().read()
+    except dotfile.DotfileError as err:
+        raise click.UsageError(err.message)
+
+    # Handle all of the client arguments
+    if auth_method is None:
+        auth_method = client_args.get('auth_method')
+    if url is None:
+        url = client_args.get('url')
+    if email is None:
+        email = client_args.get('email')
+    if secret_key is None:
+        secret_key = client_args.get('secret_key')
+    if default_site is None:
+        default_site = client_args.get('default_site')
+    del client_args  # Cleanup the namespace now.
+
+    # Validate the auth_method
+    log.debug('Validating auth_method: %s', auth_method)
+    try:
+        client_class, arg_names = get_auth_client_info(auth_method)
+    except KeyError:
+        raise click.UsageError('Invalid auth_method: %s' % (auth_method,))
+
+    # Construct kwargs to pass to the client_class
+    local_vars = locals()
+    kwargs = {arg_name: local_vars[arg_name] for arg_name in arg_names}
+    try:
+        api_client = client_class(url, **kwargs)
+    except ClientError as err:
+        msg = str(err)
+        if 'Connection refused' in msg:
+            msg = 'Could not connect to server: %s' % (url,)
+        raise click.UsageError(msg)
+    return api_client

@@ -20,7 +20,7 @@ from slumber.exceptions import (HttpClientError, HttpServerError)
 import sys
 
 import pynsot
-from . import client, dotfile
+from . import client
 from .models import ApiModel
 
 
@@ -40,6 +40,11 @@ HTTP_ERRORS = (HttpClientError, HttpServerError)
 # Where to find the command plugins.
 CMD_FOLDER = os.path.abspath(os.path.join(
                              os.path.dirname(__file__), 'commands'))
+
+
+__all__ = (
+    'NsotCLI', 'App', 'app'
+)
 
 
 class NsotCLI(click.MultiCommand):
@@ -75,54 +80,19 @@ class NsotCLI(click.MultiCommand):
 
 class App(object):
     """Context object for holding state data for the CLI app."""
-    def __init__(self, client_args, ctx, verbose=False):
+    def __init__(self, ctx, client_args=None, verbose=False):
+        if client_args is None:
+            client_args = {}
         self.client_args = client_args
         self.ctx = ctx
         self.verbose = verbose
         self.resource_name = self.ctx.invoked_subcommand
 
-    def get_api_client(self, auth_method=None, url=None, email=None,
-                       secret_key=None, default_site=None):
-        """
-        Safely create an API client so that users don't see tracebacks.
-
-        :param auth_method:
-            Auth method used by the client
-
-        :param url:
-            API URL
-
-        :param email:
-            User's email
-
-        :param secret_key:
-            User's secret_key
-
-        :param default_site:
-            User's default site_id
-        """
-        try:
-            client_class, arg_names = client.get_auth_client_info(auth_method)
-        except KeyError:
-            raise click.UsageError('Invalid auth_method: %s' % (auth_method,))
-
-        # Construct kwargs to pass to the client_class
-        local_vars = locals()
-        kwargs = {arg_name: local_vars[arg_name] for arg_name in arg_names}
-        try:
-            api_client = client_class(url, **kwargs)
-        except client.ClientError as err:
-            msg = str(err)
-            if 'Connection refused' in msg:
-                msg = 'Could not connect to server: %s' % (url,)
-            raise click.UsageError(msg)
-        return api_client
-
     @property
     def api(self):
         """This way the API client is not created until called."""
         if not hasattr(self, '_api'):
-            self._api = self.get_api_client(**self.client_args)
+            self._api = client.get_api_client(**self.client_args)
         return self._api
 
     @property
@@ -492,20 +462,13 @@ def app(ctx, verbose):
     For detailed documentation, please visit https://nsot.readthedocs.org
     """
     # This is the "app" object attached to all contexts.
-
-    # Read the dotfile
-    try:
-        client_args = dotfile.Dotfile().read()
-    except dotfile.DotfileError as err:
-        raise click.UsageError(err.message)
-
-    # Construct the App!
-    ctx.obj = App(client_args=client_args, ctx=ctx, verbose=verbose)
+    ctx.obj = App(ctx=ctx, verbose=verbose)
 
     # Store the invoked_subcommand (e.g. 'networks') name as parent_name so
     # that descendent sub-commands can reference where they came from, such as
     # when calling callbacks.list_endpoint()
     ctx.obj.parent_name = ctx.invoked_subcommand
+
 
 if __name__ == '__main__':
     app()
