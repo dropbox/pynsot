@@ -19,7 +19,7 @@ __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
-import click
+from ..vendor import click
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object

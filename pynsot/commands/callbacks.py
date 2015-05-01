@@ -3,10 +3,11 @@ Callbacks used in handling command plugins.
 """
 
 import ast
-import click
 import csv
 import json
 import logging
+
+from ..vendor import click
 
 
 log = logging.getLogger(__name__)
@@ -29,7 +30,6 @@ def process_site_id(ctx, param, value):
         if default_site is None:
             raise click.UsageError('Missing option "-s" / "--site-id".')
         value = default_site
-
     return value
 
 

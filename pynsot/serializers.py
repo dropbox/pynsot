@@ -19,8 +19,9 @@ __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
-from slumber.serialize import JsonSerializer
 import models
+
+from .vendor.slumber.serialize import JsonSerializer
 
 
 class ModelSerializer(JsonSerializer):

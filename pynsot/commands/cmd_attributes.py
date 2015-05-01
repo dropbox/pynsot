@@ -19,7 +19,8 @@ __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
-import click
+from ..vendor import click
+
 from . import callbacks
 
 

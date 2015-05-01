@@ -11,17 +11,19 @@ __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
-import click
 import datetime
 import logging
 import os
-import prettytable
-from slumber.exceptions import (HttpClientError, HttpServerError)
 import sys
 
 import pynsot
 from . import client
 from .models import ApiModel
+
+from .vendor import click
+from .vendor import prettytable
+from .vendor.slumber.exceptions import (HttpClientError, HttpServerError)
+
 
 
 # Constants/Globals
