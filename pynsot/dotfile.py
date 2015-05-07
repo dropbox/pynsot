@@ -9,10 +9,12 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
 from ConfigParser import RawConfigParser
-import click
+
 import logging
 import os
-import rcfile
+
+from .vendor import click
+from .vendor import rcfile
 
 
 # Logging object

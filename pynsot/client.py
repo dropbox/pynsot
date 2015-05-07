@@ -19,12 +19,13 @@ __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
-import click
 import json
 import logging
-from requests.auth import AuthBase
-import slumber
-from slumber.exceptions import HttpClientError
+
+from .vendor import click
+from .vendor.requests.auth import AuthBase
+from .vendor import slumber
+from .vendor.slumber.exceptions import HttpClientError
 
 from . import dotfile
 
