@@ -126,6 +126,7 @@ class App(object):
         :param sep:
             Character used to separate items
         """
+        log.debug('PRETTY DICT INCOMING DATA = %r', data)
         pretty = ''
         for key, val in data.iteritems():
             if isinstance(val, list):
@@ -223,6 +224,11 @@ class App(object):
         :param result:
             Dict containing result
         """
+        if isinstance(data, list):
+            for item in data:
+                self.handle_response(action, item, result)
+            return None
+
         pretty_dict = self.pretty_dict(data)
         t_ = '%s %s with args: %s!'
         if action.endswith('e'):
@@ -347,6 +353,7 @@ class App(object):
         # Prefer site_id from args, or default to API client's default_site
         # provided in user's config.
         site_id = data.pop('site_id', None)
+
         if site_id is None and self.resource_name != 'sites':
             site_id = self.api.default_site
 

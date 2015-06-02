@@ -44,10 +44,17 @@ def process_constraints(data, constraint_fields):
     :param constraint_fields:
         Constrained fields to move into 'constraints' dict
     """
-    constraints = {}
-    for c_field in constraint_fields:
-        constraints[c_field] = data.pop(c_field)
-    data['constraints'] = constraints
+    # Always use a list so that we can handle bulk operations
+    objects = data if isinstance(data, list) else [data]
+
+    for obj in objects:
+        constraints = {}
+        for c_field in constraint_fields:
+            try:
+                constraints[c_field] = obj.pop(c_field)
+            except KeyError:
+                continue
+        obj['constraints'] = constraints
     return data
 
 
@@ -131,7 +138,13 @@ def process_bulk_add(ctx, param, value):
             r['attributes'] = attributes
 
         # Transform True, False into booleans
+        log.debug ('FILE ROW: %r', r)
         for k, v in r.iteritems():
+            # Don't evaluate dicts
+            if isinstance(v, dict):
+                continue
+
+            # Evaluate strings and if they are booleans, convert them.
             if not isinstance(v, basestring):
                 msg = 'Error parsing file on line %d' % (lineno,)
                 raise click.BadParameter(msg)
@@ -141,8 +154,8 @@ def process_bulk_add(ctx, param, value):
 
     log.debug('PARSED BULK DATA = %r' % (objects,))
 
-    # Return a dict keyed by calling object name
-    return {parent_name: objects}
+    # Return a list of dicts
+    return objects
 
 
 def list_endpoint(ctx, display_fields):

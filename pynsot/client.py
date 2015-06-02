@@ -70,7 +70,7 @@ class BaseClient(slumber.API):
             auth = self.get_auth(base_url)
 
         kwargs['auth'] = auth
-        kwargs['append_slash'] = False  # No slashes!
+        kwargs['append_slash'] = True  # Append slashes!
         super(BaseClient, self).__init__(base_url, **kwargs)
 
     def get_auth(self, base_url=None):
@@ -194,7 +194,7 @@ class AuthTokenClient(BaseClient):
 
         log.debug('Getting token for user data: %r' % (debug_data,))
         try:
-            url = base_url + '/authenticate'
+            url = base_url + '/authenticate/'
             headers = {'content-type': 'application/json'}
             r = slumber.requests.post(url, data=json.dumps(data),
                                       headers=headers)
