@@ -46,7 +46,7 @@ class TestDotFile(unittest.TestCase):
         config.write({})
         config.validate_perms()
 
-    def test_validate_fields(self):
+    def _test_validate_fields(self):
         """Test that fields check out."""
         config = dotfile.Dotfile(self.filepath)
 

@@ -19,8 +19,10 @@ __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
+import getpass
 import json
 import logging
+import os
 
 from .vendor import click
 from .vendor.requests.auth import AuthBase
@@ -131,9 +133,26 @@ class EmailHeaderAuthentication(AuthBase):
 
 class EmailHeaderClient(BaseClient):
     """Default client using email auth header method."""
+    @classmethod
+    def get_user(cls):
+        """Get the local username, or if root, the sudo username."""
+        user = getpass.getuser()
+        if user == 'root':
+            user = os.getenv('SUDO_USER')
+        return user
+
     def get_auth(self, base_url):
         kwargs = self._kwargs
         email = kwargs.pop('email', None)
+        default_domain = kwargs.pop('default_domain', 'localhost')
+
+        if email is None and default_domain:
+            log.debug('No email provided; Using default_domain: %r',
+                      default_domain)
+            user = self.get_user()
+            email = '%s@%s' % (user, default_domain)
+            log.debug('Using email: %r', email)
+
         auth_header = kwargs.pop('auth_header', AUTH_HEADER)
         return EmailHeaderAuthentication(email, auth_header)
 
@@ -203,7 +222,7 @@ Client = AuthTokenClient  # Default client is auth_token
 
 # Mapping to our two (2) hard-coded auth methods and their required arguments.
 AUTH_CLIENTS = {
-    'auth_header': (EmailHeaderClient, ('email', 'default_site')),
+    'auth_header': (EmailHeaderClient, ('email', 'default_domain', 'default_site')),
     'auth_token': (AuthTokenClient, ('email', 'secret_key', 'default_site')),
 }
 
@@ -218,8 +237,7 @@ def get_auth_client_info(auth_method):
     return AUTH_CLIENTS[auth_method]
 
 
-def get_api_client(auth_method=None, url=None, email=None,
-                   secret_key=None, default_site=None):
+def get_api_client(auth_method=None, url=None, extra_args=None):
     """
     Safely create an API client so that users don't see tracebacks.
 
@@ -231,16 +249,10 @@ def get_api_client(auth_method=None, url=None, email=None,
 
     :param url:
         API URL
-
-    :param email:
-        User's email
-
-    :param secret_key:
-        User's secret_key
-
-    :param default_site:
-        User's default site_id
     """
+    if extra_args is None:
+        extra_args = {}
+
     # Read the dotfile
     try:
         log.debug('Reading dotfile.')
@@ -248,18 +260,12 @@ def get_api_client(auth_method=None, url=None, email=None,
     except dotfile.DotfileError as err:
         raise click.UsageError(err.message)
 
-    # Handle all of the client arguments
-    if auth_method is None:
-        auth_method = client_args.get('auth_method')
-    if url is None:
-        url = client_args.get('url')
-    if email is None:
-        email = client_args.get('email')
-    if secret_key is None:
-        secret_key = client_args.get('secret_key')
-    if default_site is None:
-        default_site = client_args.get('default_site')
-    del client_args  # Cleanup the namespace now.
+    # Merge the extra_args w/ the client_args from the config
+    client_args.update(extra_args)
+
+    # Minimum required arguments that we don't want getting passed to the client
+    auth_method = client_args.pop('auth_method')
+    url = client_args.pop('url')
 
     # Validate the auth_method
     log.debug('Validating auth_method: %s', auth_method)
@@ -268,11 +274,8 @@ def get_api_client(auth_method=None, url=None, email=None,
     except KeyError:
         raise click.UsageError('Invalid auth_method: %s' % (auth_method,))
 
-    # Construct kwargs to pass to the client_class
-    local_vars = locals()
-    kwargs = {arg_name: local_vars[arg_name] for arg_name in arg_names}
     try:
-        api_client = client_class(url, **kwargs)
+        api_client = client_class(url, **client_args)
     except ClientError as err:
         msg = str(err)
         if 'Connection refused' in msg:
