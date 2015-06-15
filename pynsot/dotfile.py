@@ -60,24 +60,31 @@ class Dotfile(object):
         """
         Read ``~/.pynsotrc`` and return it as a dict.
         """
-        # If the dotfile isn't found, prompt the user to create one.
-        if not os.path.exists(self.filepath):
+        config = rcfile.rcfile(SECTION_NAME, args={'config': self.filepath})
+        config.pop('config', None)  # We don't need this field in here.
+
+        # If there is *no* config data so far and...
+        if not config and not os.path.exists(self.filepath):
             p = '%s not found; would you like to create it?' % (self.filepath,)
             if click.confirm(p, default=True, abort=True):
                 config_data = self.get_config_data(**kwargs)
                 self.write(config_data)
 
-        # Validate the permissions and presence of fields in the dotfile
-        self.validate_perms()
-        config = rcfile.rcfile(SECTION_NAME, args={'config': self.filepath})
-        self.validate_fields(config)
-
-        config.pop('config', None)  # We don't need this field in here.
         self.config = config
+
+        # If we have configuration values, validate the permissions and presence
+        # of fields in the dotfile
+        if self.config.get('auth_method') == 'auth_token':
+            self.validate_perms()
+            self.validate_fields(config)
+
         return config
 
     def validate_perms(self):
         """Make sure dotfile ownership and permissions are correct."""
+        if not os.path.exists(self.filepath):
+            return None
+
         # Ownership
         s = os.stat(self.filepath)
         if s.st_uid != os.getuid():
@@ -96,7 +103,7 @@ class Dotfile(object):
         """
         for rname in sorted(REQUIRED_FIELDS):
             if rname not in field_names:
-                msg = '%s: Missing required field: %s' % (DOTFILE_NAME, rname)
+                msg = '%s: Missing required field: %s' % (self.filepath, rname)
                 raise DotfileError(msg)
 
     def enforce_perms(self, perms=DOTFILE_PERMS):
