@@ -353,7 +353,7 @@ class App(object):
         log.debug('Got site_id: %s' % site_id)
         if site_id is not None:
             log.debug('Site_id found; rebasing API URL!')
-            self.api._store['base_url'] += '/sites/' + site_id
+            self.api._store['base_url'] += '/sites/%s' % site_id
 
     def add(self, data):
         """POST"""
