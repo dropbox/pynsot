@@ -447,9 +447,14 @@ class App(object):
             payload.pop('id')  # We don't want id when doing a PUT
 
         # Update the payload from the CLI params if the value isn't null.
-        for k, v in data.iteritems():
-            if v is not None:
-                payload[k] = v
+        for key, val in data.iteritems():
+            # If we're updating attributes, merge with existing attributes
+            if key == 'attributes':
+                payload[key].update(val)
+
+            # Otherwise, if the value was provided, replace it outright
+            elif val is not None:
+                payload[key] = val
 
         # And now we call PUT
         try:

@@ -7,6 +7,8 @@ Make dummy data and fixtures and stuff.
 import collections
 import json
 import hashlib
+import logging
+import pytest
 import random
 import socket
 import struct
@@ -18,8 +20,84 @@ except ImportError:
     raise
 
 
+log = logging.getLogger(__name__)
+
 # Constants and stuff
 fake = faker.Factory.create()
+
+# API URL to use for testing.
+API_URL = 'http://localhost:8990/api'
+
+#############
+# Responses #
+#############
+# API responses that we're using for request/resposne mocking.
+# When authenticating against API
+AUTH_RESPONSE = {
+    'status':'ok',
+    'data': {'auth_token': 'bogus_token'}
+}
+
+# When retrieving Sites.
+SITES_RESPONSE = {u'data': {u'limit': None,
+  u'offset': 0,
+  u'sites': [{u'description': u'Production networks and devices.',
+    u'id': 1,
+    u'name': u'Production'}],
+  u'total': 1},
+ u'status': u'ok'}
+
+# When retrieving Devices.
+DEVICES_RESPONSE = {u'data': {u'devices': [{u'attributes': {'owner': 'jathan'},
+    u'hostname': u'foo-bar1',
+    u'id': 1,
+    u'site_id': 1}],
+  u'limit': 1,
+  u'offset': 0,
+  u'total': 1},
+ u'status': u'ok'}
+
+DEVICE_RETRIEVE = {u'data': {u'device': {u'attributes': {
+   u'owner': u'jathan'},
+   u'hostname': u'foo-bar1',
+   u'id': 1,
+   u'site_id': 1}},
+ u'status': u'ok'}
+
+DEVICE_UPDATE = {u'data': {u'device': {u'attributes': {u'monitored': u'',
+   u'owner': u'jathan'},
+   u'hostname': u'foo-bar1',
+   u'id': 1,
+   u'site_id': 1}},
+ u'status': u'ok'}
+
+# When retrieving Attributes.
+ATTRIBUTES_RESPONSE = {u'data': {u'attributes': [{u'constraints': {u'allow_empty': True,
+     u'pattern': u'',
+     u'valid_values': []},
+    u'description': u'',
+    u'display': False,
+    u'id': 2,
+    u'multi': False,
+    u'name': u'monitored',
+    u'required': False,
+    u'resource_name': u'Device',
+    u'site_id': 1},
+   {u'constraints': {u'allow_empty': False,
+     u'pattern': u'',
+     u'valid_values': []},
+    u'description': u'',
+    u'display': True,
+    u'id': 1,
+    u'multi': False,
+    u'name': u'owner',
+    u'required': False,
+    u'resource_name': u'Device',
+    u'site_id': 1}],
+  u'limit': None,
+  u'offset': 0,
+  u'total': 2},
+ u'status': u'ok'}
 
 # Dummy config data used for testing dotfile and client
 CONFIG_DATA = {
@@ -28,6 +106,12 @@ CONFIG_DATA = {
     'auth_method': 'auth_token',
     'secret_key': 'MJMOl9W7jqQK3h-quiUR-cSUeuyDRhbn2ca5E31sH_I=',
 }
+
+
+@pytest.fixture
+def config():
+    return CONFIG_DATA
+
 
 # Payload used to create Network & Device attributes used for testing.
 TEST_ATTRIBUTES = {
