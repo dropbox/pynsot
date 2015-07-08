@@ -158,3 +158,53 @@ def test_attributes_list(config):
 
         result = runner.invoke(app, shlex.split('attributes list -s 1'))
         assert result.exit_code == 0
+
+
+def test_site_add(config):
+    """Test addition of a site."""
+    headers = {'Content-Type': 'application/json'}
+    auth_url = config['url'] + '/authenticate/'
+    sites_url = config['url'] + '/sites/'
+    site_uri = config['url'] + '/sites/1/'
+
+    SITE_RESPONSE = {
+        'data': {
+            'site': {'description': 'Foo site.', 'id': 1, 'name': 'Foo'}
+        },
+        'status': 'ok'
+    }
+    ERROR_RESPONSE = {
+        'status': 'error',
+        'error': {
+            'message': {'name': ['This field must be unique.']},
+            'code': 400
+         }
+    }
+
+    runner = CliRunner(config)
+    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+        # Create the site
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.post(sites_url, json=SITE_RESPONSE, headers=headers)
+
+        result = runner.invoke(
+            app, shlex.split("sites add -n Foo -d 'Foo site.'")
+        )
+        assert result.exit_code == 0
+
+        expected_output = (
+            "[SUCCESS] Added site with args: name=Foo, description=Foo site.!\n"
+        )
+        assert result.output == expected_output
+
+        # Try to create the site again!! And fail!!
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.post(sites_url, json=ERROR_RESPONSE, headers=headers,
+                  status_code=400)
+
+        result = runner.invoke(
+            app, shlex.split("sites add -n Foo -d 'Foo site.'"),
+            color=False
+        )
+        assert result.exit_code != 0
+        assert result.output == ''
