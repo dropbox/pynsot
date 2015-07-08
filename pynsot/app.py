@@ -116,7 +116,7 @@ class App(object):
         return self.api.get_resource(self.resource_name)
 
     @staticmethod
-    def pretty_dict(data, delim='=', sep=', '):
+    def pretty_dict(data, delim='=', sep=', ', joiner='\n'):
         """
         Return a dict in k=v format. And also make it nice to look at.
 
@@ -125,6 +125,9 @@ class App(object):
 
         :param sep:
             Character used to separate items
+
+        :param joiner:
+            Character used to join items
         """
         log.debug('PRETTY DICT INCOMING DATA = %r', data)
         pretty = ''
@@ -132,9 +135,9 @@ class App(object):
             if isinstance(val, list):
                 # Sort, add a newline and indent so that nested value items
                 # look better.
-                val = '\n'.join(' ' + i for i in sorted(val))
+                val = joiner.join(' ' + i for i in sorted(val))
                 if val:
-                    val = '\n' + val  # Prefix it w/ newline for readability
+                    val = joiner + val  # Prefix it w/ newline for readability
             pretty += '%s%s%s%s' % (key, delim, val, sep)
 
         return pretty.rstrip(sep)  # Drop the trailing separator
@@ -200,6 +203,9 @@ class App(object):
                 msg = extra.strip()
         else:
             msg = str(err)
+
+        if isinstance(msg, dict):
+            msg = self.pretty_dict(msg, delim=':', joiner='')
 
         # If we're being verbose, print some extra context.
         if self.verbose:
