@@ -264,8 +264,10 @@ def get_api_client(auth_method=None, url=None, extra_args=None):
     client_args.update(extra_args)
 
     # Minimum required arguments that we don't want getting passed to the client
-    auth_method = client_args.pop('auth_method')
-    url = client_args.pop('url')
+    if auth_method is None:
+        auth_method = client_args.pop('auth_method')
+    if url is None:
+        url = client_args.pop('url')
 
     # Validate the auth_method
     log.debug('Validating auth_method: %s', auth_method)

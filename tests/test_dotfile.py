@@ -46,7 +46,7 @@ class TestDotFile(unittest.TestCase):
         config.write({})
         config.validate_perms()
 
-    def _test_validate_fields(self):
+    def test_validate_fields(self):
         """Test that fields check out."""
         config = dotfile.Dotfile(self.filepath)
 
@@ -63,6 +63,7 @@ class TestDotFile(unittest.TestCase):
                 err + field
             ):
                 config.read()
+                config.validate_fields(my_config)
 
             my_config[field] = self.config_data[field]
             config.write(my_config)
