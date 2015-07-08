@@ -68,7 +68,8 @@ class Dotfile(object):
             p = '%s not found; would you like to create it?' % (self.filepath,)
             if click.confirm(p, default=True, abort=True):
                 config_data = self.get_config_data(**kwargs)
-                self.write(config_data)
+                self.write(config_data)  # Write config to disk
+                config = config_data  # Return the contents
 
         self.config = config
 
