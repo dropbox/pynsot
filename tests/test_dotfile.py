@@ -49,6 +49,7 @@ class TestDotFile(unittest.TestCase):
     def test_validate_fields(self):
         """Test that fields check out."""
         config = dotfile.Dotfile(self.filepath)
+        self.config_data.pop('default_site', None)
 
         # We're going to test every field.
         fields = sorted(self.config_data)

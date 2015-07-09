@@ -30,6 +30,9 @@ def process_site_id(ctx, param, value):
         if default_site is None:
             raise click.UsageError('Missing option "-s" / "--site-id".')
         value = default_site
+    else:
+        log.debug('Setting provided site_id as default_site.')
+        ctx.obj.api.default_site = value
     return value
 
 
