@@ -256,8 +256,42 @@ def test_devices_list(config):
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.get(devices_url, json=DEVICES_RESPONSE, headers=headers)
 
+        # Normal list
         result = runner.invoke(app, shlex.split('devices list -s 1'))
         assert result.exit_code == 0
+
+        expected_output = (
+            '+------------------------------+\n'
+            '| ID   Hostname   Attributes   |\n'
+            '+------------------------------+\n'
+            '| 1    foo-bar1   owner=jathan |\n'
+            '| 2    foo-bar2   owner=jathan |\n'
+            '+------------------------------+\n'
+        )
+        assert result.output == expected_output
+
+        # Set query display newline-delimited (default)
+        query_url = config['url'] + '/sites/1/devices/query/'
+        mock.get(query_url, json=DEVICES_RESPONSE, headers=headers)
+        result = runner.invoke(
+            app, shlex.split('devices list -s 1 -q owner=jathan')
+        )
+        assert result.exit_code == 0
+
+        expected_output = (
+            'foo-bar1\n'
+            'foo-bar2\n'
+        )
+        assert result.output == expected_output
+
+        # Set query display comma-delimited (--delimited)
+        result = runner.invoke(
+            app, shlex.split('devices list -s 1 -q owner=jathan -d')
+        )
+        assert result.exit_code == 0
+
+        expected_output = 'foo-bar1,foo-bar2\n'
+        assert result.output == expected_output
 
 
 def test_device_update(config):
@@ -278,14 +312,12 @@ def test_device_update(config):
             app,
             shlex.split('devices update -s 1 -i 1 -a monitored')
         )
-        # import pdb; pdb.set_trace()
         assert result.exit_code == 0
 
         expected_output = (
             "[SUCCESS] Updated device with args: attributes={'monitored':"
             " ''}, hostname=None!\n"
         )
-        # import pdb; pdb.set_trace()
         assert result.output == expected_output
 
         # Run a list to see the object w/ the updated result
@@ -325,6 +357,7 @@ def test_attributes_list(config):
         result = runner.invoke(app, shlex.split('attributes list -s 1'))
         assert result.exit_code == 0
 
+
 ############
 # Networks #
 ############
@@ -358,12 +391,12 @@ def test_networks_bulk_add(config):
     BULK_ADD = (
         'cidr:attributes\n'
         '192.168.1.0/24:owner=jathan\n'
-        '192.168.2.0/24:owner=gary\n'
+        '192.168.2.0/24:owner=jathan\n'
     )
     BULK_FAIL = (
         'cidr:attributes\n'
         '192.168.1.0/24:owner=jathan,bacon=delicious\n'
-        '192.168.2.0/24:owner=gary\n'
+        '192.168.2.0/24:owner=jathan\n'
     )
     BULK_ERROR = {
         'status': 'error',
@@ -391,7 +424,7 @@ def test_networks_bulk_add(config):
         expected_output = (
             "[SUCCESS] Added network with args: attributes={'owner': 'jathan'}, "
             "cidr=192.168.1.0/24!\n"
-            "[SUCCESS] Added network with args: attributes={'owner': 'gary'}, "
+            "[SUCCESS] Added network with args: attributes={'owner': 'jathan'}, "
             "cidr=192.168.2.0/24!\n"
         )
         assert result.output == expected_output
@@ -434,6 +467,39 @@ def test_networks_list(config):
         result = runner.invoke(app, shlex.split('networks list -s 1'))
         assert result.exit_code == 0
 
+        expected_output = (
+            '+-------------------------------------------------------------------------+\n'
+            '| ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
+            '+-------------------------------------------------------------------------+\n'
+            '| 1    192.168.1.0   24       False    4         None        owner=jathan |\n'
+            '| 2    192.168.2.0   24       False    4         None        owner=jathan |\n'
+            '+-------------------------------------------------------------------------+\n'
+        )
+        assert result.output == expected_output
+
+        # Set query display newline-delimited (default)
+        query_url = config['url'] + '/sites/1/networks/query/'
+        mock.get(query_url, json=NETWORKS_RESPONSE, headers=headers)
+        result = runner.invoke(
+            app, shlex.split('networks list -s 1 -q owner=jathan')
+        )
+        assert result.exit_code == 0
+
+        expected_output = (
+            '192.168.1.0/24\n'
+            '192.168.2.0/24\n'
+        )
+        assert result.output == expected_output
+
+        # Set query display comma-delimited (--delimited)
+        result = runner.invoke(
+            app, shlex.split('networks list -s 1 -q owner=jathan -d')
+        )
+        assert result.exit_code == 0
+
+        expected_output = '192.168.1.0/24,192.168.2.0/24\n'
+        assert result.output == expected_output
+
 
 def test_network_update(config):
     """Test ``nsot networks update -s 1 -i 1 -a foo=bar``"""
@@ -453,13 +519,11 @@ def test_network_update(config):
             app,
             shlex.split('networks update -s 1 -i 1 -a foo=bar')
         )
-        # import pdb; pdb.set_trace()
         assert result.exit_code == 0
 
         expected_output = (
             "[SUCCESS] Updated network with args: attributes={'foo': 'bar'}!\n"
         )
-        # import pdb; pdb.set_trace()
         assert result.output == expected_output
 
         # Run a list to see the object w/ the updated result

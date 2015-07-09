@@ -4,6 +4,7 @@ Callbacks used in handling command plugins.
 
 import ast
 import csv
+from itertools import chain
 import json
 import logging
 
@@ -70,7 +71,11 @@ def transform_attributes(ctx, param, value):
     if isinstance(value, basestring):
         value = value.split(',')
 
-    for attr in value:
+    # Flatten the attributes in case any of them are comma-separated.
+    values = [v.split(',') for v in value]
+    items = set(chain.from_iterable(values))
+
+    for attr in items:
         key, _, val = attr.partition('=')
         if not key:
             msg = 'Invalid attribute: %s; format should be key=value' % (attr,)

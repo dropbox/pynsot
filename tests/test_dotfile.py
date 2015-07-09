@@ -12,12 +12,23 @@ from pynsot import dotfile
 from .fixtures import CONFIG_DATA
 
 
+log = logging.getLogger(__name__)
+
+
 class TestDotFile(unittest.TestCase):
     def setUp(self):
         """Automatically create a tempfile for each test."""
         fd, filepath = tempfile.mkstemp()
         self.filepath = filepath
         self.config_data = CONFIG_DATA.copy()
+
+        self.config_path = os.path.expanduser('~/.pynsotrc')
+        self.backup_path = self.config_path + '.orig'
+        self.backed_up = False
+        if os.path.exists(self.config_path):
+            log.debug('Config found, backing up...')
+            os.rename(self.config_path, self.backup_path)
+            self.backed_up = True
 
     def test_read_success(self):
         """Test that file can be read."""
@@ -75,3 +86,7 @@ class TestDotFile(unittest.TestCase):
             os.remove(self.filepath)
         except OSError:
             pass
+
+        if self.backed_up:
+            log.debug('Restoring original config.')
+            os.rename(self.backup_path, self.config_path)  # Restore original

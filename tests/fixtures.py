@@ -48,10 +48,10 @@ SITES_RESPONSE = {u'data': {u'limit': None,
  u'status': u'ok'}
 
 # When retrieving Devices.
-DEVICES_RESPONSE = {
-    u'data': {u'devices': [
-        {u'attributes': {'owner': 'jathan'}, u'hostname': u'foo-bar1', u'id': 1, u'site_id': 1},
-        {u'attributes': {'owner': 'jathan'}, u'hostname': u'foo-bar2', u'id': 2, u'site_id': 1}],
+DEVICES_RESPONSE = {u'data': {u'devices': [
+    {u'attributes': {'owner': 'jathan'}, u'hostname': u'foo-bar1', u'id': 1, u'site_id': 1},
+    {u'attributes': {'owner': 'jathan'}, u'hostname': u'foo-bar2', u'id': 2, u'site_id': 1}
+    ],
   u'limit': None,
   u'offset': 0,
   u'total': 2},
@@ -113,7 +113,7 @@ NETWORKS_RESPONSE = {u'data': {u'limit': None,
     u'parent_id': None,
     u'prefix_length': 24,
     u'site_id': 1},
-   {u'attributes': {u'owner': u'gary'},
+   {u'attributes': {u'owner': u'jathan'},
     u'id': 2,
     u'ip_version': u'4',
     u'is_ip': False,
