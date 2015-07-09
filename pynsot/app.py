@@ -356,10 +356,14 @@ class App(object):
         :param data:
             Dict of query arguments
         """
-        # Prefer site_id from args, or default to API client's default_site
-        # provided in user's config.
+        # Handle bulk queries
+        if isinstance(data, list):
+            data = data[0]
+
+        # Prefer site_id from args.
         site_id = data.pop('site_id', None)
 
+        # Default to client's default_site provided in user's config or at CLI.
         if site_id is None and self.resource_name != 'sites':
             site_id = self.api.default_site
 

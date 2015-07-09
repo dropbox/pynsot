@@ -48,13 +48,13 @@ SITES_RESPONSE = {u'data': {u'limit': None,
  u'status': u'ok'}
 
 # When retrieving Devices.
-DEVICES_RESPONSE = {u'data': {u'devices': [{u'attributes': {'owner': 'jathan'},
-    u'hostname': u'foo-bar1',
-    u'id': 1,
-    u'site_id': 1}],
-  u'limit': 1,
+DEVICES_RESPONSE = {
+    u'data': {u'devices': [
+        {u'attributes': {'owner': 'jathan'}, u'hostname': u'foo-bar1', u'id': 1, u'site_id': 1},
+        {u'attributes': {'owner': 'jathan'}, u'hostname': u'foo-bar2', u'id': 2, u'site_id': 1}],
+  u'limit': None,
   u'offset': 0,
-  u'total': 1},
+  u'total': 2},
  u'status': u'ok'}
 
 DEVICE_RETRIEVE = {u'data': {u'device': {u'attributes': {
@@ -69,6 +69,60 @@ DEVICE_UPDATE = {u'data': {u'device': {u'attributes': {u'monitored': u'',
    u'hostname': u'foo-bar1',
    u'id': 1,
    u'site_id': 1}},
+ u'status': u'ok'}
+
+# Networks
+NETWORK_CREATE = {'data': {'network': {'attributes': {'owner': 'jathan'},
+   'id': 1,
+   'ip_version': '4',
+   'is_ip': False,
+   'network_address': '10.0.0.0',
+   'parent_id': None,
+   'prefix_length': 8,
+   'site_id': 1}},
+ 'status': 'ok'}
+
+NETWORK_RETRIEVE = {u'data': {u'network': {u'attributes': {u'owner': u'jathan'},
+   u'id': 1,
+   u'ip_version': u'4',
+   u'is_ip': False,
+   u'network_address': u'192.168.1.0',
+   u'parent_id': None,
+   u'prefix_length': 24,
+   u'site_id': 1}},
+ u'status': u'ok'}
+
+NETWORK_UPDATE = {u'data': {u'network': {u'attributes': {u'foo': u'bar', u'owner': u'jathan'},
+   u'id': 1,
+   u'ip_version': u'4',
+   u'is_ip': False,
+   u'network_address': u'192.168.1.0',
+   u'parent_id': None,
+   u'prefix_length': 24,
+   u'site_id': 1}},
+ u'status': u'ok'}
+
+
+NETWORKS_RESPONSE = {u'data': {u'limit': None,
+  u'networks': [
+   {u'attributes': {u'owner': u'jathan'},
+    u'id': 1,
+    u'ip_version': u'4',
+    u'is_ip': False,
+    u'network_address': u'192.168.1.0',
+    u'parent_id': None,
+    u'prefix_length': 24,
+    u'site_id': 1},
+   {u'attributes': {u'owner': u'gary'},
+    u'id': 2,
+    u'ip_version': u'4',
+    u'is_ip': False,
+    u'network_address': u'192.168.2.0',
+    u'parent_id': None,
+    u'prefix_length': 24,
+    u'site_id': 1}],
+  u'offset': 0,
+  u'total': 2},
  u'status': u'ok'}
 
 # When retrieving Attributes.

@@ -56,6 +56,7 @@ def cli(ctx):
 @click.option(
     '-d',
     '--description',
+    default='',
     metavar='DESC',
     help='A helpful description for the Site.',
 )
