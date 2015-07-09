@@ -438,6 +438,11 @@ Performing a set query on Networks by attribute/value::
     10.0.0.0/16
     192.168.0.0/16
 
+You may also display the results comma-delimited::
+
+    $ nsot networks list --site-id 1 --query owner=jathan --delimited
+    10.0.0.0/16,192.168.0.0/16
+
 Updating a Network (``-a/--attributes`` can be provide once for each Attribute)::
 
     $ nsot networks update --site-id 1 --id 1 -a owner=jathan -a foo=bar
@@ -520,9 +525,14 @@ Listing Devices::
 
 Performing a set query on Device by attribute/value::
 
-    $ nsot networks list --site-id 1 --query owner=neteng
+    $ nsot devices list --site-id 1 --query owner=neteng
     bar-baz2
     foo-bar2
+
+You may also display the results comma-delimited::
+
+    $ nsot devices list --site-id 1 --query owner=neteng --delimited
+    bar-baz2,foo-bar2
 
 Updating a Device::
 

@@ -125,6 +125,14 @@ def add(ctx, attributes, bulk_add, cidr, site_id):
     ),
 )
 @click.option(
+    '-d',
+    '--delimited',
+    is_flag=True,
+    help='Display set query results separated by commas vs. newlines.',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '-i',
     '--id',
     metavar='ID',
@@ -192,8 +200,9 @@ def add(ctx, attributes, bulk_add, cidr, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, attributes, cidr, id, include_ips, include_networks, limit,
-         network_address, offset, prefix_length, query, root_only, site_id):
+def list(ctx, attributes, cidr, delimited, id, include_ips, include_networks,
+         limit, network_address, offset, prefix_length, query, root_only,
+         site_id):
     """
     List existing Networks for a Site.
 
@@ -205,6 +214,7 @@ def list(ctx, attributes, cidr, id, include_ips, include_networks, limit,
     You may limit the number of results using the -l/--limit option.
     """
     data = ctx.params
+    data.pop('delimited')  # We don't want this going to the server.
 
     # If we aren't passing a sub-command, just call list(), otherwise let it
     # fallback to default behavior.
@@ -212,12 +222,12 @@ def list(ctx, attributes, cidr, id, include_ips, include_networks, limit,
         if query:
             results = ctx.obj.api.sites(site_id).networks.query.get(**data)
             objects = results['data']['networks']
-            # log.debug('QUERY OBJECTS = %r' % (objects,))
             networks = sorted(
                 '%s/%s' % (d['network_address'], d['prefix_length'])
                 for d in objects
             )
-            click.echo('\n'.join(networks))
+            joiner = ',' if delimited else '\n'
+            click.echo(joiner.join(networks))
         else:
             ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
 
