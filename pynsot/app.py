@@ -89,6 +89,7 @@ class App(object):
         self.ctx = ctx
         self.verbose = verbose
         self.resource_name = self.ctx.invoked_subcommand
+        self.rebase_done = False  # So that we only rebase once.
 
     @property
     def api(self):
@@ -356,6 +357,10 @@ class App(object):
         :param data:
             Dict of query arguments
         """
+        # Don't rebase again if we've already rebased.
+        if self.rebase_done:
+            return None
+
         # Handle bulk queries
         if isinstance(data, list):
             data = data[0]
@@ -372,6 +377,9 @@ class App(object):
             log.debug('Site_id found; rebasing API URL!')
             self.api._store['base_url'] += '/sites/%s' % site_id
 
+        # Mark rebase as done.
+        self.rebase_done = True
+
     def add(self, data):
         """POST"""
         action = 'add'
@@ -384,6 +392,22 @@ class App(object):
             self.handle_error(action, data, err)
         else:
             self.handle_response(action, data, result)
+
+    def get_single_object(self, data, natural_key):
+        """Get a single object based on the natural key for this resource."""
+        natural_value = data.get(natural_key)
+        self.rebase(data)
+
+        params = {natural_key: natural_value}
+        try:
+            r = self.resource.get(**params)
+        except HTTP_ERRORS as err:
+            return None
+
+        try:
+            return r['data'][self.resource_name][0]
+        except IndexError as err:
+            return None
 
     def list(self, data, display_fields=None, resource=None):
         """GET"""
@@ -401,6 +425,7 @@ class App(object):
             # Try getting a single object first
             if obj_id:
                 result = resource(obj_id).get()
+
             # Or get all of them.
             else:
                 result = resource.get(**data)

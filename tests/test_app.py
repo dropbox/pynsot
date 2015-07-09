@@ -10,6 +10,7 @@ import copy
 import logging
 import os
 import pytest
+import re
 import requests_mock
 import shlex
 import shutil
@@ -390,13 +391,13 @@ def test_networks_bulk_add(config):
 
     BULK_ADD = (
         'cidr:attributes\n'
-        '192.168.1.0/24:owner=jathan\n'
-        '192.168.2.0/24:owner=jathan\n'
+        '10.0.0.0/8:owner=jathan\n'
+        '10.0.0.0/24:owner=jathan\n'
     )
     BULK_FAIL = (
         'cidr:attributes\n'
-        '192.168.1.0/24:owner=jathan,bacon=delicious\n'
-        '192.168.2.0/24:owner=jathan\n'
+        '10.0.0.0/24:owner=jathan,bacon=delicious\n'
+        '10.0.0.0/24:owner=jathan\n'
     )
     BULK_ERROR = {
         'status': 'error',
@@ -423,9 +424,9 @@ def test_networks_bulk_add(config):
 
         expected_output = (
             "[SUCCESS] Added network with args: attributes={'owner': 'jathan'}, "
-            "cidr=192.168.1.0/24!\n"
+            "cidr=10.0.0.0/8!\n"
             "[SUCCESS] Added network with args: attributes={'owner': 'jathan'}, "
-            "cidr=192.168.2.0/24!\n"
+            "cidr=10.0.0.0/24!\n"
         )
         assert result.output == expected_output
 
@@ -468,12 +469,12 @@ def test_networks_list(config):
         assert result.exit_code == 0
 
         expected_output = (
-            '+-------------------------------------------------------------------------+\n'
-            '| ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
-            '+-------------------------------------------------------------------------+\n'
-            '| 1    192.168.1.0   24       False    4         None        owner=jathan |\n'
-            '| 2    192.168.2.0   24       False    4         None        owner=jathan |\n'
-            '+-------------------------------------------------------------------------+\n'
+            '+----------------------------------------------------------------------+\n'
+            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
+            '+----------------------------------------------------------------------+\n'
+            '| 1    10.0.0.0   8        False    4         None        owner=jathan |\n'
+            '| 2    10.0.0.0   24       False    4         1           owner=jathan |\n'
+            '+----------------------------------------------------------------------+\n'
         )
         assert result.output == expected_output
 
@@ -486,8 +487,8 @@ def test_networks_list(config):
         assert result.exit_code == 0
 
         expected_output = (
-            '192.168.1.0/24\n'
-            '192.168.2.0/24\n'
+            '10.0.0.0/8\n'
+            '10.0.0.0/24\n'
         )
         assert result.output == expected_output
 
@@ -497,7 +498,87 @@ def test_networks_list(config):
         )
         assert result.exit_code == 0
 
-        expected_output = '192.168.1.0/24,192.168.2.0/24\n'
+        expected_output = '10.0.0.0/8,10.0.0.0/24\n'
+        assert result.output == expected_output
+
+
+def test_network_subcommands(config):
+    """Test supernets/subnets"""
+    # Lookup subnets by cidr
+    headers = {'Content-Type': 'application/json'}
+    auth_url = config['url'] + '/authenticate/'
+    networks_url = config['url'] + '/sites/1/networks/'
+    network_match = re.compile(networks_url)
+
+    SUBNETS = {
+        'data': {
+            'limit': None,
+            'networks': [{'attributes': {'owner': 'jathan'},
+            'id': 2,
+            'ip_version': '4',
+            'is_ip': False,
+            'network_address': '10.0.0.0',
+            'parent_id': 1,
+            'prefix_length': 24,
+            'site_id': 1}],
+            'offset': 0,
+            'total': 1},
+         'status': 'ok'
+    }
+    SUPERNETS = {
+        'data': {
+            'limit': None,
+            'networks': [
+                {'attributes': {'owner': 'jathan'},
+                'id': 1,
+                'ip_version': '4',
+                'is_ip': False,
+                'network_address': '10.0.0.0',
+                'parent_id': None,
+                'prefix_length': 8,
+                'site_id': 1}
+            ],
+            'offset': 0,
+            'total': 1},
+        'status': 'ok'
+    }
+
+    runner = CliRunner(config)
+    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+        # Test subnets
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(network_match, json=SUBNETS, headers=headers)
+
+        result = runner.invoke(
+            app, shlex.split('networks list -s 1 -c 10.0.0.0/8 subnets')
+        )
+        assert result.exit_code == 0
+
+        expected_output = (
+            '+----------------------------------------------------------------------+\n'
+            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
+            '+----------------------------------------------------------------------+\n'
+            '| 2    10.0.0.0   24       False    4         1           owner=jathan |\n'
+            '+----------------------------------------------------------------------+\n'
+        )
+        assert result.output == expected_output
+
+        # Test supernets
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(network_match, json=SUPERNETS, headers=headers)
+
+        result = runner.invoke(
+            app, shlex.split('networks list -s 1 -c 10.0.0.0/24 supernets')
+        )
+        assert result.exit_code == 0
+
+        expected_output = (
+            '+----------------------------------------------------------------------+\n'
+            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
+            '+----------------------------------------------------------------------+\n'
+            '| 1    10.0.0.0   8        False    4         None        owner=jathan |\n'
+            '+----------------------------------------------------------------------+\n'
+        )
         assert result.output == expected_output
 
 
@@ -536,29 +617,11 @@ def test_network_update(config):
         assert result.exit_code == 0
 
         expected_output = (
-            '+-------------------------------------------------------------------------+\n'
-            '| ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
-            '+-------------------------------------------------------------------------+\n'
-            '| 1    192.168.1.0   24       False    4         None        owner=jathan |\n'
-            '|                                                            foo=bar      |\n'
-            '+-------------------------------------------------------------------------+\n'
+            '+----------------------------------------------------------------------+\n'
+            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
+            '+----------------------------------------------------------------------+\n'
+            '| 1    10.0.0.0   8        False    4         None        owner=jathan |\n'
+            '|                                                         foo=bar      |\n'
+            '+----------------------------------------------------------------------+\n'
         )
         assert result.output == expected_output
-
-
-##############
-# Attributes #
-##############
-def test_attributes_list(config):
-    """Test ``nsot attributes list -s 1``"""
-    headers = {'Content-Type': 'application/json'}
-    auth_url = config['url'] + '/authenticate/'
-    devices_url = config['url'] + '/sites/1/attributes/'
-
-    runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
-        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
-        mock.get(devices_url, json=ATTRIBUTES_RESPONSE, headers=headers)
-
-        result = runner.invoke(app, shlex.split('attributes list -s 1'))
-        assert result.exit_code == 0
