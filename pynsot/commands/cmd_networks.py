@@ -223,9 +223,9 @@ def list(ctx, attributes, cidr, delimited, id, include_ips, include_networks,
             results = ctx.obj.api.sites(site_id).networks.query.get(**data)
             objects = results['data']['networks']
             networks = sorted(
-                '%s/%s' % (d['network_address'], d['prefix_length'])
-                for d in objects
+                (d['network_address'], d['prefix_length']) for d in objects
             )
+            networks = ['%s/%s' % obj for obj in networks]
             joiner = ',' if delimited else '\n'
             click.echo(joiner.join(networks))
         else:

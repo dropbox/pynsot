@@ -16,6 +16,12 @@ log = logging.getLogger(__name__)
 # Objects that do not have attribtues
 NO_ATTRIBUTES = ('attributes',)
 
+# Objects that support lookup by natural key
+NATURAL_KEYS = {
+    'devices': 'hostname',
+    'networks': 'cidr'
+}
+
 
 def process_site_id(ctx, param, value):
     """
@@ -181,11 +187,6 @@ def list_endpoint(ctx, display_fields):
     data.update(ctx.params)
 
     parent_id = data.pop('id')
-    site_id = data.pop('site_id')
-
-    # Make sure that parent_id is provided.
-    if parent_id is None:
-        raise click.UsageError('Missing option "-i" / "--id".')
 
     # Use our name, parent's command name, and the API object to retrieve the
     # endpoint resource used to call this endpoint.
@@ -193,8 +194,29 @@ def list_endpoint(ctx, display_fields):
     parent_name = ctx.obj.parent_name  # e.g. 'networks'
     my_name = ctx.info_name  # e.g. 'supernets'
 
-    # e.g. /api/sites/1/networks/5/supernets
-    parent_resource = getattr(api.sites(site_id), parent_name)
+    # Make sure that parent_id is provided. This seems complicated because we
+    # want to maintain dynamism across resource types.
+    parent = None
+    if parent_id is None:
+        natural_key = NATURAL_KEYS.get(parent_name)
+
+        # Look up the object by natural key (e.g. cidr)
+        if natural_key is not None:
+            parent = ctx.obj.get_single_object(data, natural_key)
+
+        # If the object was found, get its id
+        if parent is not None:
+            parent_id = parent['id']
+
+        # If it's not found, error out.
+        if parent_id is None:
+            raise click.UsageError(
+                'No %s matching %s; try lookup using option "-i" / "--id".' %
+                (parent_name, data.get(natural_key))
+            )
+
+    # e.g. /api/sites/1/networks/5/supernets/
+    parent_resource = getattr(api, parent_name)
     my_resource = getattr(parent_resource(parent_id), my_name)
 
     ctx.obj.list(data, display_fields=display_fields, resource=my_resource)
