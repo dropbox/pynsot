@@ -5,7 +5,6 @@ Callbacks used in handling command plugins.
 import ast
 import csv
 from itertools import chain
-import json
 import logging
 
 from ..vendor import click
@@ -73,23 +72,24 @@ def transform_attributes(ctx, param, value):
     attrs = {}
     log.debug('TRANSFORM_ATTRIBUTES [IN]: %r' % (value,))
 
-    # If value is a string, we'll assume that it's comma-separated.
+    # If this is a simple string, make it a list.
     if isinstance(value, basestring):
-        value = value.split(',')
+        value = [value]
 
     # Flatten the attributes in case any of them are comma-separated.
     values = [v.split(',') for v in value]
     items = set(chain.from_iterable(values))
+
+    # Prepare the context object for storing attribute actions
+    parent = ctx.find_root()
+    if not hasattr(parent, '_attributes'):
+        parent._attributes = []
 
     for attr in items:
         key, _, val = attr.partition('=')
         if not key:
             msg = 'Invalid attribute: %s; format should be key=value' % (attr,)
             raise click.UsageError(msg)
-        try:
-            val = json.loads(val)
-        except ValueError:
-            pass
 
         # Cast integers to strings (fix #24)
         if isinstance(val, int):
@@ -97,8 +97,9 @@ def transform_attributes(ctx, param, value):
 
         log.debug(' name = %r', key)
         log.debug('value = %r', val)
-
+        parent._attributes.append((key, val))
         attrs[key] = val
+
     log.debug('TRANSFORM_ATTRIBUTES [OUT]: %r' % (attrs,))
     return attrs
 

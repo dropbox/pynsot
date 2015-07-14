@@ -323,8 +323,46 @@ def remove(ctx, id, site_id):
     help='Unique ID of the Site this Network is under.  [required]',
     callback=callbacks.process_site_id,
 )
+@click.option(
+    '-A',
+    '--add-attributes',
+    'attr_action',
+    flag_value='add',
+    default=True,
+    help=(
+        'Causes attributes to be added. This is the default and providing it '
+        'will have no effect.'
+    )
+)
+@click.option(
+    '-d',
+    '--delete-attributes',
+    'attr_action',
+    flag_value='delete',
+    help=(
+        'Causes attributes to be deleted instead of updated. If combined with'
+        'with --multi the attribute will be deleted if either no value is '
+        'provided, or if attribute no longer has an valid values.'
+    ),
+)
+@click.option(
+    '-r',
+    '--replace-attributes',
+    'attr_action',
+    flag_value='replace',
+    help=(
+        'Causes attributes to be replaced instead of updated. If combined with '
+        '--multi, the entire list will be replaced.'
+    ),
+)
+@click.option(
+    '-m',
+    '--multi',
+    is_flag=True,
+    help='Treat the specified attributes as a list type.',
+)
 @click.pass_context
-def update(ctx, attributes, id, site_id):
+def update(ctx, attributes, id, site_id, attr_action, multi):
     """
     Update a Network.
 
@@ -332,6 +370,23 @@ def update(ctx, attributes, id, site_id):
 
     When updating a Network you must provide the unique ID (-i/--id) and at
     least one of the optional arguments.
+
+    The -a/--attributes option may be provided multiple times, once for each
+    key-value pair. You may also specify the -a a single time and separate
+    key-value pairs by a single comma.
+
+    When modifying attributes you have three actions to choose from:
+
+    * Add (-A/--add-attributes). This is the default behavior that will add
+    attributes if they don't exist, or update them if they do.
+
+    * Delete (-d/--delete-attributes). This will cause attributes to be
+    deleted. If combined with --multi the attribute will be deleted if either
+    no value is provided, or if the attribute no longer contains a valid value.
+
+    * Replace (-r/--replace-attributes). This will cause attributes to
+    replaced. If combined with -m/--multi and multiple attributes of the same
+    name are provided, only the last value provided will be used.
     """
     if not any([attributes]):
         msg = 'You must supply at least one of the optional arguments.'

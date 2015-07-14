@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 """
 Base CLI commands for all objects. Model-specific objects and argument parsers
@@ -25,7 +26,6 @@ from .vendor import prettytable
 from .vendor.slumber.exceptions import (HttpClientError, HttpServerError)
 
 
-
 # Constants/Globals
 if os.getenv('DEBUG'):
     logging.basicConfig(level=logging.DEBUG)
@@ -40,8 +40,9 @@ CONTEXT_SETTINGS = {
 HTTP_ERRORS = (HttpClientError, HttpServerError)
 
 # Where to find the command plugins.
-CMD_FOLDER = os.path.abspath(os.path.join(
-                             os.path.dirname(__file__), 'commands'))
+CMD_FOLDER = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), 'commands')
+)
 
 
 __all__ = (
@@ -237,11 +238,11 @@ class App(object):
             return None
 
         pretty_dict = self.pretty_dict(data)
-        t_ = '%s %s with args: %s!'
+        t_ = '%s %s!'
         if action.endswith('e'):
             action = action[:-1]  # "remove" -> "remov"
         action = action.title() + 'ed'  # "remove" -> "removed"
-        msg = t_ % (action, self.singular,  pretty_dict)
+        msg = t_ % (action, self.singular)
 
         # Colorize the success text as green.
         click.echo(click.style('[SUCCESS] ', fg='green') + msg)
@@ -352,7 +353,7 @@ class App(object):
 
     def rebase(self, data):
         """
-        If this is not a site object, then rebase the API URL.
+        If this is not a Site object, then rebase the API URL.
 
         :param data:
             Dict of query arguments
@@ -463,10 +464,76 @@ class App(object):
         else:
             self.handle_response(action, data, result)
 
+    def process_attributes(self, attrs, action, multi=False):
+        """
+        Return a merged dict of CLI attribute actions w/ existing attributes.
+
+        Turn attribute/value pairs into actionable attributes that the API can
+        consume.
+
+        :param attrs:
+            Dictionary of outgoing attributes to merge with
+
+        :param action:
+            The action to perform against the outgoing attributes
+
+        :param multi:
+            Whether to treat the incoming attributes as list types
+        """
+        log.debug('PROCESS_ATTRIBUTES [IN]: %r', attrs)
+
+        log.debug('ATTRIBUTES = %r', self.ctx._attributes)
+        log.debug('ATTR_ACTION = %r', action)
+        log.debug('      MULTI = %r', multi)
+
+        multi_replaced = False
+        for key, val in self.ctx._attributes:
+            # List-type handler
+            if multi:
+                if action == 'add':
+                    log.debug('[multi] Adding %r to %r' % (val, key))
+                    if key not in attrs:
+                        attrs[key] = [val]
+                    elif val not in attrs[key]:
+                        attrs[key].append(val)
+                elif action == 'replace':
+                    log.debug('[multi] Replacing %r with [%r]' % (key, val))
+                    if key in attrs and not multi_replaced:
+                        attrs[key] = []
+                        multi_replaced = True
+
+                    if val not in attrs[key]:
+                        attrs[key].append(val)
+                elif action == 'delete':
+                    log.debug('[multi] Removing %r from %r' % (val, key))
+                    # Remove this item from the list
+                    if val in attrs[key]:
+                        attrs[key].remove(val)
+
+                    # If the value wasn't provided, or if the list is now empty,
+                    # remove it.
+                    if not val or not attrs[key]:
+                        attrs.pop(key)
+
+            # Default string-based handler
+            else:
+                if action in ('add', 'replace'):
+                    log.debug('[single] Adding/replacing %r to %r' % (val, key))
+                    attrs[key] = val
+                elif action == 'delete':
+                    log.debug('[single] Removing %r from %r' % (val, key))
+                    attrs.pop(key, None)
+
+        log.debug('PROCESS_ATTRIBUTES [OUT]: %r', attrs)
+        return attrs
+
     def update(self, data):
         """PUT"""
+
         action = 'update'
         obj_id = data.pop('id')
+        attr_action = data.pop('attr_action')
+        multi = data.pop('multi')
         log.debug('updating %s' % data)
         self.rebase(data)
 
@@ -481,19 +548,26 @@ class App(object):
             payload = dict(model)
             payload.pop('id')  # We don't want id when doing a PUT
 
+        log.debug('PAYLOAD [in]: %r', payload)
+
         # Update the payload from the CLI params if the value isn't null.
         for key, val in data.iteritems():
-            # If we're updating attributes, merge with existing attributes
+            # If we're updating attributes, reconcile with existing attributes
             if key == 'attributes':
-                payload[key].update(val)
+                attrs = payload['attributes']
+                payload['attributes'] = self.process_attributes(
+                        attrs, attr_action, multi=multi
+                )
 
             # Otherwise, if the value was provided, replace it outright
             elif val is not None:
                 payload[key] = val
 
+        log.debug('PAYLOAD [out]: %r', payload)
         # And now we call PUT
         try:
             result = self.resource(obj_id).put(payload)
+            log.debug('RESULT [out]: %r', result)
         except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
         else:

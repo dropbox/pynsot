@@ -5,74 +5,28 @@ from __future__ import unicode_literals
 Test the CLI app.
 """
 
-import contextlib
 import copy
 import logging
 import os
 import pytest
 import re
-import requests_mock
 import shlex
-import shutil
-import tempfile
 
 from pynsot import dotfile
 from pynsot.app import app
-from pynsot.vendor import click
-from pynsot.vendor.click.testing import CliRunner as BaseCliRunner
 
 from .fixtures import (
     config, AUTH_RESPONSE, API_URL, DEVICES_RESPONSE, ATTRIBUTES_RESPONSE,
     DEVICE_RETRIEVE, DEVICE_UPDATE, NETWORK_CREATE, NETWORK_RETRIEVE,
-    NETWORK_UPDATE, NETWORKS_RESPONSE
+    NETWORK_UPDATE, NETWORKS_RESPONSE, ATTRIBUTE_CREATE
 )
+from .util import CliRunner
 
 
 log = logging.getLogger(__name__)
 
 # Hard-code the app name as 'nsot' to match the CLI util.
 app.name = 'nsot'
-
-
-class CliRunner(BaseCliRunner):
-    """
-    Subclass of CliRunner that also creates a .pynsotrc in the isolated
-    filesystem.
-    """
-    def __init__(self, client_config, *args, **kwargs):
-        self.client_config = client_config
-        super(CliRunner, self).__init__(*args, **kwargs)
-
-    @contextlib.contextmanager
-    def isolated_filesystem(self):
-        """A context manager that creates a temporary folder and changes
-        the current working directory to it for isolated filesystem tests.
-        """
-        # If user config is found, back it up for duration of each test.
-        config_path = os.path.expanduser('~/.pynsotrc')
-        backup_path = config_path + '.orig'
-        backed_up = False
-        if os.path.exists(config_path):
-            log.debug('Config found, backing up...')
-            os.rename(config_path, backup_path)
-            backed_up = True
-
-        cwd = os.getcwd()
-        t = tempfile.mkdtemp()
-        os.chdir(t)
-        rcfile = dotfile.Dotfile('.pynsotrc')
-        rcfile.write(self.client_config)
-        try:
-            yield t
-        finally:
-            os.chdir(cwd)
-            if backed_up:
-                log.debug('Restoring original config.')
-                os.rename(backup_path, config_path)  # Restore original
-            try:
-                shutil.rmtree(t)
-            except (OSError, IOError):
-                pass
 
 
 #########
@@ -85,7 +39,7 @@ def test_site_id(config):
     devices_url = config['url'] + '/sites/1/devices/'
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.get(devices_url, json=DEVICES_RESPONSE, headers=headers)
 
@@ -123,7 +77,7 @@ def test_site_add(config):
     }
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         # Create the site
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.post(sites_url, json=SITE_RESPONSE, headers=headers)
@@ -134,7 +88,7 @@ def test_site_add(config):
         assert result.exit_code == 0
 
         expected_output = (
-            "[SUCCESS] Added site with args: name=Foo, description=Foo site.!\n"
+            "[SUCCESS] Added site!\n"
         )
         assert result.output == expected_output
 
@@ -161,7 +115,7 @@ def test_device_add(config):
     devices_url = config['url'] + '/sites/1/devices/'
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.post(devices_url, json=DEVICE_RETRIEVE, headers=headers)
 
@@ -169,8 +123,7 @@ def test_device_add(config):
         assert result.exit_code == 0
 
         expected_output = (
-            '[SUCCESS] Added device with args: bulk_add=None, attributes={}, '
-            'hostname=foo-bar1!\n'
+            '[SUCCESS] Added device!\n'
         )
         assert result.output == expected_output
 
@@ -200,7 +153,7 @@ def test_devices_bulk_add(config):
     }
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.post(devices_url, json=DEVICES_RESPONSE, headers=headers)
 
@@ -215,10 +168,8 @@ def test_devices_bulk_add(config):
         assert result.exit_code == 0
 
         expected_output = (
-            "[SUCCESS] Added device with args: attributes={'owner': 'jathan'}, "
-            "hostname=foo-bar1!\n"
-            "[SUCCESS] Added device with args: attributes={'owner': 'jathan'}, "
-            "hostname=foo-bar2!\n"
+            "[SUCCESS] Added device!\n"
+            "[SUCCESS] Added device!\n"
         )
         assert result.output == expected_output
 
@@ -253,7 +204,7 @@ def test_devices_list(config):
     devices_url = config['url'] + '/sites/1/devices/'
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.get(devices_url, json=DEVICES_RESPONSE, headers=headers)
 
@@ -299,16 +250,16 @@ def test_device_update(config):
     """Test ``nsot devices update -s 1 -i 1 -a monitored``"""
     headers = {'Content-Type': 'application/json'}
     auth_url = config['url'] + '/authenticate/'
-    devices_url = config['url'] + '/sites/1/devices/'
     device_uri = config['url'] + '/sites/1/devices/1/'
+    devices_url = config['url'] + '/sites/1/devices/'
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
+        # Run the update to add the new attribute
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.get(device_uri, json=DEVICE_RETRIEVE, headers=headers)
         mock.put(device_uri, json=DEVICE_UPDATE, headers=headers)
 
-        # Run the update to add the new attribute
         result = runner.invoke(
             app,
             shlex.split('devices update -s 1 -i 1 -a monitored')
@@ -316,8 +267,7 @@ def test_device_update(config):
         assert result.exit_code == 0
 
         expected_output = (
-            "[SUCCESS] Updated device with args: attributes={'monitored':"
-            " ''}, hostname=None!\n"
+            "[SUCCESS] Updated device!\n"
         )
         assert result.output == expected_output
 
@@ -341,6 +291,287 @@ def test_device_update(config):
         assert result.output == expected_output
 
 
+def test_attribute_modify(config):
+    headers = {'Content-Type': 'application/json'}
+    auth_url = config['url'] + '/authenticate/'
+    device_uri = config['url'] + '/sites/1/devices/1/'
+    devices_url = config['url'] + '/sites/1/devices/'
+
+    runner = CliRunner(config)
+    with runner.isolated_requests() as mock:
+        # Run the update to ADD the new attribute
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=DEVICE_RETRIEVE, headers=headers)
+        mock.put(device_uri, json=DEVICE_UPDATE, headers=headers)
+
+        result = runner.invoke(
+            app,
+            shlex.split('devices update -s 1 -i 1 -a monitored')
+        )
+        assert result.exit_code == 0
+
+        # Now REMOVE the attribute
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=DEVICE_RETRIEVE, headers=headers)
+        mock.put(device_uri, json=DEVICE_RETRIEVE, headers=headers)
+        result = runner.invoke(
+            app, shlex.split('devices update -s 1 -i 1 -a monitored -d')
+        )
+        assert result.exit_code == 0
+
+        # Run a list to see the object w/ the updated result
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=DEVICE_RETRIEVE, headers=headers)
+
+        result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
+        assert result.exit_code == 0
+
+        expected_output = (
+            "+------------------------------+\n"
+            "| ID   Hostname   Attributes   |\n"
+            "+------------------------------+\n"
+            "| 1    foo-bar1   owner=jathan |\n"
+            "+------------------------------+\n"
+        )
+        assert result.output == expected_output
+
+        # Test attribute REPLACE
+
+
+def test_attribute_modify_multi(config):
+    """Test modification of list-type attributes (multi=True)."""
+    headers = {'Content-Type': 'application/json'}
+    auth_url = config['url'] + '/authenticate/'
+    device_uri = config['url'] + '/sites/1/devices/1/'
+    devices_url = config['url'] + '/sites/1/devices/'
+
+    runner = CliRunner(config)
+    with runner.isolated_requests() as mock:
+        #
+        # ADD a multi attribute with 2 items
+        #
+        INITIAL_DEVICE = {
+            'status': 'ok',
+            'data': {
+                'device': {
+                    'attributes': {},
+                    'hostname': 'foo-bar1', 'site_id': 1, 'id': 1
+                }
+            }
+        }
+        # Add multi=[jathy, jilli]
+        MULTI_UPDATE = {
+            'status': 'ok',
+            'data': {
+                'device': {
+                    'attributes': {'multi': ['jathy', 'jilli']},
+                    'hostname': 'foo-bar1', 'site_id': 1, 'id': 1
+                }
+            }
+        }
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=INITIAL_DEVICE, headers=headers)
+        mock.put(device_uri, json=MULTI_UPDATE, headers=headers)
+
+        result = runner.invoke(
+            app,
+            shlex.split('devices update -s 1 -i 1 -a multi=jathy -a multi=jilli -m')
+        )
+        assert result.exit_code == 0
+
+        # List to see attributes.
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=MULTI_UPDATE, headers=headers)
+
+        result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
+        assert result.exit_code == 0
+
+        expected_output = (
+            '+----------------------------+\n'
+            '| ID   Hostname   Attributes |\n'
+            '+----------------------------+\n'
+            '| 1    foo-bar1   multi=     |\n'
+            '|                  jathy     |\n'
+            '|                  jilli     |\n'
+            '+----------------------------+\n'
+        )
+        assert result.output == expected_output
+
+        #
+        # REPLACE it with two different items
+        #
+        # Replace with multi=[bob, alice]
+        MULTI_REPLACE = {
+            'status': 'ok',
+            'data': {
+                'device': {
+                    'attributes': {'multi': ['bob', 'alice']},
+                    'hostname': 'foo-bar1', 'site_id': 1, 'id': 1
+                }
+            }
+        }
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=MULTI_UPDATE, headers=headers)
+        mock.put(device_uri, json=MULTI_REPLACE, headers=headers)
+
+        result = runner.invoke(
+            app,
+            shlex.split(
+                'devices update -s 1 -i 1 -a multi=bob -a multi=alice -m -r'
+            )
+        )
+        assert result.exit_code == 0
+
+        # List to show updated items.
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=MULTI_REPLACE, headers=headers)
+
+        result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
+        assert result.exit_code == 0
+
+        expected_output = (
+            '+----------------------------+\n'
+            '| ID   Hostname   Attributes |\n'
+            '+----------------------------+\n'
+            '| 1    foo-bar1   multi=     |\n'
+            '|                  alice     |\n'
+            '|                  bob       |\n'
+            '+----------------------------+\n'
+        )
+        assert result.output == expected_output
+
+        #
+        # DELETE one, leaving one
+        #
+        # Pop alice
+        MULTI_DELETE1 = {
+            'status': 'ok',
+            'data': {
+                'device': {
+                    'attributes': {'multi': ['alice']},
+                    'hostname': 'foo-bar1', 'site_id': 1, 'id': 1
+                }
+            }
+        }
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=MULTI_REPLACE, headers=headers)
+        mock.put(device_uri, json=MULTI_DELETE1, headers=headers)
+
+        result = runner.invoke(
+            app, shlex.split('devices update -s 1 -i 1 -a multi=bob -m -d')
+        )
+        assert result.exit_code == 0
+
+        # List to show the proof!
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=MULTI_DELETE1, headers=headers)
+
+        result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
+        assert result.exit_code == 0
+
+        expected_output = (
+            '+----------------------------+\n'
+            '| ID   Hostname   Attributes |\n'
+            '+----------------------------+\n'
+            '| 1    foo-bar1   multi=     |\n'
+            '|                  alice     |\n'
+            '+----------------------------+\n'
+        )
+        assert result.output == expected_output
+
+        #
+        # DELETE the other; attr goes away, object returned to initial state
+        #
+        # Pop bob; attribute is removed
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=MULTI_DELETE1, headers=headers)
+        mock.put(device_uri, json=INITIAL_DEVICE, headers=headers)
+
+        result = runner.invoke(
+            app, shlex.split('devices update -s 1 -i 1 -a multi=alice -m -d')
+        )
+        assert result.exit_code == 0
+
+        # List to show the proof!
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=INITIAL_DEVICE, headers=headers)
+
+        result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
+        assert result.exit_code == 0
+
+        initial_output = (
+            '+----------------------------+\n'
+            '| ID   Hostname   Attributes |\n'
+            '+----------------------------+\n'
+            '| 1    foo-bar1              |\n'
+            '+----------------------------+\n'
+        )
+        assert result.output == initial_output
+
+        #
+        # ADD new list w/ 2 items
+        #
+        # Add multi=[spam, eggs]
+        MULTI_ADD2 = {
+            'status': 'ok',
+            'data': {
+                'device': {
+                    'attributes': {'multi': ['spam', 'eggs']},
+                    'hostname': 'foo-bar1', 'site_id': 1, 'id': 1
+                }
+            }
+        }
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=INITIAL_DEVICE, headers=headers)
+        mock.put(device_uri, json=MULTI_ADD2, headers=headers)
+
+        result = runner.invoke(
+            app,
+            shlex.split(
+                'devices update -s 1 -i 1 -a multi=spam -a multi=eggs -m'
+            )
+        )
+        assert result.exit_code == 0
+
+        # List to show updated items.
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=MULTI_ADD2, headers=headers)
+
+        result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
+        assert result.exit_code == 0
+
+        expected_output = (
+            '+----------------------------+\n'
+            '| ID   Hostname   Attributes |\n'
+            '+----------------------------+\n'
+            '| 1    foo-bar1   multi=     |\n'
+            '|                  eggs      |\n'
+            '|                  spam      |\n'
+            '+----------------------------+\n'
+        )
+        assert result.output == expected_output
+
+        #
+        # DELETE with no value; attribute goes away; object initialized
+        #
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=MULTI_ADD2, headers=headers)
+        mock.put(device_uri, json=INITIAL_DEVICE, headers=headers)
+
+        result = runner.invoke(
+            app, shlex.split('devices update -s 1 -i 1 -a multi -d')
+        )
+        assert result.exit_code == 0
+
+        # List to show the proof!
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(device_uri, json=INITIAL_DEVICE, headers=headers)
+
+        result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
+        assert result.exit_code == 0
+        assert result.output == initial_output
+
+
 ##############
 # Attributes #
 ##############
@@ -348,14 +579,30 @@ def test_attributes_list(config):
     """Test ``nsot attributes list -s 1``"""
     headers = {'Content-Type': 'application/json'}
     auth_url = config['url'] + '/authenticate/'
-    devices_url = config['url'] + '/sites/1/attributes/'
+    attrs_url = config['url'] + '/sites/1/attributes/'
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
-        mock.get(devices_url, json=ATTRIBUTES_RESPONSE, headers=headers)
+        mock.get(attrs_url, json=ATTRIBUTES_RESPONSE, headers=headers)
 
         result = runner.invoke(app, shlex.split('attributes list -s 1'))
+        assert result.exit_code == 0
+
+
+def test_attributes_add(config):
+    headers = {'Content-Type': 'application/json'}
+    auth_url = config['url'] + '/authenticate/'
+    attrs_url = config['url'] + '/sites/1/attributes/'
+
+    runner = CliRunner(config)
+    with runner.isolated_requests() as mock:
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.post(attrs_url, json=ATTRIBUTE_CREATE, headers=headers)
+
+        result = runner.invoke(
+            app, shlex.split('attributes add -s 1 -n multi -r device --multi')
+        )
         assert result.exit_code == 0
 
 
@@ -369,7 +616,7 @@ def test_network_add(config):
     networks_url = config['url'] + '/sites/1/networks/'
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.post(networks_url, json=NETWORK_CREATE, headers=headers)
 
@@ -377,8 +624,7 @@ def test_network_add(config):
         assert result.exit_code == 0
 
         expected_output = (
-            '[SUCCESS] Added network with args: bulk_add=None, attributes={}, '
-            'cidr=10.0.0.0/8!\n'
+            '[SUCCESS] Added network!\n'
         )
         assert result.output == expected_output
 
@@ -408,7 +654,7 @@ def test_networks_bulk_add(config):
     }
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.post(networks_url, json=NETWORKS_RESPONSE, headers=headers)
 
@@ -423,10 +669,8 @@ def test_networks_bulk_add(config):
         assert result.exit_code == 0
 
         expected_output = (
-            "[SUCCESS] Added network with args: attributes={'owner': 'jathan'}, "
-            "cidr=10.0.0.0/8!\n"
-            "[SUCCESS] Added network with args: attributes={'owner': 'jathan'}, "
-            "cidr=10.0.0.0/24!\n"
+            "[SUCCESS] Added network!\n"
+            "[SUCCESS] Added network!\n"
         )
         assert result.output == expected_output
 
@@ -461,7 +705,7 @@ def test_networks_list(config):
     networks_url = config['url'] + '/sites/1/networks/'
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.get(networks_url, json=NETWORKS_RESPONSE, headers=headers)
 
@@ -544,7 +788,7 @@ def test_network_subcommands(config):
     }
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         # Test subnets
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.get(network_match, json=SUBNETS, headers=headers)
@@ -590,7 +834,7 @@ def test_network_update(config):
     network_uri = config['url'] + '/sites/1/networks/1/'
 
     runner = CliRunner(config)
-    with requests_mock.Mocker() as mock, runner.isolated_filesystem():
+    with runner.isolated_requests() as mock:
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.get(network_uri, json=NETWORK_RETRIEVE, headers=headers)
         mock.put(network_uri, json=NETWORK_UPDATE, headers=headers)
@@ -603,7 +847,7 @@ def test_network_update(config):
         assert result.exit_code == 0
 
         expected_output = (
-            "[SUCCESS] Updated network with args: attributes={'foo': 'bar'}!\n"
+            "[SUCCESS] Updated network!\n"
         )
         assert result.output == expected_output
 
