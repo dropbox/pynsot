@@ -126,6 +126,19 @@ NETWORKS_RESPONSE = {u'data': {u'limit': None,
  u'status': u'ok'}
 
 # When retrieving Attributes.
+ATTRIBUTE_CREATE = {u'data': {u'attribute': {u'constraints': {u'allow_empty': False,
+    u'pattern': u'',
+    u'valid_values': []},
+   u'description': u'',
+   u'display': False,
+   u'id': 3,
+   u'multi': True,
+   u'name': u'multi',
+   u'required': False,
+   u'resource_name': u'Device',
+   u'site_id': 1}},
+ u'status': u'ok'}
+
 ATTRIBUTES_RESPONSE = {u'data': {u'attributes': [{u'constraints': {u'allow_empty': True,
      u'pattern': u'',
      u'valid_values': []},
@@ -147,10 +160,21 @@ ATTRIBUTES_RESPONSE = {u'data': {u'attributes': [{u'constraints': {u'allow_empty
     u'name': u'owner',
     u'required': False,
     u'resource_name': u'Device',
-    u'site_id': 1}],
+    u'site_id': 1},
+   {u'constraints': {u'allow_empty': False,
+    u'pattern': u'',
+    u'valid_values': []},
+   u'description': u'',
+   u'display': False,
+   u'id': 3,
+   u'multi': True,
+   u'name': u'multi',
+   u'required': False,
+   u'resource_name': u'Device',
+   u'site_id': 1}],
   u'limit': None,
   u'offset': 0,
-  u'total': 2},
+  u'total': 3},
  u'status': u'ok'}
 
 # Dummy config data used for testing dotfile and client
