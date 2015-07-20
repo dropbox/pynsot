@@ -532,8 +532,8 @@ class App(object):
 
         action = 'update'
         obj_id = data.pop('id')
-        attr_action = data.pop('attr_action')
-        multi = data.pop('multi')
+        attr_action = data.pop('attr_action', None)
+        multi = data.get('multi', False)
         log.debug('updating %s' % data)
         self.rebase(data)
 
