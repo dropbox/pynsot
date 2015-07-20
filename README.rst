@@ -170,6 +170,27 @@ When updating or removing objects, you must provide their unique ID using the
 ``-i/--id`` option. The object's ID can be obtained by using the ``list``
 action.
 
+Updating Attributes
+~~~~~~~~~~~~~~~~~~~
+
+When modifying attributes on Device and Network resources, you have three
+actions to choose from:
+
++ Add (``-A/--add-attributes``). This is the default behavior that will add
+attributes if they don't exist, or update them if they do.
+
++ Delete (``-d/--delete-attributes``). This will cause attributes to be
+deleted. If combined with ``--multi`` the attribute will be deleted if either
+no value is provided, or if the attribute no longer contains a valid value.
+
++ Replace (``-r/--replace-attributes``). This will cause attributes to
+replaced. If combined with ``-m/--multi`` and multiple attributes of the same
+name are provided, only the last value provided will be used.
+
+Please note that this does not apply when updating Attribute resources
+themselves. Attribute values attached to Devices and Networks are considered to
+be "instances" of Attributes.
+
 Viewing Objects
 ---------------
 
@@ -448,12 +469,24 @@ Updating a Network (``-a/--attributes`` can be provide once for each Attribute):
     $ nsot networks update --site-id 1 --id 1 -a owner=jathan -a foo=bar
     [SUCCESS] Updated network with args: attributes={u'owner': u'nobody', u'foo': u'bar'}!
 
-    $ nsot networks list --site-id 1 --id 6
+    $ nsot networks list --site-id 1 --id 1
     +-------------------------------------------------------------------------+
     | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
     +-------------------------------------------------------------------------+
     | 1    192.168.0.0   16       False    4         None        owner=nobody |
     |                                                            foo=bar      |
+    +-------------------------------------------------------------------------+
+
+To delete attributes, reference each attribute by name and include the
+``-d/--delete-attributes`` flag::
+
+    $ nsot networks update --site-id 1 --id 1 -a owner --delete-attributes
+
+    $ nsot networks list --site-id 1 --id 1
+    +-------------------------------------------------------------------------+
+    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
+    +-------------------------------------------------------------------------+
+    | 1    192.168.0.0   16       False    4         None        owner=nobody |
     +-------------------------------------------------------------------------+
 
 Removing a Network::
@@ -545,6 +578,18 @@ Updating a Device::
     +----------------------------+
     | 1    potato                |
     +----------------------------+
+
+To delete attributes, reference each attribute by name and include the
+``-d/--delete-attributes`` flag::
+
+    $ nsot devices update --site-id 1 --id 2 -a owner --delete-attributes
+
+    $ nsot devices list --site-id 1 --id 2
+    +------------------------------+
+    | ID   Hostname   Attributes   |
+    +------------------------------+
+    | 2    foo-bar2                |
+    +------------------------------+
 
 Removing a Device::
 

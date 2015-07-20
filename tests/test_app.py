@@ -606,6 +606,47 @@ def test_attributes_add(config):
         assert result.exit_code == 0
 
 
+def test_attributes_update(config):
+    headers = {'Content-Type': 'application/json'}
+    auth_url = config['url'] + '/authenticate/'
+    attrs_url = config['url'] + '/sites/1/attributes/'
+    attr_uri = config['url'] + '/sites/1/attributes/3/'
+
+    runner = CliRunner(config)
+
+    ATTRIBUTE_UPDATE = ATTRIBUTE_CREATE.copy()['data']['attribute']
+    ATTRIBUTE_UPDATE['multi'] = False
+
+    with runner.isolated_requests() as mock:
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(attr_uri, json=ATTRIBUTE_CREATE, headers=headers)
+        mock.put(attr_uri, json=ATTRIBUTE_UPDATE, headers=headers)
+
+        # Update the attribute to disable multi
+        result = runner.invoke(
+            app, shlex.split('attributes update -s 1 -i 3 --no-multi')
+        )
+        assert result.exit_code == 0
+
+        # List it to show the proof!
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(attr_uri, json=ATTRIBUTE_CREATE, headers=headers)
+        result = runner.invoke(
+            app, shlex.split('attributes list -s 1 -i 3')
+        )
+        assert result.exit_code == 0
+
+        expected_output = (
+            '+------------------------------------------------------------------------------------+\n'
+            '| Name    Resource   Required?   Display?   Multi?   Constraints         Description |\n'
+            '+------------------------------------------------------------------------------------+\n'
+            '| multi   Device     False       False      False    pattern=                        |\n'
+            '|                                                    valid_values=                   |\n'
+            '|                                                    allow_empty=False               |\n'
+            '+------------------------------------------------------------------------------------+\n'
+        )
+        assert result.output == expected_output
+
 ############
 # Networks #
 ############
