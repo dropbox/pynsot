@@ -6,20 +6,38 @@ Utilities for testing.
 """
 
 
+import collections
 import contextlib
+from itertools import islice
+import json
 import logging
 import os
+import random
 import requests_mock
 import shutil
+import socket
+import struct
 import sys
 import tempfile
 
+from pynsot import client
 from pynsot import dotfile
 from pynsot.vendor import click
 from pynsot.vendor.click.testing import CliRunner as BaseCliRunner
 
 
 log = logging.getLogger(__name__)
+
+# Phony attributes to randomly generate for testing.
+ATTRIBUTE_DATA = {
+    'lifecycle': ['monitored', 'ignored'],
+    'owner': ['jathan', 'gary', 'lisa', 'jimmy', 'bart', 'bob', 'alice'],
+    'metro': ['lax', 'iad', 'sjc', 'tyo'],
+    'foo': ['bar', 'baz', 'spam'],
+}
+
+# Used to store Attribute/value pairs
+Attribute = collections.namedtuple('Attribute', 'name value')
 
 
 class CliRunner(BaseCliRunner):
@@ -70,3 +88,252 @@ class CliRunner(BaseCliRunner):
         """
         with requests_mock.Mocker() as mock, self.isolated_filesystem():
             yield mock
+
+
+def rando():
+    """Flip a coin."""
+    return random.choice((True, False))
+
+
+def take_n(n, iterable):
+    "Return first n items of the iterable as a list"
+    return list(islice(iterable, n))
+
+
+def generate_hostnames(num_items=100):
+    """
+    Generate a random list of hostnames.
+
+    :param num_items:
+        Number of items to generate
+    """
+
+    for i in range(1, num_items + 1):
+        yield 'host%s' % i
+
+
+def generate_ipv4():
+    """Generate a random IPv4 address."""
+    return socket.inet_ntoa(struct.pack('>I', random.randint(1, 0xffffffff)))
+
+
+def generate_ipv4list(num_items=100, include_hosts=False):
+    """
+    Generate a list of unique IPv4 addresses. This is a total hack.
+
+    :param num_items:
+        Number of items to generate
+
+    :param include_hosts:
+        Whether to include /32 addresses
+    """
+    ipset = set()
+    # Keep iterating and hack together cidr prefixes if we detect empty
+    # trailing octects. This is so lame that we'll mostly just end up with a
+    # bunch of /24 networks.
+    while len(ipset) < num_items:
+        ip = generate_ipv4()
+        if ip.startswith('0'):
+            continue
+
+        if ip.endswith('.0.0.0'):
+            prefix = '/8'
+        elif ip.endswith('.0.0'):
+            prefix = '/16'
+        elif ip.endswith('.0'):
+            prefix = '/24'
+        elif include_hosts:
+            prefix = '/32'
+        else:
+            continue
+
+        ip += prefix
+        ipset.add(ip)
+
+    return sorted(ipset)
+
+
+def enumerate_attributes(resource_name, attributes=None):
+    if attributes is None:
+        attributes = ATTRIBUTE_DATA
+
+    for name in attributes:
+        yield {'name': name, 'resource_name': resource_name}
+
+
+def generate_attributes(attributes=None, as_dict=True):
+    """
+    Randomly choose attributes and values for testing.
+
+    :param attributes:
+        Dictionary of attribute names and values
+
+    :param as_dict:
+        If set return a dict vs. list of Attribute objects
+    """
+    if attributes is None:
+        attributes = ATTRIBUTE_DATA
+
+    attrs = []
+    for attr_name, attr_values in attributes.iteritems():
+        if random.choice((True, False)):
+            attr_value = random.choice(attr_values)
+            attrs.append(Attribute(attr_name, attr_value))
+
+    if as_dict:
+        attrs = dict(attrs)
+
+    return attrs
+
+
+def generate_devices(num_items=100, with_attributes=True):
+    """
+    Return a list of dicts for Device creation.
+
+    :param num_items:
+        Number of items to generate
+
+    :param with_attributes:
+        Whether to include Attributes
+    """
+    hostnames = generate_hostnames(num_items)
+
+    devices = []
+    for hostname in hostnames:
+        item = {'hostname': hostname}
+        if with_attributes:
+            item['attributes'] = generate_attributes()
+
+        devices.append(item)
+
+    return devices
+
+
+def generate_interface(name, device_id=None, with_attributes=True,
+                       addresses=None):
+    """
+    Return a list of dicts for Interface creation.
+
+    :param device_id:
+        The device_id for the Interface
+
+    :param with_attributes:
+        Whether to include Attributes
+
+    :param addresses:
+        List of addresses to assign to the Interface
+    """
+    speeds = (100, 1000, 10000, 40000)
+    types = (6, 135, 136, 161)
+    if addresses is None:
+        addresses = []
+
+    item = {
+        'name': name,
+        # 'device_id': device_id,
+        'device': device_id,
+        'speed': random.choice(speeds),
+        'type': random.choice(types),
+    }
+
+    if with_attributes:
+        item['attributes'] = generate_attributes()
+    if addresses:
+        item['addresses'] = addresses
+
+    return item
+
+
+def generate_interfaces(device_id=None, with_attributes=True,
+                        address_pool=None):
+    """
+    Return a list of dicts for Interface creation.
+
+    Will generate as many Interfaces as there are in the address_pool.
+
+    :param device_id:
+        The device_id for the Interface
+
+    :param num_items:
+        Number of items to generate
+
+    :param with_attributes:
+        Whether to include Attributes
+
+    :param address_pool:
+        Pool of addresses to assign
+    """
+    prefix = 'eth'
+
+    if address_pool is None:
+        address_pool = []
+
+    interfaces = []
+    for num, address in enumerate(address_pool):
+        name = prefix + str(num)
+
+        # Currently hard-coded to 1 address per interface.
+        addresses = [address]
+
+        item = generate_interface(
+            name, device_id, with_attributes=with_attributes,
+            addresses=addresses
+        )
+        interfaces.append(item)
+
+    return interfaces
+
+
+def generate_networks(num_items=100, with_attributes=True,
+        include_hosts=False, ipv4list=None):
+    """
+    Return a list of dicts for Network creation.
+
+    :param num_items:
+        Number of items to generate
+
+    :param with_attributes:
+        Whether to include Attributes
+    """
+    if ipv4list is None:
+        ipv4list = generate_ipv4list(num_items, include_hosts=include_hosts)
+
+    networks = []
+    for cidr in ipv4list:
+        attributes = generate_attributes()
+        item = {'cidr': str(cidr)}
+        if with_attributes:
+            item['attributes'] = generate_attributes()
+
+        networks.append(item)
+
+    return networks
+
+
+def populate_sites(site_data):
+    """Populate sites from fixture data."""
+    api = client.Client('http://localhost:8990/api', email='jathan@localhost')
+
+    results = []
+    for d in site_data:
+        try:
+            result = api.sites.post(d)
+        except Exception as err:
+            print err, d['name']
+        else:
+            results.append(result)
+
+    print 'Created', len(results), 'sites.'
+
+
+def rando_set_action():
+    """Return a random set theory query action."""
+    return random.choice(['+', '-', ''])
+
+
+def rando_set_query():
+    """Return a random set theory query string."""
+    action = rando_set_action()
+    return ' '.join(
+        action + '%s=%s' % (k, v) for k,v in generate_attributes().iteritems()
+    )
