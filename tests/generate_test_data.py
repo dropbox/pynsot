@@ -7,12 +7,14 @@ Generate fixtures for NSoT dev/testing.
 
 import netaddr
 
-from . import util as fx
+# from . import util as fx
+import util as fx
 from pynsot import client
 
 
 # API_URL = 'http://localhost:8990/api'
 API_URL = 'http://localhost:8000/api'
+# API_URL = 'http://localhost:80/api'
 EMAIL = 'admin@localhost'
 
 api = client.EmailHeaderClient(API_URL, email=EMAIL)

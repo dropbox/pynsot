@@ -754,12 +754,12 @@ def test_networks_list(config):
         assert result.exit_code == 0
 
         expected_output = (
-            '+----------------------------------------------------------------------+\n'
-            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
-            '+----------------------------------------------------------------------+\n'
-            '| 1    10.0.0.0   8        False    4         None        owner=jathan |\n'
-            '| 2    10.0.0.0   24       False    4         1           owner=jathan |\n'
-            '+----------------------------------------------------------------------+\n'
+            '+----------------------------------------------------------------------------------+\n'
+            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes   |\n'
+            '+----------------------------------------------------------------------------------+\n'
+            '| 1    10.0.0.0   8        False    4         None        allocated   owner=jathan |\n'
+            '| 2    10.0.0.0   24       False    4         1           allocated   owner=jathan |\n'
+            '+----------------------------------------------------------------------------------+\n'
         )
         assert result.output == expected_output
 
@@ -805,6 +805,7 @@ def test_network_subcommands(config):
             'network_address': '10.0.0.0',
             'parent_id': 1,
             'prefix_length': 24,
+            'state': 'allocated',
             'site_id': 1}],
             'offset': 0,
             'total': 1},
@@ -821,6 +822,7 @@ def test_network_subcommands(config):
                 'network_address': '10.0.0.0',
                 'parent_id': None,
                 'prefix_length': 8,
+                'state': 'allocated',
                 'site_id': 1}
             ],
             'offset': 0,
@@ -840,11 +842,11 @@ def test_network_subcommands(config):
         assert result.exit_code == 0
 
         expected_output = (
-            '+----------------------------------------------------------------------+\n'
-            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
-            '+----------------------------------------------------------------------+\n'
-            '| 2    10.0.0.0   24       False    4         1           owner=jathan |\n'
-            '+----------------------------------------------------------------------+\n'
+            '+----------------------------------------------------------------------------------+\n'
+            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes   |\n'
+            '+----------------------------------------------------------------------------------+\n'
+            '| 2    10.0.0.0   24       False    4         1           allocated   owner=jathan |\n'
+            '+----------------------------------------------------------------------------------+\n'
         )
         assert result.output == expected_output
 
@@ -858,11 +860,11 @@ def test_network_subcommands(config):
         assert result.exit_code == 0
 
         expected_output = (
-            '+----------------------------------------------------------------------+\n'
-            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
-            '+----------------------------------------------------------------------+\n'
-            '| 1    10.0.0.0   8        False    4         None        owner=jathan |\n'
-            '+----------------------------------------------------------------------+\n'
+            '+----------------------------------------------------------------------------------+\n'
+            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes   |\n'
+            '+----------------------------------------------------------------------------------+\n'
+            '| 1    10.0.0.0   8        False    4         None        allocated   owner=jathan |\n'
+            '+----------------------------------------------------------------------------------+\n'
         )
         assert result.output == expected_output
 
@@ -902,11 +904,11 @@ def test_network_update(config):
         assert result.exit_code == 0
 
         expected_output = (
-            '+----------------------------------------------------------------------+\n'
-            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |\n'
-            '+----------------------------------------------------------------------+\n'
-            '| 1    10.0.0.0   8        False    4         None        owner=jathan |\n'
-            '|                                                         foo=bar      |\n'
-            '+----------------------------------------------------------------------+\n'
+            '+----------------------------------------------------------------------------------+\n'
+            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes   |\n'
+            '+----------------------------------------------------------------------------------+\n'
+            '| 1    10.0.0.0   8        False    4         None        allocated   owner=jathan |\n'
+            '|                                                                     foo=bar      |\n'
+            '+----------------------------------------------------------------------------------+\n'
         )
         assert result.output == expected_output
