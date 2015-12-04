@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Sub-command for Networks.
+Sub-command for Interfaces.
 
 In all cases ``data = ctx.params`` when calling the appropriate action method
 on ``ctx.obj``. (e.g. ``ctx.obj.add(ctx.params)``)
@@ -22,19 +22,29 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 from ..vendor import click
 
 from . import callbacks
+from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
-    ('network_address', 'Network'),
-    ('prefix_length', 'Prefix'),
-    # ('site_id': 'Site ID'),
-    ('is_ip', 'Is IP?'),
-    ('ip_version', 'IP Ver.'),
+    ('device', 'Device'),
+    ('name', 'Name'),
+    ('mac_address', 'MAC'),
+    ('addresses', 'Addresses'),
+    ('attributes', 'Attributes'),
+)
+
+# Fields to display when viewing a single record.
+VERBOSE_FIELDS = (
+    ('device', 'Device'),
+    ('name', 'Name'),
+    ('mac_address', 'MAC'),
+    ('addresses', 'Addresses'),
+    ('speed', 'Speed'),
+    ('type', 'Type'),
     ('parent_id', 'Parent ID'),
-    ('state', 'State'),
     ('attributes', 'Attributes'),
 )
 
@@ -44,12 +54,13 @@ DISPLAY_FIELDS = (
 @click.pass_context
 def cli(ctx):
     """
-    Network objects.
+    Interface objects.
 
-    A Network resource can represent an IP Network and an IP Address. Working
-    with networks is usually done with CIDR notation.
+    An Interface resource can represent a network interface attached to a
+    Device. Working with interfaces is usually the device and an interface
+    name.
 
-    Networks can have any number of arbitrary attributes as defined below.
+    Interfaces can have any number of arbitrary attributes as defined below.
     """
 
 
@@ -72,34 +83,29 @@ def cli(ctx):
     callback=callbacks.process_bulk_add,
 )
 @click.option(
-    '-c',
-    '--cidr',
-    metavar='CIDR',
-    help='A network or IP address in CIDR notation.  [required]',
-)
-@click.option(
-    '-S',
-    '--state',
-    metavar='STATE',
-    type=str,
-    help='The allocation state of the Network.',
-)
-@click.option(
-    '-s',
-    '--site-id',
-    metavar='SITE_ID',
+    '-D',
+    '--device',
+    metavar='DEVICE_ID',
     type=int,
-    help='Unique ID of the Site this Network is under.  [required]',
-    callback=callbacks.process_site_id,
+    help=(
+        'Unique ID of the Device to which this Interface is attached.'
+        '  [required]'
+    )
+)
+@click.option(
+    '-n',
+    '--name',
+    metavar='NAME',
+    help='The name of the Interface.  [required]',
 )
 @click.pass_context
-def add(ctx, attributes, bulk_add, cidr, state, site_id):
+def add(ctx, attributes, bulk_add, device_id, name):
     """
-    Add a new Network.
+    Add a new Interface.
 
-    You must provide a Site ID using the -s/--site-id option.
+    You must provide a Device ID using the -d/--device-id option.
 
-    When adding a new Network, you must provide a value for the -c/--cidr
+    When adding a new Interface, you must provide a value for the -n/--name
     option.
 
     If you wish to add attributes, you may specify the -a/--attributes
@@ -109,8 +115,8 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
 
     # Enforce required options
     if bulk_add is None:
-        if cidr is None:
-            raise click.UsageError('Missing option "-c" / "--cidr"')
+        if name is None:
+            raise click.UsageError('Missing option "-n" / "--name"')
     ctx.obj.add(data)
 
 
@@ -124,15 +130,6 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     multiple=True,
 )
 @click.option(
-    '-c',
-    '--cidr',
-    metavar='CIDR',
-    help=(
-        'Filter to Networks matching this CIDR. If provided, this overrides '
-        '-n/--network-address and -p/--prefix-length.'
-    ),
-)
-@click.option(
     '-d',
     '--delimited',
     is_flag=True,
@@ -141,25 +138,25 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     show_default=True,
 )
 @click.option(
+    '-D',
+    '--device',
+    metavar='DEVICE_ID',
+    type=int,
+    help='Unique ID of the Device being retrieved.',
+)
+@click.option(
+    '-e',
+    '--description',
+    metavar='DESCRIPTOIN',
+    type=str,
+    help='Filter by Interfaces matching this description.',
+)
+@click.option(
     '-i',
     '--id',
     metavar='ID',
     type=int,
-    help='Unique ID of the Network being retrieved.',
-)
-@click.option(
-    '--include-networks/--no-include-networks',
-    is_flag=True,
-    help='Include/exclude non-IP networks.',
-    default=True,
-    show_default=True,
-)
-@click.option(
-    '--include-ips/--no-include-ips',
-    is_flag=True,
-    help='Include/exclude IP addresses.',
-    default=False,
-    show_default=True,
+    help='Unique ID of the Interface being retrieved.',
 )
 @click.option(
     '-l',
@@ -169,9 +166,9 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
 )
 @click.option(
     '-n',
-    '--network-address',
-    metavar='NETWORK',
-    help='Filter to Networks matching this network address.',
+    '--name',
+    metavar='NAME',
+    help='Filter to Interfaces matching this name.'
 )
 @click.option(
     '-o',
@@ -181,10 +178,10 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
 )
 @click.option(
     '-p',
-    '--prefix-length',
-    metavar='PREFIX',
+    '--parent-id',
+    metavar='PARENT_ID',
     type=int,
-    help='Filter to Networks matching this prefix length.',
+    help='Filter by integer of the ID of the parent Interface.',
 )
 @click.option(
     '-q',
@@ -193,90 +190,83 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     help='Perform a set query using Attributes and output matching Networks.',
 )
 @click.option(
-    '-r',
-    '--root-only',
-    is_flag=True,
-    help='Filter to root Networks.',
-    default=False,
-    show_default=True,
-)
-@click.option(
-    '-S',
-    '--state',
-    metavar='STATE',
-    type=str,
-    help='The allocation state of the Network.',
-)
-@click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Network is under.  [required]',
+    help='Unique ID of the Site this Interface is under.  [required]',
     callback=callbacks.process_site_id,
 )
+@click.option(
+    '-S',
+    '--speed',
+    metavar='SPEED',
+    type=int,
+    help='Filter by integer of Mbps of interface (e.g. 20000 for 20 Gbps)',
+)
+@click.option(
+    '-t',
+    '--type',
+    metavar='TYPE',
+    type=int,
+    help='Filter by integer of the interface type (e.g. 6 for ethernet)',
+)
 @click.pass_context
-def list(ctx, attributes, cidr, delimited, id, include_ips, include_networks,
-         limit, network_address, offset, prefix_length, query, root_only,
-         state, site_id):
+def list(ctx, attributes, delimited, device, description, id, limit, name, offset,
+         parent_id, query, site_id, speed, type):
     """
-    List existing Networks for a Site.
+    List existing Interfaces for a Site.
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When listing Networks, all objects are displayed by default. You optionally
-    may lookup a single Network by ID using the -i/--id option.
+    When listing Interfaces, all objects are displayed by default. You optionally
+    may lookup a single Interfaces by ID using the -i/--id option.
 
     You may limit the number of results using the -l/--limit option.
     """
     data = ctx.params
     data.pop('delimited')  # We don't want this going to the server.
 
+    # If we provide ID, show more fields
+    if id is not None:
+        display_fields = VERBOSE_FIELDS
+    else:
+        display_fields = DISPLAY_FIELDS
+
     # If we aren't passing a sub-command, just call list(), otherwise let it
     # fallback to default behavior.
     if ctx.invoked_subcommand is None:
         if query:
-            results = ctx.obj.api.sites(site_id).networks.query.get(**data)
-            objects = results['data']['networks']
-            networks = sorted(
-                (d['network_address'], d['prefix_length']) for d in objects
+            results = ctx.obj.api.sites(site_id).interfaces.query.get(**data)
+            objects = results['data']['interfaces']
+            interfaces = sorted(
+                (i['device'], i['name']) for i in objects
             )
-            networks = ['%s/%s' % obj for obj in networks]
+            interfaces = ['%s:%s' % obj for obj in interfaces]
             joiner = ',' if delimited else '\n'
-            click.echo(joiner.join(networks))
+            click.echo(joiner.join(interfaces))
         else:
-            ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
+            ctx.obj.list(data, display_fields=display_fields)
 
 
 @list.command()
-@click.option(
-    '-d',
-    '--direct',
-    is_flag=True,
-    help='Return only direct subnets.',
-    default=False,
-    show_default=True,
-)
 @click.pass_context
-def subnets(ctx, *args, **kwargs):
-    """Get subnets of a Network."""
-    callbacks.list_endpoint(ctx, display_fields=DISPLAY_FIELDS)
+def addresses(ctx, *args, **kwargs):
+    """Get addresses assigned to an Interface."""
+    callbacks.list_endpoint(
+        ctx, display_fields=NETWORK_DISPLAY_FIELDS, my_name=ctx.info_name
+    )
 
 
 @list.command()
-@click.option(
-    '-d',
-    '--direct',
-    is_flag=True,
-    help='Return only direct supernets.',
-    default=False,
-    show_default=True,
-)
 @click.pass_context
-def supernets(ctx, *args, **kwargs):
-    """Get supernets of a Network."""
-    callbacks.list_endpoint(ctx, display_fields=DISPLAY_FIELDS)
+def networks(ctx, *args, **kwargs):
+    """Get networks attached to Interface."""
+    callbacks.list_endpoint(
+        ctx, display_fields=NETWORK_DISPLAY_FIELDS, my_name=ctx.info_name
+    )
 
 
+'''
 # Remove
 @cli.command()
 @click.option(
@@ -376,15 +366,8 @@ def remove(ctx, id, site_id):
     is_flag=True,
     help='Treat the specified attributes as a list type.',
 )
-@click.option(
-    '-S',
-    '--state',
-    metavar='STATE',
-    type=str,
-    help='The allocation state of the Network.',
-)
 @click.pass_context
-def update(ctx, attributes, id, site_id, attr_action, multi, state):
+def update(ctx, attributes, id, site_id, attr_action, multi):
     """
     Update a Network.
 
@@ -410,9 +393,10 @@ def update(ctx, attributes, id, site_id, attr_action, multi, state):
     replaced. If combined with -m/--multi and multiple attributes of the same
     name are provided, only the last value provided will be used.
     """
-    if not any([attributes, state]):
+    if not any([attributes]):
         msg = 'You must supply at least one of the optional arguments.'
         raise click.UsageError(msg)
 
     data = ctx.params
     ctx.obj.update(data)
+'''

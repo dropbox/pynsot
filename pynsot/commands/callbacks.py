@@ -173,7 +173,7 @@ def process_bulk_add(ctx, param, value):
     return objects
 
 
-def list_endpoint(ctx, display_fields):
+def list_endpoint(ctx, display_fields, my_name=None):
     """
     Determine params and a resource object to pass to ``ctx.obj.list()``
 
@@ -193,7 +193,11 @@ def list_endpoint(ctx, display_fields):
     # endpoint resource used to call this endpoint.
     api = ctx.obj.api
     parent_name = ctx.obj.parent_name  # e.g. 'networks'
-    my_name = ctx.info_name  # e.g. 'supernets'
+
+    if my_name is not None:
+        ctx.obj.resource_name = my_name
+    else:
+        my_name = ctx.info_name  # e.g. 'supernets'
 
     # Make sure that parent_id is provided. This seems complicated because we
     # want to maintain dynamism across resource types.

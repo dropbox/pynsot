@@ -82,6 +82,7 @@ NETWORK_CREATE = {'data': {'network': {'attributes': {'owner': 'jathan'},
    'network_address': '10.0.0.0',
    'parent_id': None,
    'prefix_length': 8,
+   'state': 'allocated',
    'site_id': 1}},
  'status': 'ok'}
 
@@ -92,6 +93,7 @@ NETWORK_RETRIEVE = {u'data': {u'network': {u'attributes': {u'owner': u'jathan'},
    u'network_address': u'10.0.0.0',
    u'parent_id': None,
    u'prefix_length': 8,
+   u'state': 'allocated',
    u'site_id': 1}},
  u'status': u'ok'}
 
@@ -102,9 +104,9 @@ NETWORK_UPDATE = {u'data': {u'network': {u'attributes': {u'foo': u'bar', u'owner
    u'network_address': u'10.0.0.0',
    u'parent_id': None,
    u'prefix_length': 8,
+   u'state': 'allocated',
    u'site_id': 1}},
  u'status': u'ok'}
-
 
 NETWORKS_RESPONSE = {u'data': {u'limit': None,
   u'networks': [
@@ -115,6 +117,7 @@ NETWORKS_RESPONSE = {u'data': {u'limit': None,
     u'network_address': u'10.0.0.0',
     u'parent_id': None,
     u'prefix_length': 8,
+    u'state': 'allocated',
     u'site_id': 1},
    {u'attributes': {u'owner': u'jathan'},
     u'id': 2,
@@ -123,6 +126,7 @@ NETWORKS_RESPONSE = {u'data': {u'limit': None,
     u'network_address': u'10.0.0.0',
     u'parent_id': 1,
     u'prefix_length': 24,
+    u'state': 'allocated',
     u'site_id': 1}],
   u'offset': 0,
   u'total': 2},

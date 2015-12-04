@@ -298,6 +298,9 @@ class App(object):
                 delim = '='
             field_data = self.pretty_dict(field_data, delim=delim, sep='\n')
 
+        if isinstance(field_data, list):
+            field_data = '\n'.join(field_data)
+
         # If it's the 'change_at' field, make it human-readable
         elif field == 'change_at':  # Timestamp
             field_data = self.format_timestamp(field_data)
@@ -339,8 +342,18 @@ class App(object):
 
         # Prepare the table object
         table = prettytable.PrettyTable(headers)
-        table.vrules = prettytable.FRAME  # Display table in a frame
+
+        # Display table in a frame
+        table.vrules = prettytable.FRAME
+
+        # *or* Display table with row separators
+        # table.hrules = prettytable.ALL
+        # table.vrules = prettytable.NONE
+
         table.align = 'l'  # Left-align everything
+        table.left_padding_width = 1
+
+        # Add the table rows
         for row in table_data:
             table.add_row(row)
 
