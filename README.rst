@@ -177,15 +177,15 @@ When modifying attributes on Device and Network resources, you have three
 actions to choose from:
 
 + Add (``-A/--add-attributes``). This is the default behavior that will add
-attributes if they don't exist, or update them if they do.
+  attributes if they don't exist, or update them if they do.
 
 + Delete (``-d/--delete-attributes``). This will cause attributes to be
-deleted. If combined with ``--multi`` the attribute will be deleted if either
-no value is provided, or if the attribute no longer contains a valid value.
+  deleted. If combined with ``--multi`` the attribute will be deleted if either
+  no value is provided, or if the attribute no longer contains a valid value. 
 
 + Replace (``-r/--replace-attributes``). This will cause attributes to
-replaced. If combined with ``-m/--multi`` and multiple attributes of the same
-name are provided, only the last value provided will be used.
+  replaced. If combined with ``-m/--multi`` and multiple attributes of the same
+  name are provided, only the last value provided will be used.
 
 Please note that this does not apply when updating Attribute resources
 themselves. Attribute values attached to Devices and Networks are considered to
