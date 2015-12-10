@@ -158,7 +158,7 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     '--include-ips/--no-include-ips',
     is_flag=True,
     help='Include/exclude IP addresses.',
-    default=False,
+    default=True,
     show_default=True,
 )
 @click.option(
