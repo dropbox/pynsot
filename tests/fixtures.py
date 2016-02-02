@@ -235,3 +235,6 @@ TEST_ATTRIBUTES = {
         },
     ]
 }
+
+# Payload used to list Attribute values.
+VALUES_RETRIEVE = {u'status': u'ok', u'data': {u'values': [{u'resource_name': u'Device', u'name': u'owner', u'resource_id': 26683, u'attribute': 83, u'value': u'jathan', u'id': 1780986}], u'total': 1, u'limit': None, u'offset': 0}}

@@ -18,7 +18,7 @@ from pynsot.app import app
 from .fixtures import (
     config, AUTH_RESPONSE, API_URL, DEVICES_RESPONSE, ATTRIBUTES_RESPONSE,
     DEVICE_RETRIEVE, DEVICE_UPDATE, NETWORK_CREATE, NETWORK_RETRIEVE,
-    NETWORK_UPDATE, NETWORKS_RESPONSE, ATTRIBUTE_CREATE
+    NETWORK_UPDATE, NETWORKS_RESPONSE, ATTRIBUTE_CREATE, VALUES_RETRIEVE
 )
 from .util import CliRunner
 
@@ -102,7 +102,7 @@ def test_site_add(config):
             color=False
         )
         assert result.exit_code != 0
-        assert result.output == ''
+        assert 'This field must be unique.\n' in result.output
 
 
 ###########
@@ -912,3 +912,32 @@ def test_network_update(config):
             '+----------------------------------------------------------------------------------+\n'
         )
         assert result.output == expected_output
+
+
+def test_values_list(config):
+    """Test ``nsot devices list -s 1 -n owner -r device``."""
+    headers = {'Content-Type': 'application/json'}
+    auth_url = config['url'] + '/authenticate/'
+    values_uri = config['url'] + '/sites/1/values/'
+    values_url = values_uri + '?resource_name=Device&site_id=1&name=owner'
+
+    runner = CliRunner(config)
+    with runner.isolated_requests() as mock:
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(
+            values_url,
+            json=VALUES_RETRIEVE, headers=headers
+        )
+
+        # Make sure -n/--name is required.
+        result = runner.invoke(app, shlex.split('values list'))
+        assert result.exit_code != 0
+        assert 'Error: Missing option "-n"' in result.output
+
+        # Run a simple list to get the expected result.
+        result = runner.invoke(
+            app,
+            shlex.split('values list -s 1 -n owner -r device')
+        )
+        assert result.exit_code == 0
+        assert result.output == 'jathan\n'
