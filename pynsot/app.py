@@ -45,6 +45,16 @@ CMD_FOLDER = os.path.abspath(
 )
 
 
+# Mapping of resource_names to natural_keys. This is primarily used by
+# App.get_single_object() to map parameters to a single object.
+NATURAL_KEYS = {
+    'devices': ['hostname'],
+    'networks': ['cidr'],
+    'attributes': ['name', 'resource_name'],
+    'interfaces': ['name', 'device'],
+}
+
+
 __all__ = (
     'NsotCLI', 'App', 'app'
 )
@@ -90,6 +100,7 @@ class App(object):
         self.ctx = ctx
         self.verbose = verbose
         self.resource_name = self.ctx.invoked_subcommand
+        self.site_id = None  # This is populated later.
         self.rebase_done = False  # So that we only rebase once.
 
     @property
@@ -386,9 +397,10 @@ class App(object):
         if site_id is None and self.resource_name != 'sites':
             site_id = self.api.default_site
 
-        log.debug('Got site_id: %s' % site_id)
+        log.debug('rebase: Got site_id: %s' % site_id)
         if site_id is not None:
-            log.debug('Site_id found; rebasing API URL!')
+            log.debug('rebase: Site_id found; rebasing API URL!')
+            self.site_id = site_id
             self.api._store['base_url'] += '/sites/%s' % site_id
 
         # Mark rebase as done.
@@ -407,24 +419,72 @@ class App(object):
         else:
             self.handle_response(action, data, result)
 
-    def get_single_object(self, data, natural_key):
-        """Get a single object based on the natural key for this resource."""
-        natural_value = data.get(natural_key)
-        self.rebase(data)
+    def get_single_object(self, data, resource=None, natural_keys=None):
+        """
+        Get a single object based on the natural key for this resource.
 
-        params = {natural_key: natural_value}
+        :param data:
+            Dict of query parameters
+
+        :param resource:
+            (Optional) API resource object
+
+        :param natural_keys:
+            (Optional) List of natural keys. If not provided, they are derived
+            automatically from the resource.
+
+        :returns:
+            None
+        """
+        # Should be a list of natural keys for the resource
+        if natural_keys is None:
+            natural_keys = NATURAL_KEYS.get(self.resource_name)
+
+        # Construct our params to retrieve a single object.
+        params = {'limit': 1}
+        for natural_key in natural_keys:
+            params[natural_key] = data[natural_key]
+
+        # Rebase before we toilet face.
+        if resource is None:
+            resource = self.resource
+
+        # Get the results
         try:
-            r = self.resource.get(**params)
+            r = resource.get(**params)
         except HTTP_ERRORS as err:
             return None
 
+        # Assert only 1 matching result.
+        total = r['data']['total']
+        if total > 1:
+            log.debug('get_single_object: More than one object found!')
+            return None
+
+        # Return a single result.
         try:
             return r['data'][self.resource_name][0]
         except IndexError as err:
             return None
 
-    def list(self, data, display_fields=None, resource=None):
-        """GET"""
+    def list(self, data, display_fields=None, resource=None,
+             verbose_fields=None):
+        """
+        GET objects and display them to stdout.
+
+        :param data:
+            Dict of query parameters
+
+        :param display_fields:
+            Mapping of field_names to list display
+
+        :param resource:
+            (Optional) API resource object
+
+        :param verbose_fields:
+            (Optional) Mapping of field_names to verbose detail display. If not
+            provided, ``display_fields`` is used.
+        """
         action = 'list'
         log.debug('listing %s' % data)
         obj_id = data.get('id')  # If obj_id, it's a single object
@@ -435,22 +495,39 @@ class App(object):
             self.rebase(data)  # Rebase first
             resource = self.resource
 
+        obj = None
         try:
             # Try getting a single object first
             if obj_id:
+                log.debug('Retrieving by obj_id=%r' % obj_id)
                 result = resource(obj_id).get()
+                obj = result['data'][self.singular]
 
+            # If we still don't have an object try param-based lookup.
+            if obj is None:
+                log.debug('Retrieving by single_object')
+                obj = self.get_single_object(data, resource)
+
+            # If obj is STILL None...
             # Or get all of them.
+            # else:
+            if obj is not None:
+                # Set display_fields to verbose
+                display_fields = verbose_fields or display_fields
             else:
+                log.debug('Retrieving by params=%r' % data)
                 result = resource.get(**data)
+
         except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
+
         else:
             objects = []
+
             # Turn a single object into a list
-            if obj_id:
-                obj = result['data'][self.singular]
+            if obj:
                 objects = [obj]
+
             # Or just list all of them.
             elif result:
                 objects = result['data'][self.resource_name]
@@ -553,13 +630,25 @@ class App(object):
         # Get the original object by id first so that we can keep any existing
         # values without resetting them.
         try:
-            obj = self.resource(obj_id).get()
+            if obj_id:
+                log.debug('Retrieving by obj_id=%r' % obj_id)
+                result = self.resource(obj_id).get()
+                obj = result['data'][self.singular]
+            else:
+                obj = self.get_single_object(data)
         except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
         else:
-            model = ApiModel(obj)
-            payload = dict(model)
-            payload.pop('id')  # We don't want id when doing a PUT
+            # FIXME(jathan) This error case needs work. It needs to be as
+            # descriptive as when a lookup by id fails.
+            if obj is None:
+                self.handle_error(
+                    action, data,
+                    'Update failed. Try again with --verbose for more info.'
+                )
+
+            obj_id = obj.pop('id') # We don't want id when doing a PUT
+            payload = obj
 
         log.debug('PAYLOAD [in]: %r', payload)
 
@@ -600,10 +689,10 @@ def app(ctx, verbose):
     # This is the "app" object attached to all contexts.
     ctx.obj = App(ctx=ctx, verbose=verbose)
 
-    # Store the invoked_subcommand (e.g. 'networks') name as parent_name so
-    # that descendent sub-commands can reference where they came from, such as
-    # when calling callbacks.list_endpoint()
-    ctx.obj.parent_name = ctx.invoked_subcommand
+    # Store the invoked_subcommand (e.g. 'networks') name as
+    # parent_resource_name so that descendent sub-commands can reference where
+    # they came from, such as when calling callbacks.list_subcommand()
+    ctx.obj.parent_resource_name = ctx.invoked_subcommand
 
 
 if __name__ == '__main__':

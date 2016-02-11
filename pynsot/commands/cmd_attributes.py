@@ -39,6 +39,7 @@ DISPLAY_FIELDS = (
 
 # Fields to display when viewing a single record.
 VERBOSE_FIELDS = (
+    ('id', 'ID'),
     ('name', 'Name'),
     ('resource_name', 'Resource'),
     ('required', 'Required?'),
@@ -239,12 +240,14 @@ def list(ctx, id, display, limit, multi, name, offset, required, resource_name,
     data = ctx.params
 
     # If we provide ID, be verbose
-    if id is not None:
+    if id is not None or all([name, resource_name]):
         display_fields = VERBOSE_FIELDS
     else:
         display_fields = DISPLAY_FIELDS
 
-    ctx.obj.list(data, display_fields=display_fields)
+    ctx.obj.list(
+        data, display_fields=display_fields, verbose_fields=VERBOSE_FIELDS
+    )
 
 
 # Remove

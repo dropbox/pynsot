@@ -9,6 +9,7 @@ import copy
 import logging
 import os
 import pytest
+from urllib import urlencode
 import re
 import shlex
 
@@ -18,7 +19,9 @@ from pynsot.app import app
 from .fixtures import (
     config, AUTH_RESPONSE, API_URL, DEVICES_RESPONSE, ATTRIBUTES_RESPONSE,
     DEVICE_RETRIEVE, DEVICE_UPDATE, NETWORK_CREATE, NETWORK_RETRIEVE,
-    NETWORK_UPDATE, NETWORKS_RESPONSE, ATTRIBUTE_CREATE, VALUES_RETRIEVE
+    NETWORK_UPDATE, NETWORKS_RESPONSE, ATTRIBUTE_CREATE, VALUES_RETRIEVE,
+    ATTRIBUTES_NAME_RESPONSE, ATTRIBUTES_ID_RESPONSE, DEVICE_HOSTNAME_RETRIEVE,
+    NETWORK_CIDR_RETRIEVE
 )
 from .util import CliRunner
 
@@ -212,15 +215,10 @@ def test_devices_list(config):
         result = runner.invoke(app, shlex.split('devices list -s 1'))
         assert result.exit_code == 0
 
-        expected_output = (
-            '+------------------------------+\n'
-            '| ID   Hostname   Attributes   |\n'
-            '+------------------------------+\n'
-            '| 1    foo-bar1   owner=jathan |\n'
-            '| 2    foo-bar2   owner=jathan |\n'
-            '+------------------------------+\n'
-        )
-        assert result.output == expected_output
+        # Make sure the hostnames show up
+        expected = ('foo-bar1', 'foo-bar2')
+        for e in expected:
+            assert e in result.output
 
         # Set query display newline-delimited (default)
         query_url = config['url'] + '/sites/1/devices/query/'
@@ -246,12 +244,15 @@ def test_devices_list(config):
         assert result.output == expected_output
 
 
-def test_device_update(config):
+def test_devices_update(config):
     """Test ``nsot devices update -s 1 -i 1 -a monitored``"""
     headers = {'Content-Type': 'application/json'}
     auth_url = config['url'] + '/authenticate/'
     device_uri = config['url'] + '/sites/1/devices/1/'
     devices_url = config['url'] + '/sites/1/devices/'
+
+    update_params = {'hostname': 'foo-bar1', 'limit': 1}
+    device_update_url = devices_url + '?' + urlencode(update_params)
 
     runner = CliRunner(config)
     with runner.isolated_requests() as mock:
@@ -280,15 +281,21 @@ def test_device_update(config):
         )
         assert result.exit_code == 0
 
-        expected_output = (
-            "+------------------------------+\n"
-            "| ID   Hostname   Attributes   |\n"
-            "+------------------------------+\n"
-            "| 1    foo-bar1   owner=jathan |\n"
-            "|                 monitored=   |\n"
-            "+------------------------------+\n"
+        # Assert 'monitored=' attribute is now there.
+        assert 'monitored=' in result.output
+
+        # Now run update by natural_key (hostname) to remove monitored
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(
+            device_update_url, json=DEVICE_HOSTNAME_RETRIEVE, headers=headers
         )
-        assert result.output == expected_output
+        mock.put(device_uri, json=DEVICE_RETRIEVE, headers=headers)
+
+        result = runner.invoke(
+            app,
+            shlex.split('devices update -s 1 -H foo-bar1 -d -a monitored')
+        )
+        assert result.exit_code == 0
 
 
 def test_attribute_modify(config):
@@ -326,14 +333,8 @@ def test_attribute_modify(config):
         result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
         assert result.exit_code == 0
 
-        expected_output = (
-            "+------------------------------+\n"
-            "| ID   Hostname   Attributes   |\n"
-            "+------------------------------+\n"
-            "| 1    foo-bar1   owner=jathan |\n"
-            "+------------------------------+\n"
-        )
-        assert result.output == expected_output
+        # Make sure that monitored isn't showing in output
+        assert 'monitored=' not in result.output
 
         # Test attribute REPLACE
 
@@ -347,9 +348,10 @@ def test_attribute_modify_multi(config):
 
     runner = CliRunner(config)
     with runner.isolated_requests() as mock:
-        #
+
+        #####
         # ADD a multi attribute with 2 items
-        #
+        #####
         INITIAL_DEVICE = {
             'status': 'ok',
             'data': {
@@ -386,20 +388,15 @@ def test_attribute_modify_multi(config):
         result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
         assert result.exit_code == 0
 
-        expected_output = (
-            '+----------------------------+\n'
-            '| ID   Hostname   Attributes |\n'
-            '+----------------------------+\n'
-            '| 1    foo-bar1   multi=     |\n'
-            '|                  jathy     |\n'
-            '|                  jilli     |\n'
-            '+----------------------------+\n'
-        )
-        assert result.output == expected_output
+        # Assert that multi= shows w/ jathy & jilli as values.
+        expected = ('multi=', 'jathy', 'jilli')
+        for e in expected:
+            assert e in result.output
 
-        #
+        #########
         # REPLACE it with two different items
-        #
+        #########
+
         # Replace with multi=[bob, alice]
         MULTI_REPLACE = {
             'status': 'ok',
@@ -429,20 +426,15 @@ def test_attribute_modify_multi(config):
         result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
         assert result.exit_code == 0
 
-        expected_output = (
-            '+----------------------------+\n'
-            '| ID   Hostname   Attributes |\n'
-            '+----------------------------+\n'
-            '| 1    foo-bar1   multi=     |\n'
-            '|                  alice     |\n'
-            '|                  bob       |\n'
-            '+----------------------------+\n'
-        )
-        assert result.output == expected_output
+        # Assert that multi= shows w/ bob & alice as values.
+        expected = ('multi=', 'bob', 'alice')
+        for e in expected:
+            assert e in result.output
 
-        #
+        ########
         # DELETE one, leaving one
-        #
+        ########
+
         # Pop alice
         MULTI_DELETE1 = {
             'status': 'ok',
@@ -469,19 +461,13 @@ def test_attribute_modify_multi(config):
         result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
         assert result.exit_code == 0
 
-        expected_output = (
-            '+----------------------------+\n'
-            '| ID   Hostname   Attributes |\n'
-            '+----------------------------+\n'
-            '| 1    foo-bar1   multi=     |\n'
-            '|                  alice     |\n'
-            '+----------------------------+\n'
-        )
-        assert result.output == expected_output
+        # Make sure that bob no longer shows
+        assert 'bob' not in result.output
 
-        #
+        ########
         # DELETE the other; attr goes away, object returned to initial state
-        #
+        ########
+
         # Pop bob; attribute is removed
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.get(device_uri, json=MULTI_DELETE1, headers=headers)
@@ -499,18 +485,13 @@ def test_attribute_modify_multi(config):
         result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
         assert result.exit_code == 0
 
-        initial_output = (
-            '+----------------------------+\n'
-            '| ID   Hostname   Attributes |\n'
-            '+----------------------------+\n'
-            '| 1    foo-bar1              |\n'
-            '+----------------------------+\n'
-        )
-        assert result.output == initial_output
+        # Assert that 'multi=' no longer shows in output
+        assert 'multi=' not in result.output
 
-        #
+        #####
         # ADD new list w/ 2 items
-        #
+        #####
+
         # Add multi=[spam, eggs]
         MULTI_ADD2 = {
             'status': 'ok',
@@ -540,20 +521,15 @@ def test_attribute_modify_multi(config):
         result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
         assert result.exit_code == 0
 
-        expected_output = (
-            '+----------------------------+\n'
-            '| ID   Hostname   Attributes |\n'
-            '+----------------------------+\n'
-            '| 1    foo-bar1   multi=     |\n'
-            '|                  eggs      |\n'
-            '|                  spam      |\n'
-            '+----------------------------+\n'
-        )
-        assert result.output == expected_output
+        # Assert that multi= is back and has egg & spam.
+        expected = ('multi=', 'eggs', 'spam')
+        for e in expected:
+            assert e in result.output
 
-        #
+        ########
         # DELETE with no value; attribute goes away; object initialized
-        #
+        ########
+
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.get(device_uri, json=MULTI_ADD2, headers=headers)
         mock.put(device_uri, json=INITIAL_DEVICE, headers=headers)
@@ -569,7 +545,10 @@ def test_attribute_modify_multi(config):
 
         result = runner.invoke(app, shlex.split('devices list -s 1 -i 1'))
         assert result.exit_code == 0
-        assert result.output == initial_output
+
+        # Assert that 'multi=' no longer shows in output. And scene.
+        assert 'multi=' not in result.output
+
 
 
 ##############
@@ -580,14 +559,40 @@ def test_attributes_list(config):
     headers = {'Content-Type': 'application/json'}
     auth_url = config['url'] + '/authenticate/'
     attrs_url = config['url'] + '/sites/1/attributes/'
+    attr_obj_uri = attrs_url + '2/'
 
     runner = CliRunner(config)
     with runner.isolated_requests() as mock:
+
+        # Simple list
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
         mock.get(attrs_url, json=ATTRIBUTES_RESPONSE, headers=headers)
 
         result = runner.invoke(app, shlex.split('attributes list -s 1'))
         assert result.exit_code == 0
+
+        # List a single attribute by name
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(attrs_url, json=ATTRIBUTES_NAME_RESPONSE, headers=headers)
+
+        name_result = runner.invoke(
+            app, shlex.split('attributes list -s 1 -n monitored')
+        )
+
+        # Single matching object should have 'Constraints' column
+        expected = ('Constraints', 'monitored')
+        for e in expected:
+            assert e in name_result.output
+
+        # List the same attribute by id
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(attr_obj_uri, json=ATTRIBUTES_ID_RESPONSE, headers=headers)
+
+        id_result = runner.invoke(
+            app, shlex.split('attributes list -s 1 -i 2')
+        )
+        # Output should match the previous command.
+        assert id_result.output == name_result.output
 
 
 def test_attributes_add(config):
@@ -636,16 +641,8 @@ def test_attributes_update(config):
         )
         assert result.exit_code == 0
 
-        expected_output = (
-            '+------------------------------------------------------------------------------------+\n'
-            '| Name    Resource   Required?   Display?   Multi?   Constraints         Description |\n'
-            '+------------------------------------------------------------------------------------+\n'
-            '| multi   Device     False       False      False    pattern=                        |\n'
-            '|                                                    valid_values=                   |\n'
-            '|                                                    allow_empty=False               |\n'
-            '+------------------------------------------------------------------------------------+\n'
-        )
-        assert result.output == expected_output
+        # Make sure that 'multi' name is in the output.
+        assert 'multi' in result.output
 
 ############
 # Networks #
@@ -753,15 +750,9 @@ def test_networks_list(config):
         result = runner.invoke(app, shlex.split('networks list -s 1'))
         assert result.exit_code == 0
 
-        expected_output = (
-            '+----------------------------------------------------------------------------------+\n'
-            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes   |\n'
-            '+----------------------------------------------------------------------------------+\n'
-            '| 1    10.0.0.0   8        False    4         None        allocated   owner=jathan |\n'
-            '| 2    10.0.0.0   24       False    4         1           allocated   owner=jathan |\n'
-            '+----------------------------------------------------------------------------------+\n'
-        )
-        assert result.output == expected_output
+        # Make sure 10.0.0.0 shows twice in the output. Lazy man's output
+        # checking.
+        assert result.output.count('10.0.0.0') == 2
 
         # Set query display newline-delimited (default)
         query_url = config['url'] + '/sites/1/networks/query/'
@@ -787,7 +778,7 @@ def test_networks_list(config):
         assert result.output == expected_output
 
 
-def test_network_subcommands(config):
+def test_networks_subcommands(config):
     """Test supernets/subnets"""
     # Lookup subnets by cidr
     headers = {'Content-Type': 'application/json'}
@@ -841,14 +832,10 @@ def test_network_subcommands(config):
         )
         assert result.exit_code == 0
 
-        expected_output = (
-            '+----------------------------------------------------------------------------------+\n'
-            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes   |\n'
-            '+----------------------------------------------------------------------------------+\n'
-            '| 2    10.0.0.0   24       False    4         1           allocated   owner=jathan |\n'
-            '+----------------------------------------------------------------------------------+\n'
-        )
-        assert result.output == expected_output
+        # Assert that 10.0.0.0/24 shows in output
+        expected = ('10.0.0.0', '24')
+        for e in expected:
+            assert e in result.output
 
         # Test supernets
         mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
@@ -859,22 +846,21 @@ def test_network_subcommands(config):
         )
         assert result.exit_code == 0
 
-        expected_output = (
-            '+----------------------------------------------------------------------------------+\n'
-            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes   |\n'
-            '+----------------------------------------------------------------------------------+\n'
-            '| 1    10.0.0.0   8        False    4         None        allocated   owner=jathan |\n'
-            '+----------------------------------------------------------------------------------+\n'
-        )
-        assert result.output == expected_output
+        # Assert that 10.0.0.0/8 shows in output
+        expected = ('10.0.0.0', '8')
+        for e in expected:
+            assert e in result.output
 
 
-def test_network_update(config):
+def test_networks_update(config):
     """Test ``nsot networks update -s 1 -i 1 -a foo=bar``"""
     headers = {'Content-Type': 'application/json'}
     auth_url = config['url'] + '/authenticate/'
     networks_url = config['url'] + '/sites/1/networks/'
     network_uri = config['url'] + '/sites/1/networks/1/'
+
+    update_params = {'cidr': '10.0.0.0/8', 'limit': 1}
+    network_update_url = networks_url + '?' + urlencode(update_params)
 
     runner = CliRunner(config)
     with runner.isolated_requests() as mock:
@@ -903,15 +889,21 @@ def test_network_update(config):
         )
         assert result.exit_code == 0
 
-        expected_output = (
-            '+----------------------------------------------------------------------------------+\n'
-            '| ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes   |\n'
-            '+----------------------------------------------------------------------------------+\n'
-            '| 1    10.0.0.0   8        False    4         None        allocated   owner=jathan |\n'
-            '|                                                                     foo=bar      |\n'
-            '+----------------------------------------------------------------------------------+\n'
+        # Assert that foo=bar is in the output
+        assert 'foo=bar' in result.output
+
+        # Now run update by natural_key (cidr) to remove foo=bar
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(
+            network_update_url, json=NETWORK_CIDR_RETRIEVE, headers=headers
         )
-        assert result.output == expected_output
+        mock.put(network_uri, json=NETWORK_RETRIEVE, headers=headers)
+
+        result = runner.invoke(
+            app,
+            shlex.split('networks update -s 1 -c 10.0.0.0/8 -d -a foo')
+        )
+        assert result.exit_code == 0
 
 
 def test_values_list(config):

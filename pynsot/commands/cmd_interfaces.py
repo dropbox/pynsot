@@ -38,6 +38,7 @@ DISPLAY_FIELDS = (
 
 # Fields to display when viewing a single record.
 VERBOSE_FIELDS = (
+    ('id', 'ID'),
     ('device', 'Device'),
     ('name', 'Name'),
     ('mac_address', 'MAC'),
@@ -227,7 +228,7 @@ def list(ctx, attributes, delimited, device, description, id, limit, name, offse
     data.pop('delimited')  # We don't want this going to the server.
 
     # If we provide ID, show more fields
-    if id is not None:
+    if id is not None or all([device, name]):
         display_fields = VERBOSE_FIELDS
     else:
         display_fields = DISPLAY_FIELDS
@@ -245,14 +246,17 @@ def list(ctx, attributes, delimited, device, description, id, limit, name, offse
             joiner = ',' if delimited else '\n'
             click.echo(joiner.join(interfaces))
         else:
-            ctx.obj.list(data, display_fields=display_fields)
+            ctx.obj.list(
+                data, display_fields=display_fields,
+                verbose_fields=VERBOSE_FIELDS
+            )
 
 
 @list.command()
 @click.pass_context
 def addresses(ctx, *args, **kwargs):
     """Get addresses assigned to an Interface."""
-    callbacks.list_endpoint(
+    callbacks.list_subcommand(
         ctx, display_fields=NETWORK_DISPLAY_FIELDS, my_name=ctx.info_name
     )
 
@@ -261,7 +265,7 @@ def addresses(ctx, *args, **kwargs):
 @click.pass_context
 def networks(ctx, *args, **kwargs):
     """Get networks attached to Interface."""
-    callbacks.list_endpoint(
+    callbacks.list_subcommand(
         ctx, display_fields=NETWORK_DISPLAY_FIELDS, my_name=ctx.info_name
     )
 

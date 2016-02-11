@@ -15,12 +15,6 @@ log = logging.getLogger(__name__)
 # Objects that do not have attribtues
 NO_ATTRIBUTES = ('attributes',)
 
-# Objects that support lookup by natural key
-NATURAL_KEYS = {
-    'devices': 'hostname',
-    'networks': 'cidr'
-}
-
 
 def process_site_id(ctx, param, value):
     """
@@ -132,7 +126,7 @@ def process_bulk_add(ctx, param, value):
         return value
 
     # This is our object name (e.g. 'devices')
-    parent_name = ctx.obj.parent_name
+    parent_resource_name = ctx.obj.parent_resource_name
     objects = []
 
     # Value is already an open file handle
@@ -146,7 +140,7 @@ def process_bulk_add(ctx, param, value):
             raise click.BadParameter(msg)
 
         # Transform attributes for eligible resource types
-        if parent_name not in NO_ATTRIBUTES:
+        if parent_resource_name not in NO_ATTRIBUTES:
             attributes = transform_attributes(
                 ctx, param, r['attributes']
             )
@@ -173,9 +167,55 @@ def process_bulk_add(ctx, param, value):
     return objects
 
 
-def list_endpoint(ctx, display_fields, my_name=None):
+def get_resource_by_natural_key(ctx, data, resource_name, resource=None):
+    """
+    Attempt to return the reource_id for an object.
+
+    :param ctx:
+        Context from the calling command
+
+    :param data:
+        Query parameters used for object lookup
+
+    :param resource_name:
+        The API resource name (for display)
+
+    :param resource:
+        The API resource client object
+    """
+    resource_id = None
+    obj = None
+
+    # Look up the object by natural key (e.g. cidr)
+    obj = ctx.obj.get_single_object(data, resource=resource)
+
+    # If the object was found, get its id
+    if obj is not None:
+        resource_id = obj['id']
+
+    # If it's not found, error out.
+    if resource_id is None:
+        raise click.UsageError(
+            'No matching %s found; try lookup using option "-i" / "--id".' %
+            (resource_name,)
+        )
+
+    return resource_id
+
+
+def list_subcommand(ctx, display_fields, my_name=None):
     """
     Determine params and a resource object to pass to ``ctx.obj.list()``
+
+    This is used for mapping sub-commands to nested API resources.
+
+    For example::
+
+        nsot networks list -s 1 -c 10.0.0.0/8 subnets
+
+    Would be mapped to::
+
+        GET /api/sites/1/networks/5/subnets/
 
     :param ctx:
         Context from the calling command
@@ -187,41 +227,32 @@ def list_endpoint(ctx, display_fields, my_name=None):
     data = ctx.parent.params
     data.update(ctx.params)
 
-    parent_id = data.pop('id')
+    parent_resource_id = data.pop('id')
+
+    # Prepare the app and rebase the API to include site_id.
+    app = ctx.obj
+    app.rebase(data)
 
     # Use our name, parent's command name, and the API object to retrieve the
     # endpoint resource used to call this endpoint.
-    api = ctx.obj.api
-    parent_name = ctx.obj.parent_name  # e.g. 'networks'
+    parent_resource_name = app.parent_resource_name  # e.g. 'networks'
 
     if my_name is not None:
-        ctx.obj.resource_name = my_name
+        app.resource_name = my_name
     else:
         my_name = ctx.info_name  # e.g. 'supernets'
 
-    # Make sure that parent_id is provided. This seems complicated because we
-    # want to maintain dynamism across resource types.
-    parent = None
-    if parent_id is None:
-        natural_key = NATURAL_KEYS.get(parent_name)
+    # e.g. /api/sites/1/networks/
+    parent_resource = getattr(app.api, parent_resource_name)
 
-        # Look up the object by natural key (e.g. cidr)
-        if natural_key is not None:
-            parent = ctx.obj.get_single_object(data, natural_key)
-
-        # If the object was found, get its id
-        if parent is not None:
-            parent_id = parent['id']
-
-        # If it's not found, error out.
-        if parent_id is None:
-            raise click.UsageError(
-                'No %s matching %s; try lookup using option "-i" / "--id".' %
-                (parent_name, data.get(natural_key))
-            )
+    # Make sure that parent_resource_id is provided. This seems complicated
+    # because we want to maintain dynamism across resource types.
+    if parent_resource_id is None:
+        parent_resource_id = get_resource_by_natural_key(
+            ctx, data, parent_resource_name, parent_resource
+        )
 
     # e.g. /api/sites/1/networks/5/supernets/
-    parent_resource = getattr(api, parent_name)
-    my_resource = getattr(parent_resource(parent_id), my_name)
+    my_resource = getattr(parent_resource(parent_resource_id), my_name)
 
-    ctx.obj.list(data, display_fields=display_fields, resource=my_resource)
+    app.list(data, display_fields=display_fields, resource=my_resource)

@@ -259,7 +259,7 @@ def list(ctx, attributes, cidr, delimited, id, include_ips, include_networks,
 @click.pass_context
 def subnets(ctx, *args, **kwargs):
     """Get subnets of a Network."""
-    callbacks.list_endpoint(ctx, display_fields=DISPLAY_FIELDS)
+    callbacks.list_subcommand(ctx, display_fields=DISPLAY_FIELDS)
 
 
 @list.command()
@@ -274,7 +274,7 @@ def subnets(ctx, *args, **kwargs):
 @click.pass_context
 def supernets(ctx, *args, **kwargs):
     """Get supernets of a Network."""
-    callbacks.list_endpoint(ctx, display_fields=DISPLAY_FIELDS)
+    callbacks.list_subcommand(ctx, display_fields=DISPLAY_FIELDS)
 
 
 # Remove
@@ -323,12 +323,20 @@ def remove(ctx, id, site_id):
     callback=callbacks.transform_attributes,
 )
 @click.option(
+    '-c',
+    '--cidr',
+    metavar='CIDR',
+    help=(
+	'A network or IP address in CIDR notation. Used for lookup only in '
+	'place of -i/--id!'
+    )
+)
+@click.option(
     '-i',
     '--id',
     metavar='ID',
     type=int,
     help='Unique ID of the Network being updated.',
-    required=True,
 )
 @click.option(
     '-s',
@@ -384,14 +392,15 @@ def remove(ctx, id, site_id):
     help='The allocation state of the Network.',
 )
 @click.pass_context
-def update(ctx, attributes, id, site_id, attr_action, multi, state):
+def update(ctx, attributes, cidr, id, site_id, attr_action, multi, state):
     """
     Update a Network.
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When updating a Network you must provide the unique ID (-i/--id) and at
-    least one of the optional arguments.
+    When updating a Network you must provide either the unique ID (-i/--id) or
+    CIDR (-c/--cidr) and at least one of the optional arguments. If -i/--id is
+    provided -c/--cidr will be ignored.
 
     The -a/--attributes option may be provided multiple times, once for each
     key-value pair. You may also specify the -a a single time and separate
@@ -413,6 +422,11 @@ def update(ctx, attributes, id, site_id, attr_action, multi, state):
     if not any([attributes, state]):
         msg = 'You must supply at least one of the optional arguments.'
         raise click.UsageError(msg)
+
+    if not id and not cidr:
+        raise click.UsageError(
+            'You most provide -c/--cidr when not providing -i/--id.'
+        )
 
     data = ctx.params
     ctx.obj.update(data)

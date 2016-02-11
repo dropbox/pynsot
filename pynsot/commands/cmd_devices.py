@@ -87,7 +87,7 @@ def add(ctx, attributes, bulk_add, hostname, site_id):
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When adding a new Device, you must provide a value for the -h/--hostname
+    When adding a new Device, you must provide a value for the -H/--hostname
     option.
 
     If you wish to add attributes, you may specify the -a/--attributes
@@ -243,7 +243,6 @@ def remove(ctx, id, site_id):
     metavar='ID',
     type=int,
     help='Unique ID of the Device being updated.',
-    required=True,
 )
 @click.option(
     '-s',
@@ -298,8 +297,12 @@ def update(ctx, attributes, hostname, id, site_id, attr_action, multi):
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When updating a Device you must provide the unique ID (-i/--id) and at
-    least one of the optional arguments.
+    When updating a Device you must provide either the unique ID (-i/--id) or
+    hostname (-H/--hostname) and at least one of the optional arguments. If
+    -i/--id is provided -H/--hostname will be ignored.
+
+    If you desire to update the hostname field, you must provide -i/--id to
+    uniquely identify the Device.
 
     The -a/--attributes option may be provided multiple times, once for each
     key-value pair. You may also specify the -a a single time and separate
@@ -321,6 +324,11 @@ def update(ctx, attributes, hostname, id, site_id, attr_action, multi):
     if not any([attributes, hostname]):
         msg = 'You must supply at least one of the optional arguments.'
         raise click.UsageError(msg)
+
+    if not id and not hostname:
+        raise click.UsageError(
+            'You must provide -H/--hostname when not providing -i/--id.'
+        )
 
     data = ctx.params
     ctx.obj.update(data)
