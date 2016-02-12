@@ -107,10 +107,14 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     """
     data = bulk_add or ctx.params
 
-    # Enforce required options
+    # Additional handling for non-bulk requests only, as bulk_add is a list
     if bulk_add is None:
+        # Required option
         if cidr is None:
             raise click.UsageError('Missing option "-c" / "--cidr"')
+        # Remove if empty, allow default assignment
+        if state is None:
+            data.pop('state', None)
     ctx.obj.add(data)
 
 
