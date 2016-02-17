@@ -438,7 +438,7 @@ class App(object):
         """
         # Should be a list of natural keys for the resource
         if natural_keys is None:
-            natural_keys = NATURAL_KEYS.get(self.resource_name)
+            natural_keys = NATURAL_KEYS.get(self.resource_name, [])
 
         # Construct our params to retrieve a single object.
         params = {'limit': 1}

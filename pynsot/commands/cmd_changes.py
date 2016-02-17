@@ -97,7 +97,7 @@ def cli(ctx):
     '--resource-id',
     metavar='RESOURCE_ID',
     type=int,
-    help='Filter to Changes for a specific resource ID (e.g. Network ID 1',
+    help='Filter to Changes for a specific resource ID (e.g. Network ID 1)',
 )
 @click.option(
     '-r',

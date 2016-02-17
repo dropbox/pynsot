@@ -50,6 +50,43 @@ SITES_RESPONSE = {u'data': {u'limit': None,
   u'total': 1},
  u'status': u'ok'}
 
+SITES_LIMIT_RESPONSE = {
+    "status": "ok",
+    "data": {
+        "total": 2,
+        "limit": 1,
+        "sites": [
+            {
+                "description": "Production networks, devices, and interfaces.",
+                "id": 1,
+                "name": "Production"
+            }
+        ],
+        "offset": 0
+    }
+}
+
+SITES_LIST_RESPONSE = {
+    "status": "ok",
+    "data": {
+        "total": 2,
+        "limit": None,
+        "sites": [
+            {
+                "description": "Production networks, devices, and interfaces.",
+                "id": 1,
+                "name": "Production"
+            },
+            {
+                "description": "Where bass is dropped.",
+                "id": 2,
+                "name": "Da Club"
+            }
+        ],
+        "offset": 0
+    }
+}
+
 # When retrieving Devices.
 DEVICES_RESPONSE = {u'data': {u'devices': [
     {u'attributes': {'owner': 'jathan'}, u'hostname': u'foo-bar1', u'id': 1, u'site_id': 1},
@@ -305,3 +342,41 @@ TEST_ATTRIBUTES = {
 
 # Payload used to list Attribute values.
 VALUES_RETRIEVE = {u'status': u'ok', u'data': {u'values': [{u'resource_name': u'Device', u'name': u'owner', u'resource_id': 26683, u'attribute': 83, u'value': u'jathan', u'id': 1780986}], u'total': 1, u'limit': None, u'offset': 0}}
+
+
+# Changes
+CHANGES_LIST_RESPONSE = {
+    "status": "ok",
+    "data": {
+        "changes": [
+            {
+                "resource_name": "Device",
+                "resource": {
+                    "attributes": {
+                        "owner": "john",
+                        "monitor": "collected"
+                    },
+                    "hostname": "foo-bar3",
+                    "site_id": 1,
+                    "id": 26687
+                },
+                "resource_id": 26687,
+                "site": {
+                    "description": "Production networks, devices, and interfaces.",
+                    "name": "Production",
+                    "id": 1
+                },
+                "id": 266658,
+                "change_at": 1455656717,
+                "user": {
+                    "id": 51,
+                    "email": "admin@localhost"
+                },
+                "event": "Update"
+            }
+        ],
+        "total": 1,
+        "limit": None,
+        "offset": 0
+    }
+}
