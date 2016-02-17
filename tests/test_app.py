@@ -21,7 +21,8 @@ from .fixtures import (
     DEVICE_RETRIEVE, DEVICE_UPDATE, NETWORK_CREATE, NETWORK_RETRIEVE,
     NETWORK_UPDATE, NETWORKS_RESPONSE, ATTRIBUTE_CREATE, VALUES_RETRIEVE,
     ATTRIBUTES_NAME_RESPONSE, ATTRIBUTES_ID_RESPONSE, DEVICE_HOSTNAME_RETRIEVE,
-    NETWORK_CIDR_RETRIEVE
+    NETWORK_CIDR_RETRIEVE, SITES_LIST_RESPONSE, SITES_LIMIT_RESPONSE,
+    CHANGES_LIST_RESPONSE
 )
 from .util import CliRunner
 
@@ -106,6 +107,27 @@ def test_site_add(config):
         )
         assert result.exit_code != 0
         assert 'This field must be unique.\n' in result.output
+
+
+def test_sites_list(config):
+    """
+    Test ``nsot sites list``.
+    """
+    headers = {'Content-Type': 'application/json'}
+    auth_url = config['url'] + '/authenticate/'
+    sites_url = config['url'] + '/sites/'
+
+    params = {'limit': 1}
+    sites_limit_url = sites_url + '?' + urlencode(params)
+
+    runner = CliRunner(config)
+    with runner.isolated_requests() as mock:
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(sites_limit_url, json=SITES_LIMIT_RESPONSE, headers=headers)
+        mock.get(sites_url, json=SITES_LIST_RESPONSE, headers=headers)
+        result = runner.invoke(app, shlex.split('sites list'))
+
+        assert result.exit_code == 0
 
 
 ###########
@@ -933,3 +955,32 @@ def test_values_list(config):
         )
         assert result.exit_code == 0
         assert result.output == 'jathan\n'
+
+
+###########
+# Changes #
+###########
+def test_changes_list(config):
+    """
+    Test ``nsot changes list``.
+    """
+    headers = {'Content-Type': 'application/json'}
+    auth_url = config['url'] + '/authenticate/'
+    changes_url = config['url'] + '/sites/1/changes/'
+
+    params = {'limit': 1}
+    changes_limit_url = changes_url + '?' + urlencode(params)
+
+    CHANGES_LIMIT_RESPONSE = CHANGES_LIST_RESPONSE.copy()
+    CHANGES_LIMIT_RESPONSE['limit'] = 1
+
+    runner = CliRunner(config)
+    with runner.isolated_requests() as mock:
+        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
+        mock.get(changes_limit_url, json=CHANGES_LIMIT_RESPONSE, headers=headers)
+        mock.get(changes_url, json=CHANGES_LIST_RESPONSE, headers=headers)
+        result = runner.invoke(app, shlex.split('changes list'))
+
+        assert result.exit_code == 0
+
+
