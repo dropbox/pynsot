@@ -86,7 +86,8 @@ class BaseClient(slumber.API):
         """Fetch resources from API"""
         headers = self._headers
         auth = self._auth
-        r = slumber.requests.get(self._base_url, auth=auth, headers=headers)
+        api_root = self._base_url + '/'
+        r = slumber.requests.get(api_root, auth=auth, headers=headers)
 
         if r.ok:
             return r.json()
@@ -322,7 +323,8 @@ def get_auth_client_info(auth_method):
     return AUTH_CLIENTS[auth_method]
 
 
-def get_api_client(auth_method=None, url=None, extra_args=None):
+def get_api_client(auth_method=None, url=None, extra_args=None,
+                   use_dotfile=True):
     """
     Safely create an API client so that users don't see tracebacks.
 
@@ -337,16 +339,22 @@ def get_api_client(auth_method=None, url=None, extra_args=None):
 
     :param extra_args:
         Dict of extra keyword args to be passed to the API client class
+
+    :param use_dotfile:
+        Whether to read the dotfile or not.
     """
     if extra_args is None:
         extra_args = {}
 
-    # Read the dotfile
-    try:
-        log.debug('Reading dotfile.')
-        client_args = dotfile.Dotfile().read()
-    except dotfile.DotfileError as err:
-        raise click.UsageError(err.message)
+    # Should we read the dotfile? If not, client_args will be an empty dict
+    if use_dotfile:
+        try:
+            log.debug('Reading dotfile.')
+            client_args = dotfile.Dotfile().read()
+        except dotfile.DotfileError as err:
+            raise click.UsageError(err.message)
+    else:
+        client_args = {}
 
     # Merge the extra_args w/ the client_args from the config
     client_args.update(extra_args)

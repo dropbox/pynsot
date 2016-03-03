@@ -1,295 +1,36 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 Make dummy data and fixtures and stuff.
 """
 
-import collections
-import json
+from __future__ import unicode_literals
 import logging
-import netaddr
+import os
 import pytest
-import random
-import socket
-import struct
-from pynsot import client
-try:
-    import faker
-except ImportError:
-    print "The 'fake-factory' module is required! (Hint: pip install fake-factory)"
-    raise
+from pytest_django.fixtures import live_server, django_user_model
 
-from . import util
+from pynsot.client import get_api_client
 
 
+__all__ = ('django_user_model', 'live_server')
+
+
+# Logger
 log = logging.getLogger(__name__)
 
-# Constants and stuff
-fake = faker.Factory.create()
+# API version to use for the API client
+API_VERSION = os.getenv('NSOT_API_VERSION')
 
-# API URL to use for testing.
-API_URL = 'http://localhost:8990/api'
-
-
-#############
-# Responses #
-#############
-# API responses that we're using for request/resposne mocking.
-# When authenticating against API
-AUTH_RESPONSE = {
-    'status':'ok',
-    'data': {'auth_token': 'bogus_token'}
+# Dummy config data used for testing auth_header authentication.
+AUTH_HEADER_CONFIG = {
+    'auth_method': 'auth_header',
+    'default_domain': 'localhost',
+    'auth_header': 'X-NSoT-Email',
 }
 
-# When retrieving Sites.
-SITES_RESPONSE = {u'data': {u'limit': None,
-  u'offset': 0,
-  u'sites': [{u'description': u'Production networks and devices.',
-    u'id': 1,
-    u'name': u'Production'}],
-  u'total': 1},
- u'status': u'ok'}
-
-SITES_LIMIT_RESPONSE = {
-    "status": "ok",
-    "data": {
-        "total": 2,
-        "limit": 1,
-        "sites": [
-            {
-                "description": "Production networks, devices, and interfaces.",
-                "id": 1,
-                "name": "Production"
-            }
-        ],
-        "offset": 0
-    }
-}
-
-SITES_LIST_RESPONSE = {
-    "status": "ok",
-    "data": {
-        "total": 2,
-        "limit": None,
-        "sites": [
-            {
-                "description": "Production networks, devices, and interfaces.",
-                "id": 1,
-                "name": "Production"
-            },
-            {
-                "description": "Where bass is dropped.",
-                "id": 2,
-                "name": "Da Club"
-            }
-        ],
-        "offset": 0
-    }
-}
-
-# When retrieving Devices.
-DEVICES_RESPONSE = {u'data': {u'devices': [
-    {u'attributes': {'owner': 'jathan'}, u'hostname': u'foo-bar1', u'id': 1, u'site_id': 1},
-    {u'attributes': {'owner': 'jathan'}, u'hostname': u'foo-bar2', u'id': 2, u'site_id': 1}
-    ],
-  u'limit': None,
-  u'offset': 0,
-  u'total': 2},
- u'status': u'ok'}
-
-DEVICE_RETRIEVE = {u'data': {u'device': {u'attributes': {
-   u'owner': u'jathan'},
-   u'hostname': u'foo-bar1',
-   u'id': 1,
-   u'site_id': 1}},
- u'status': u'ok'}
-
-DEVICE_UPDATE = {u'data': {u'device': {u'attributes': {u'monitored': u'',
-   u'owner': u'jathan'},
-   u'hostname': u'foo-bar1',
-   u'id': 1,
-   u'site_id': 1}},
- u'status': u'ok'}
-
-DEVICE_HOSTNAME_RETRIEVE = {u'data': {u'devices': [{u'attributes': {
-   u'owner': u'jathan'},
-   u'hostname': u'foo-bar1',
-   u'id': 1,
-   u'site_id': 1}],
-   'total': 1,
-   'offset': 0,
-   'limit': None,
-   },
- u'status': u'ok'}
-
-
-# Networks
-NETWORK_CREATE = {'data': {'network': {'attributes': {'owner': 'jathan'},
-   'id': 1,
-   'ip_version': '4',
-   'is_ip': False,
-   'network_address': '10.0.0.0',
-   'parent_id': None,
-   'prefix_length': 8,
-   'state': 'allocated',
-   'site_id': 1}},
- 'status': 'ok'}
-
-NETWORK_RETRIEVE = {u'data': {u'network': {u'attributes': {u'owner': u'jathan'},
-   u'id': 1,
-   u'ip_version': u'4',
-   u'is_ip': False,
-   u'network_address': u'10.0.0.0',
-   u'parent_id': None,
-   u'prefix_length': 8,
-   u'state': 'allocated',
-   u'site_id': 1}},
- u'status': u'ok'}
-
-NETWORK_UPDATE = {u'data': {u'network': {u'attributes': {u'foo': u'bar', u'owner': u'jathan'},
-   u'id': 1,
-   u'ip_version': u'4',
-   u'is_ip': False,
-   u'network_address': u'10.0.0.0',
-   u'parent_id': None,
-   u'prefix_length': 8,
-   u'state': 'allocated',
-   u'site_id': 1}},
- u'status': u'ok'}
-
-NETWORKS_RESPONSE = {u'data': {u'limit': None,
-  u'networks': [
-   {u'attributes': {u'owner': u'jathan'},
-    u'id': 1,
-    u'ip_version': u'4',
-    u'is_ip': False,
-    u'network_address': u'10.0.0.0',
-    u'parent_id': None,
-    u'prefix_length': 8,
-    u'state': 'allocated',
-    u'site_id': 1},
-   {u'attributes': {u'owner': u'jathan'},
-    u'id': 2,
-    u'ip_version': u'4',
-    u'is_ip': False,
-    u'network_address': u'10.0.0.0',
-    u'parent_id': 1,
-    u'prefix_length': 24,
-    u'state': 'allocated',
-    u'site_id': 1}],
-  u'offset': 0,
-  u'total': 2},
- u'status': u'ok'}
-
-NETWORK_CIDR_RETRIEVE = {u'data':
-  {u'networks': [{u'attributes': {u'owner': u'jathan'},
-   u'id': 1,
-   u'ip_version': u'4',
-   u'is_ip': False,
-   u'network_address': u'10.0.0.0',
-   u'parent_id': None,
-   u'prefix_length': 8,
-   u'state': 'allocated',
-   u'site_id': 1}],
-   "total": 1,
-   "limit": None,
-   "offset": 0,
-   },
- u'status': u'ok'}
-
-
-# When retrieving Attributes.
-ATTRIBUTE_CREATE = {u'data': {u'attribute': {u'constraints': {u'allow_empty': False,
-    u'pattern': u'',
-    u'valid_values': []},
-   u'description': u'',
-   u'display': False,
-   u'id': 3,
-   u'multi': True,
-   u'name': u'multi',
-   u'required': False,
-   u'resource_name': u'Device',
-   u'site_id': 1}},
- u'status': u'ok'}
-
-ATTRIBUTES_RESPONSE = {u'data': {u'attributes': [{u'constraints': {u'allow_empty': True,
-     u'pattern': u'',
-     u'valid_values': []},
-    u'description': u'',
-    u'display': False,
-    u'id': 2,
-    u'multi': False,
-    u'name': u'monitored',
-    u'required': False,
-    u'resource_name': u'Device',
-    u'site_id': 1},
-   {u'constraints': {u'allow_empty': False,
-     u'pattern': u'',
-     u'valid_values': []},
-    u'description': u'',
-    u'display': True,
-    u'id': 1,
-    u'multi': False,
-    u'name': u'owner',
-    u'required': False,
-    u'resource_name': u'Device',
-    u'site_id': 1},
-   {u'constraints': {u'allow_empty': False,
-    u'pattern': u'',
-    u'valid_values': []},
-   u'description': u'',
-   u'display': False,
-   u'id': 3,
-   u'multi': True,
-   u'name': u'multi',
-   u'required': False,
-   u'resource_name': u'Device',
-   u'site_id': 1}],
-  u'limit': None,
-  u'offset': 0,
-  u'total': 3},
- u'status': u'ok'}
-
-ATTRIBUTES_NAME_RESPONSE = {u'data': {u'attributes': [{u'constraints': {u'allow_empty': True,
-     u'pattern': u'',
-     u'valid_values': []},
-    u'description': u'',
-    u'display': False,
-    u'id': 2,
-    u'multi': False,
-    u'name': u'monitored',
-    u'required': False,
-    u'resource_name': u'Device',
-    u'site_id': 1},],
-  u'limit': None,
-  u'offset': 0,
-  u'total': 1},
- u'status': u'ok'}
-
-ATTRIBUTES_ID_RESPONSE = {
-    "status": "ok",
-    "data": {
-        "attribute": {
-            "multi": False,
-            "resource_name": "Device",
-            "description": "",
-            "display": False,
-            "required": False,
-            "site_id": 1,
-            "id": 2,
-            "constraints": {
-                "pattern": "",
-                "valid_values": [],
-                "allow_empty": True
-            },
-            "name": "monitored"
-        }
-    }
-}
-
-
-# Dummy config data used for testing dotfile and client
-CONFIG_DATA = {
+# This is used to test dotfile settings.
+DOTFILE_CONFIG_DATA = {
     'auth_token': {
         'email': 'jathan@localhost',
         'url': 'http://localhost:8990/api',
@@ -307,90 +48,71 @@ CONFIG_DATA = {
 
 
 @pytest.fixture
-def auth_token_config():
-    return CONFIG_DATA['auth_token']
+def config(live_server, django_user_model):
+    """Create a user and return an auth_token config matching that user."""
+    user = django_user_model.objects.create(
+        email='jathan@localhost', is_superuser=True, is_staff=True
+    )
+    data = {
+        'email': user.email,
+        'secret_key': user.secret_key,
+        'auth_method': 'auth_token',
+        'url': live_server.url + '/api',
+        # 'api_version': API_VERSION,
+        'api_version': '1.0',  # Hard-coded.
+    }
+
+    return data
 
 
 @pytest.fixture
-def auth_header_config():
-    return CONFIG_DATA['auth_header']
+def auth_header_config(config):
+    """Return an auth_header config."""
+    config.pop('secret_key')
+    config.update(AUTH_HEADER_CONFIG)
+    return config
 
 
-# Payload used to create Network & Device attributes used for testing.
-TEST_ATTRIBUTES = {
-    'attributes': [
-        {
-            'name': 'cluster',
-            'resource_name': 'Device',
-            'description': 'Device cluster.',
-            'constraints': {'allow_empty': True},
-        },
-        {
-            'name': 'foo',
-            'resource_name': 'Device',
-            'description': 'Foo for Devices.',
-        },
-        {
-            'name': 'owner',
-            'resource_name': 'Device',
-            'description': 'Device owner.',
-        },
-        {
-            'name': 'cluster',
-            'resource_name': 'Network',
-            'description': 'Network cluster.',
-            'constraints': {'allow_empty': True},
-        },
-        {
-            'name': 'foo',
-            'resource_name': 'Network',
-            'description': 'Foo for Networks.',
-        },
-        {
-            'name': 'owner',
-            'resource_name': 'Network',
-            'description': 'Network owner.',
-        },
-    ]
-}
-
-# Payload used to list Attribute values.
-VALUES_RETRIEVE = {u'status': u'ok', u'data': {u'values': [{u'resource_name': u'Device', u'name': u'owner', u'resource_id': 26683, u'attribute': 83, u'value': u'jathan', u'id': 1780986}], u'total': 1, u'limit': None, u'offset': 0}}
+@pytest.fixture
+def client(config):
+    """Create and return an admin client."""
+    api = get_api_client(extra_args=config, use_dotfile=False)
+    api.config = config
+    return api
 
 
-# Changes
-CHANGES_LIST_RESPONSE = {
-    "status": "ok",
-    "data": {
-        "changes": [
-            {
-                "resource_name": "Device",
-                "resource": {
-                    "attributes": {
-                        "owner": "john",
-                        "monitor": "collected"
-                    },
-                    "hostname": "foo-bar3",
-                    "site_id": 1,
-                    "id": 26687
-                },
-                "resource_id": 26687,
-                "site": {
-                    "description": "Production networks, devices, and interfaces.",
-                    "name": "Production",
-                    "id": 1
-                },
-                "id": 266658,
-                "change_at": 1455656717,
-                "user": {
-                    "id": 51,
-                    "email": "admin@localhost"
-                },
-                "event": "Update"
-            }
-        ],
-        "total": 1,
-        "limit": None,
-        "offset": 0
-    }
-}
+@pytest.fixture
+def site(client):
+    """Returns a Site object."""
+    return client.sites.post({'name': 'Foo', 'description': 'Foo site.'})
+
+
+@pytest.fixture
+def site_client(client, site):
+    """Returns a client tied to a specific site."""
+    client.config['default_site'] = site['id']
+    client.default_site = site['id']
+    return client
+
+
+@pytest.fixture
+def attribute(site_client):
+    """Return an Attribute object."""
+    return site_client.sites(site_client.default_site).attributes.post(
+        {'name': 'foo', 'resource_name': 'Device'}
+    )
+
+
+@pytest.fixture
+def device(site_client):
+    """Return a Device object."""
+    return site_client.sites(site_client.default_site).devices.post(
+        {'hostname': 'foo-bar1'}
+    )
+
+@pytest.fixture
+def network(site_client):
+    """Return a Network object."""
+    return site_client.sites(site_client.default_site).networks.post(
+        {'cidr': '10.20.30.0/24'}
+    )

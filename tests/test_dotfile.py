@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
+
 """
 Test the dotfile.
 """
 
+from __future__ import unicode_literals
 import copy
 import logging
 import os
@@ -10,7 +13,7 @@ import unittest
 
 from pynsot import constants, dotfile
 
-from .fixtures import CONFIG_DATA
+from .fixtures import DOTFILE_CONFIG_DATA
 
 
 log = logging.getLogger(__name__)
@@ -21,7 +24,7 @@ class TestDotFile(unittest.TestCase):
         """Automatically create a tempfile for each test."""
         fd, filepath = tempfile.mkstemp()
         self.filepath = filepath
-        self.config_data = copy.deepcopy(CONFIG_DATA)
+        self.config_data = copy.deepcopy(DOTFILE_CONFIG_DATA)
 
         self.config_path = os.path.expanduser('~/.pynsotrc')
         self.backup_path = self.config_path + '.orig'

@@ -6,29 +6,18 @@ Model classes to represent API dict results as objects in an ORM style.
 See the examples in the docstring for ``ApiModel``.
 """
 
+from __future__ import unicode_literals
+import collections
+
+
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
-import collections
-
-
 # Valid top-level types.
 TYPES = ('network', 'attribute', 'user', 'site', 'device')
-
-
-# What an error response looks like:
-'''
-{
-    "status": "error",
-    "error": {
-        "code": 404,
-        "message": "Resource not found."
-    }
-}
-'''
 
 
 class ApiModel(collections.MutableMapping):

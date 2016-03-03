@@ -369,8 +369,8 @@ def remove(ctx, id, site_id):
     'attr_action',
     flag_value='replace',
     help=(
-        'Causes attributes to be replaced instead of updated. If combined with '
-        '--multi, the entire list will be replaced.'
+        'Causes attributes to be replaced instead of updated. If combined '
+        'with --multi, the entire list will be replaced.'
     ),
 )
 @click.option(

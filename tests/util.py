@@ -1,28 +1,26 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 """
 Utilities for testing.
 """
 
-
+from __future__ import unicode_literals
 import collections
 import contextlib
 from itertools import islice
-import json
 import logging
 import os
 import random
 import requests_mock
+import shlex
 import shutil
 import socket
 import struct
-import sys
 import tempfile
 
+from pynsot.app import app
 from pynsot import client
 from pynsot import dotfile
-from pynsot.vendor import click
 from pynsot.vendor.click.testing import CliRunner as BaseCliRunner
 
 
@@ -38,6 +36,9 @@ ATTRIBUTE_DATA = {
 
 # Used to store Attribute/value pairs
 Attribute = collections.namedtuple('Attribute', 'name value')
+
+# Hard-code the app name as 'nsot' to match the CLI util.
+app.name = 'nsot'
 
 
 class CliRunner(BaseCliRunner):
@@ -88,6 +89,20 @@ class CliRunner(BaseCliRunner):
         """
         with requests_mock.Mocker() as mock, self.isolated_filesystem():
             yield mock
+
+    def run(self, command, **kwargs):
+        """
+        Shortcut to invoke to parse command and pass app along.
+
+        :param command:
+            Command args e.g. 'devices list'
+
+        :param kwargs:
+            Extra keyword arguments to pass to ``invoke()``
+        """
+        cmd_parts = shlex.split(command)
+        result = self.invoke(app, cmd_parts, **kwargs)
+        return result
 
 
 def rando():
@@ -284,8 +299,8 @@ def generate_interfaces(device_id=None, with_attributes=True,
     return interfaces
 
 
-def generate_networks(num_items=100, with_attributes=True,
-        include_hosts=False, ipv4list=None):
+def generate_networks(num_items=100, with_attributes=True, include_hosts=False,
+                      ipv4list=None):
     """
     Return a list of dicts for Network creation.
 
@@ -300,7 +315,6 @@ def generate_networks(num_items=100, with_attributes=True,
 
     networks = []
     for cidr in ipv4list:
-        attributes = generate_attributes()
         item = {'cidr': str(cidr)}
         if with_attributes:
             item['attributes'] = generate_attributes()
@@ -335,5 +349,5 @@ def rando_set_query():
     """Return a random set theory query string."""
     action = rando_set_action()
     return ' '.join(
-        action + '%s=%s' % (k, v) for k,v in generate_attributes().iteritems()
+        action + '%s=%s' % (k, v) for k, v in generate_attributes().iteritems()
     )
