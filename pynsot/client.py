@@ -16,7 +16,7 @@ to the client constructor::
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
+__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 import getpass
@@ -29,6 +29,7 @@ from .vendor.requests.auth import AuthBase
 from .vendor import slumber
 from .vendor.slumber.exceptions import HttpClientError
 
+from .util import get_result
 from . import dotfile
 
 
@@ -37,6 +38,9 @@ log = logging.getLogger(__name__)
 
 # Header used for passthrough authentication.
 AUTH_HEADER = 'X-NSoT-Email'
+
+# Default authentication method
+DEFAULT_AUTH_METHOD = 'auth_token'
 
 
 __all__ = (
@@ -58,29 +62,75 @@ class BaseClient(slumber.API):
     """
     Magic REST API client for NSoT.
     """
+    authentication_class = None
+
     def __init__(self, base_url=None, **kwargs):
+        self._base_url = base_url
         auth = kwargs.pop('auth', None)  # Ditch default auth
         self.default_site = kwargs.pop('default_site', None)  # Default site_id
+        self.api_version = kwargs.pop('api_version', None)  # API version
+        log.debug('Using api_version = %s' % self.api_version)
 
         # Override the auth method if we have defined .get_auth()
         if auth is None:
             # Set these as object attributes so that they can be mutated in the
-            # subclass .get_auth() method
+            # subclass. We want subclasses to be able to pop items off of the
+            # kwargs before they're passed to BaseClient.
             self._kwargs = kwargs
-            auth = self.get_auth(base_url)
+            auth = self.get_auth(client=self)
 
         kwargs['auth'] = auth
         kwargs['append_slash'] = True  # Append slashes!
         super(BaseClient, self).__init__(base_url, **kwargs)
 
-    def get_auth(self, base_url=None):
+        # Store auth and headers for use later.
+        self._auth = auth
+        self._headers = self._store['session'].headers
+
+    def _fetch_resources(self):
+        """Fetch resources from API"""
+        headers = self._headers
+        auth = self._auth
+        r = slumber.requests.get(self._base_url, auth=auth, headers=headers)
+
+        if r.ok:
+            return r.json()
+        else:
+            msg = r.json().get(
+                'error', 'Error fetching API resources. Is auth OK?'
+            )
+            raise ClientError(msg)
+
+    def _populate_resources(self, resources=None):
+        """
+        Use `resources` to populate ... resources.
+
+        :param resources:
+            A list or dict containing resource names
+        """
+        if resources is None:
+            raise TypeError('Resources must be iterable')
+
+        # Iterate the resource names, and set a local attribute name using the
+        # resource method we retrieved from the API.
+        for resource_name in resources:
+            resource = getattr(self, resource_name)
+            setattr(self, resource_name, resource)
+
+    def get_auth(self, **kwargs):
         """
         Subclasses should references kwargs from ``self._kwargs``.
 
-        :param base_url:
-            Base API URL
+        :param client:
+            Client instance. Defaults to ``self``.
         """
-        raise NotImplementedError('SUBCLASS ME OR SOMETHING!')
+        if self.authentication_class is None:
+            raise NotImplementedError(
+                'Define authentication_class in a subclass!'
+            )
+
+        client = kwargs.get('client')
+        return self.authentication_class(client=client)
 
     def error(self, exc):
         """
@@ -117,34 +167,45 @@ class BaseClient(slumber.API):
         return '<%s(url=%s)>' % (cls_name, self._store['base_url'])
 
 
-class EmailHeaderAuthentication(AuthBase):
-    """Special authentication that sets the email auth header."""
-    def __init__(self, email=None, auth_header=AUTH_HEADER):
-        if email is None:
-            raise LoginFailed('You must provide an email!')
-        self.email = email
-        self.auth_header = auth_header
+class BaseClientAuth(AuthBase):
+    def __init__(self, client):
+        """
+        Any subclasses must accept ``client`` as the first argument. Kwargs
+        come from the client so that they can be mutated and will be available
+        as ``self.kwargs`` on authentication subclasses.
+
+        Additionally, you must also subclass ``__call__``.
+        """
+        self.client = client
+        self.base_url = client._base_url
+        self.api_version = client.api_version
+        self.kwargs = client._kwargs
+
+    def append_api_version(self, request):
+        """Append API version into Accept header."""
+        headers = request.headers
+        accept_header = headers.get('accept')
+
+        # If the header exists
+        if accept_header:
+            version_value = ';version={}'.format(self.api_version)
+            headers['accept'] += version_value
 
     def __call__(self, r):
-        """Set the auth header."""
-        r.headers[self.auth_header] = self.email
+        if self.api_version is not None:
+            self.append_api_version(r)
+
         return r
 
 
-class EmailHeaderClient(BaseClient):
-    """Default client using email auth header method."""
-    @classmethod
-    def get_user(cls):
-        """Get the local username, or if root, the sudo username."""
-        user = getpass.getuser()
-        if user == 'root':
-            user = os.getenv('SUDO_USER')
-        return user
+class EmailHeaderAuthentication(BaseClientAuth):
+    """Special authentication that sets the email auth header."""
 
-    def get_auth(self, base_url):
-        kwargs = self._kwargs
-        email = kwargs.pop('email', None)
-        default_domain = kwargs.pop('default_domain', 'localhost')
+    def __init__(self, client):
+        super(EmailHeaderAuthentication, self).__init__(client)
+        email = self.kwargs.pop('email', None)
+        default_domain = self.kwargs.pop('default_domain', 'localhost')
+        auth_header = self.kwargs.pop('auth_header', AUTH_HEADER)
 
         if email is None and default_domain:
             log.debug('No email provided; Using default_domain: %r',
@@ -153,28 +214,49 @@ class EmailHeaderClient(BaseClient):
             email = '%s@%s' % (user, default_domain)
             log.debug('Using email: %r', email)
 
-        auth_header = kwargs.pop('auth_header', AUTH_HEADER)
-        return EmailHeaderAuthentication(email, auth_header)
+        if email is not None and '@' not in email:
+            raise LoginFailed('You must provide an email!')
+
+        self.email = email
+        self.auth_header = auth_header
+
+    @classmethod
+    def get_user(cls):
+        """Get the local username, or if root, the sudo username."""
+        user = getpass.getuser()
+        if user == 'root':
+            user = os.getenv('SUDO_USER')
+        return user
+
+    def __call__(self, r):
+        """Set the auth header."""
+        r = super(EmailHeaderAuthentication, self).__call__(r)
+        r.headers[self.auth_header] = self.email
+        return r
 
 
-class AuthTokenAuthentication(AuthBase):
+class EmailHeaderClient(BaseClient):
+    """Default client using email auth header method."""
+    authentication_class = EmailHeaderAuthentication
+    required_arguments = ('email', 'default_domain')
+
+
+class AuthTokenAuthentication(BaseClientAuth):
     """
     Special authentication that utilizes auth_tokens.
 
     Adds header for "Authorization: ApiToken {email}:{auth_token}"
     """
-    def __init__(self, email=None, auth_token=None):
+    def __init__(self, client):
+        super(AuthTokenAuthentication, self).__init__(client)
+        kwargs = self.kwargs
+        base_url = self.base_url
+        email = kwargs.pop('email', None)
+        secret_key = kwargs.pop('secret_key', None)
+
         self.email = email
-        self.auth_token = auth_token
+        self.auth_token = self.get_token(base_url, email, secret_key)
 
-    def __call__(self, r):
-        header = 'AuthToken %s:%s' % (self.email, self.auth_token)
-        r.headers['Authorization'] = header
-        return r
-
-
-class AuthTokenClient(BaseClient):
-    """Client that uses auth_token method."""
     def get_token(self, base_url, email, secret_key):
         """
         Currently ghetto: Hit the API to get an auth_token.
@@ -196,35 +278,43 @@ class AuthTokenClient(BaseClient):
         try:
             url = base_url + '/authenticate/'
             headers = {'content-type': 'application/json'}
-            r = slumber.requests.post(url, data=json.dumps(data),
-                                      headers=headers)
+            r = slumber.requests.post(
+                url, data=json.dumps(data), headers=headers
+            )
         except Exception as err:
             log.debug('Got error: %s' % (err,))
-            self.error(err)
+            self.client.error(err)
 
         if r.ok:
             log.debug('Got response: %r' % (r,))
-            return r.json()['data']['auth_token']
+            result = get_result(r.json())
+            return result
         else:
             msg = 'Failed to fetch auth_token from %s' % base_url
             err = HttpClientError(msg, response=r, content=r.content)
-            self.error(err)
+            self.client.error(err)
 
-    def get_auth(self, base_url):
-        kwargs = self._kwargs
-        email = kwargs.pop('email', None)
-        secret_key = kwargs.pop('secret_key', None)
-        auth_token = self.get_token(base_url, email, secret_key)
-        auth = AuthTokenAuthentication(email, auth_token)
-        return auth
-Client = AuthTokenClient  # Default client is auth_token
+    def __call__(self, r):
+        r = super(AuthTokenAuthentication, self).__call__(r)
+        header = 'AuthToken %s:%s' % (self.email, self.auth_token)
+        r.headers['Authorization'] = header
+        return r
 
 
-# Mapping to our two (2) hard-coded auth methods and their required arguments.
+class AuthTokenClient(BaseClient):
+    """Client that uses auth_token method."""
+    authentication_class = AuthTokenAuthentication
+    required_arguments = ('email', 'secret_key')
+
+
+#: Mapping to our two (2) hard-coded auth methods
 AUTH_CLIENTS = {
-    'auth_header': (EmailHeaderClient, ('email', 'default_domain', 'default_site')),
-    'auth_token': (AuthTokenClient, ('email', 'secret_key', 'default_site')),
+    'auth_header': EmailHeaderClient,
+    'auth_token': AuthTokenClient,
 }
+
+#: Default client class
+Client = AUTH_CLIENTS[DEFAULT_AUTH_METHOD]
 
 
 def get_auth_client_info(auth_method):
@@ -249,6 +339,9 @@ def get_api_client(auth_method=None, url=None, extra_args=None):
 
     :param url:
         API URL
+
+    :param extra_args:
+        Dict of extra keyword args to be passed to the API client class
     """
     if extra_args is None:
         extra_args = {}
@@ -263,7 +356,8 @@ def get_api_client(auth_method=None, url=None, extra_args=None):
     # Merge the extra_args w/ the client_args from the config
     client_args.update(extra_args)
 
-    # Minimum required arguments that we don't want getting passed to the client
+    # Minimum required arguments that we don't want getting passed to the
+    # client
     if auth_method is None:
         auth_method = client_args.pop('auth_method')
     if url is None:
@@ -272,9 +366,25 @@ def get_api_client(auth_method=None, url=None, extra_args=None):
     # Validate the auth_method
     log.debug('Validating auth_method: %s', auth_method)
     try:
-        client_class, arg_names = get_auth_client_info(auth_method)
+        client_class = get_auth_client_info(auth_method)
     except KeyError:
         raise click.UsageError('Invalid auth_method: %s' % (auth_method,))
+
+    arg_names = client_class.required_arguments
+
+    # Allow optional arguments in arg_names
+    optional_args = tuple(dotfile.OPTIONAL_FIELDS)
+    arg_names += optional_args
+
+    # Remove non-relavant args
+    for client_arg in client_args.keys():
+        if client_arg not in arg_names:
+            log.debug(
+                'Skipping %r in config for auth_method %r' % (
+                    client_arg, auth_method
+                )
+            )
+            client_args.pop(client_arg)
 
     try:
         api_client = client_class(url, **client_args)
@@ -283,4 +393,5 @@ def get_api_client(auth_method=None, url=None, extra_args=None):
         if 'Connection refused' in msg:
             msg = 'Could not connect to server: %s' % (url,)
         raise click.UsageError(msg)
+
     return api_client
