@@ -2,12 +2,13 @@
 Test the dotfile.
 """
 
+import copy
 import logging
 import os
 import tempfile
 import unittest
 
-from pynsot import dotfile
+from pynsot import constants, dotfile
 
 from .fixtures import CONFIG_DATA
 
@@ -20,7 +21,7 @@ class TestDotFile(unittest.TestCase):
         """Automatically create a tempfile for each test."""
         fd, filepath = tempfile.mkstemp()
         self.filepath = filepath
-        self.config_data = CONFIG_DATA.copy()
+        self.config_data = copy.deepcopy(CONFIG_DATA)
 
         self.config_path = os.path.expanduser('~/.pynsotrc')
         self.backup_path = self.config_path + '.orig'
@@ -33,7 +34,7 @@ class TestDotFile(unittest.TestCase):
     def test_read_success(self):
         """Test that file can be read."""
         config = dotfile.Dotfile(self.filepath)
-        config.write(self.config_data)
+        config.write(self.config_data['auth_token'])
         config.read()
 
     def test_read_failure(self):
@@ -48,7 +49,7 @@ class TestDotFile(unittest.TestCase):
     def test_write(self):
         """Test that file can be written."""
         config = dotfile.Dotfile(self.filepath)
-        config.write(self.config_data)
+        config.write(self.config_data['auth_token'])
 
     def test_validate_perms_success(self):
         """Test that file permissions are ok."""
@@ -57,27 +58,41 @@ class TestDotFile(unittest.TestCase):
         config.write({})
         config.validate_perms()
 
-    def test_validate_fields(self):
-        """Test that fields check out."""
+    def test_validate_fields_auth_token(self):
+        """Test that auth_token fields check out."""
         config = dotfile.Dotfile(self.filepath)
-        self.config_data.pop('default_site', None)
 
-        # We're going to test every field.
-        fields = sorted(self.config_data)
+        self._validate_test_fields('auth_token', config)
+
+    def test_validate_fields_auth_header(self):
+        """Test that auth_header fields check out."""
+        config = dotfile.Dotfile(self.filepath)
+
+        self._validate_test_fields('auth_header', config)
+
+    def _validate_test_fields(self, auth_method, config):
+        config_data = self.config_data[auth_method]
+
+        # We're not testing optional fields, yo.
+        for optional_field in constants.OPTIONAL_FIELDS:
+            config_data.pop(optional_field, None)
+
+        # We're going to test every required field.
+        fields = sorted(config_data)
         my_config = {}
+
+        # Fetch the required_fields for this auth_method
+        required_fields = config.get_required_fields(auth_method)
 
         # Iterate through the sorted list of fields to make sure that each one
         # raises an error as expected.
         err = 'Missing required field: '
         for field in fields:
-            with self.assertRaisesRegexp(
-                dotfile.DotfileError,
-                err + field
-            ):
+            with self.assertRaisesRegexp(dotfile.DotfileError, err + field):
                 config.read()
-                config.validate_fields(my_config)
+                config.validate_fields(my_config, required_fields)
 
-            my_config[field] = self.config_data[field]
+            my_config[field] = config_data[field]
             config.write(my_config)
 
     def tearDown(self):

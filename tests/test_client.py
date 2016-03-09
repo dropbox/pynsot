@@ -17,7 +17,10 @@ from pynsot import client
 from pynsot.vendor import click
 from pynsot.vendor.click.testing import CliRunner
 
-from .fixtures import config, API_URL, AUTH_RESPONSE, SITES_RESPONSE
+from .fixtures import (
+    auth_token_config as config, auth_header_config, API_URL, AUTH_RESPONSE,
+    SITES_RESPONSE
+)
 
 
 @requests_mock.Mocker()
