@@ -290,16 +290,30 @@ ATTRIBUTES_ID_RESPONSE = {
 
 # Dummy config data used for testing dotfile and client
 CONFIG_DATA = {
-    'email': 'jathan@localhost',
-    'url': 'http://localhost:8990/api',
-    'auth_method': 'auth_token',
-    'secret_key': 'MJMOl9W7jqQK3h-quiUR-cSUeuyDRhbn2ca5E31sH_I=',
+    'auth_token': {
+        'email': 'jathan@localhost',
+        'url': 'http://localhost:8990/api',
+        'auth_method': 'auth_token',
+        'secret_key': 'MJMOl9W7jqQK3h-quiUR-cSUeuyDRhbn2ca5E31sH_I=',
+    },
+    'auth_header': {
+        'email': 'jathan@localhost',
+        'url': 'http://localhost:8990/api',
+        'auth_method': 'auth_header',
+        'default_domain': 'localhost',
+        'auth_header': 'X-NSoT-Email',
+    }
 }
 
 
 @pytest.fixture
-def config():
-    return CONFIG_DATA
+def auth_token_config():
+    return CONFIG_DATA['auth_token']
+
+
+@pytest.fixture
+def auth_header_config():
+    return CONFIG_DATA['auth_header']
 
 
 # Payload used to create Network & Device attributes used for testing.

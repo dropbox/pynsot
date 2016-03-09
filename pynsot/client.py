@@ -13,12 +13,7 @@ to the client constructor::
     AuthTokenClient(url=http://localhost:8990/api)>
 """
 
-__author__ = 'Jathan McCollum'
-__maintainer__ = 'Jathan McCollum'
-__email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
-
-
+from __future__ import unicode_literals
 import getpass
 import json
 import logging
@@ -30,17 +25,17 @@ from .vendor import slumber
 from .vendor.slumber.exceptions import HttpClientError
 
 from .util import get_result
-from . import dotfile
+from . import constants, dotfile
+
+
+__author__ = 'Jathan McCollum'
+__maintainer__ = 'Jathan McCollum'
+__email__ = 'jathan@dropbox.com'
+__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Logger
 log = logging.getLogger(__name__)
-
-# Header used for passthrough authentication.
-AUTH_HEADER = 'X-NSoT-Email'
-
-# Default authentication method
-DEFAULT_AUTH_METHOD = 'auth_token'
 
 
 __all__ = (
@@ -205,7 +200,7 @@ class EmailHeaderAuthentication(BaseClientAuth):
         super(EmailHeaderAuthentication, self).__init__(client)
         email = self.kwargs.pop('email', None)
         default_domain = self.kwargs.pop('default_domain', 'localhost')
-        auth_header = self.kwargs.pop('auth_header', AUTH_HEADER)
+        auth_header = self.kwargs.pop('auth_header', constants.AUTH_HEADER)
 
         if email is None and default_domain:
             log.debug('No email provided; Using default_domain: %r',
@@ -238,7 +233,7 @@ class EmailHeaderAuthentication(BaseClientAuth):
 class EmailHeaderClient(BaseClient):
     """Default client using email auth header method."""
     authentication_class = EmailHeaderAuthentication
-    required_arguments = ('email', 'default_domain')
+    required_arguments = ('email', 'default_domain', 'auth_header')
 
 
 class AuthTokenAuthentication(BaseClientAuth):
@@ -314,7 +309,7 @@ AUTH_CLIENTS = {
 }
 
 #: Default client class
-Client = AUTH_CLIENTS[DEFAULT_AUTH_METHOD]
+Client = AUTH_CLIENTS[constants.DEFAULT_AUTH_METHOD]
 
 
 def get_auth_client_info(auth_method):
@@ -373,7 +368,7 @@ def get_api_client(auth_method=None, url=None, extra_args=None):
     arg_names = client_class.required_arguments
 
     # Allow optional arguments in arg_names
-    optional_args = tuple(dotfile.OPTIONAL_FIELDS)
+    optional_args = tuple(constants.OPTIONAL_FIELDS)
     arg_names += optional_args
 
     # Remove non-relavant args

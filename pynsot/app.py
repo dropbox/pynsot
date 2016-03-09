@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
+
+"""
+Base CLI commands for all objects.
+
+Model-specific objects and argument parsers will be defined in subclasses or by
+way of factory methods.
+"""
+
 from __future__ import unicode_literals
-
-"""
-Base CLI commands for all objects. Model-specific objects and argument parsers
-will be defined in subclasses or by way of factory methods.
-"""
-
-__author__ = 'Jathan McCollum'
-__maintainer__ = 'Jathan McCollum'
-__email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
-
-
 import datetime
 import logging
 import os
@@ -24,6 +20,12 @@ from .util import get_result
 from .vendor import click
 from .vendor import prettytable
 from .vendor.slumber.exceptions import (HttpClientError, HttpServerError)
+
+
+__author__ = 'Jathan McCollum'
+__maintainer__ = 'Jathan McCollum'
+__email__ = 'jathan@dropbox.com'
+__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
 # Constants/Globals

@@ -1,13 +1,10 @@
+# -*- coding: utf-8 -*-
+
 """
 Handle the read, write, and generation of the .pynsotrc config file.
 """
 
-__author__ = 'Jathan McCollum'
-__maintainer__ = 'Jathan McCollum'
-__email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
-
-
+from __future__ import unicode_literals
 from ConfigParser import RawConfigParser
 import copy
 import logging
@@ -15,32 +12,17 @@ import os
 
 from .vendor import click
 from .vendor import rcfile
+from . import constants
+
+
+__author__ = 'Jathan McCollum'
+__maintainer__ = 'Jathan McCollum'
+__email__ = 'jathan@dropbox.com'
+__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Logging object
 log = logging.getLogger(__name__)
-
-# Mapping of required field names and default values we want to be in the
-# dotfile.
-REQUIRED_FIELDS = {
-    'auth_method': ['auth_token', 'auth_header'],
-    'url': None,
-}
-
-# Mapping of optional field names and default values (if any)
-OPTIONAL_FIELDS = {
-    'default_site': None,
-    'api_version': None,
-}
-
-# Path stuff
-USER_HOME = os.path.expanduser('~')
-DOTFILE_NAME = '.pynsotrc'
-DOTFILE_PATH = os.path.join(USER_HOME, DOTFILE_NAME)
-DOTFILE_PERMS = 0600  # -rw-------
-
-# Config section name
-SECTION_NAME = 'pynsot'
 
 
 __all__ = (
@@ -54,14 +36,16 @@ class DotfileError(Exception):
 
 class Dotfile(object):
     """Create, read, and write a dotfile."""
-    def __init__(self, filepath=DOTFILE_PATH, **kwargs):
+    def __init__(self, filepath=constants.DOTFILE_PATH, **kwargs):
         self.filepath = filepath
 
     def read(self, **kwargs):
         """
         Read ``~/.pynsotrc`` and return it as a dict.
         """
-        config = rcfile.rcfile(SECTION_NAME, args={'config': self.filepath})
+        config = rcfile.rcfile(
+            constants.SECTION_NAME, args={'config': self.filepath}
+        )
         config.pop('config', None)  # We don't need this field in here.
 
         # If there is *no* config data so far and...
@@ -92,28 +76,31 @@ class Dotfile(object):
         # Ownership
         s = os.stat(self.filepath)
         if s.st_uid != os.getuid():
-            msg = '%s: %s must be owned by you' % (DOTFILE_NAME, self.filepath)
-            raise DotfileError(msg)
+            raise DotfileError(
+                '%s: %s must be owned by you' % (
+                    constants.DOTFILE_NAME, self.filepath
+                )
+            )
 
         # Permissions
         self.enforce_perms()
 
-    def validate_fields(self, field_names, required_fields=None):
+    def validate_fields(self, field_names, required_fields):
         """
         Make sure all the fields are set.
 
         :param field_names:
             List of field names to validate
-        """
-        if required_fields is None:
-            required_fields = REQUIRED_FIELDS
 
+        :param required_fields:
+            List of required field names to check against
+        """
         for rname in sorted(required_fields):
             if rname not in field_names:
                 msg = '%s: Missing required field: %s' % (self.filepath, rname)
                 raise DotfileError(msg)
 
-    def enforce_perms(self, perms=DOTFILE_PERMS):
+    def enforce_perms(self, perms=constants.DOTFILE_PERMS):
         """
         Enforce permissions on the dotfile.
 
@@ -136,7 +123,7 @@ class Dotfile(object):
         if filepath is None:
             filepath = self.filepath
         config = RawConfigParser()
-        section = SECTION_NAME
+        section = constants.SECTION_NAME
         config.add_section(section)
 
         # Set the config settings
@@ -161,13 +148,20 @@ class Dotfile(object):
             Mapping of required field names to default values
         """
         if required_fields is None:
-            required_fields = copy.deepcopy(REQUIRED_FIELDS)
+            required_fields = copy.deepcopy(constants.REQUIRED_FIELDS)
 
         from .client import AUTH_CLIENTS  # To avoid circular import
 
+        # Fields that do not have default values, which are specific to an
+        # auth_method.
         auth_fields = AUTH_CLIENTS[auth_method].required_arguments
-        auth_items = dict.fromkeys(auth_fields)
-        required_fields.update(auth_items)
+        non_specific_fields = dict.fromkeys(auth_fields)
+        required_fields.update(non_specific_fields)
+
+        # Fields that MAY have default values, which are specific to an
+        # auth_method, if any.
+        specific_fields = constants.SPECIFIC_FIELDS.get(auth_method, {})
+        required_fields.update(specific_fields)
 
         return required_fields
 
@@ -191,10 +185,10 @@ class Dotfile(object):
             Dict of config data
         """
         if required_fields is None:
-            required_fields = REQUIRED_FIELDS
+            required_fields = constants.REQUIRED_FIELDS
 
         if optional_fields is None:
-            optional_fields = OPTIONAL_FIELDS
+            optional_fields = constants.OPTIONAL_FIELDS
 
         config_data = {}
 
@@ -234,6 +228,8 @@ class Dotfile(object):
             Keyword arguments of prepared values
         """
         for field, default_value in field_items.iteritems():
+            prompt = 'Please enter %s' % (field,)
+
             # If it's already in the config data, move on.
             if field in config_data:
                 continue
@@ -242,13 +238,20 @@ class Dotfile(object):
             if field not in kwargs:
                 # If it does not have a default value prompt for it
                 if default_value is None:
-                    prompt = 'Please enter %s' % (field,)
                     if not optional:
                         value = click.prompt(prompt, type=str)
                     else:
                         prompt += ' (optional)'
-                        value = click.prompt(prompt, default='',
-                                             show_default=False)
+                        value = click.prompt(
+                            prompt, default='', type=str, show_default=False
+                        )
+
+                # If the default_value is a string, prompt for it, but present
+                # it as a default.
+                elif isinstance(default_value, basestring):
+                    value = click.prompt(
+                        prompt, type=str, default=default_value
+                    )
 
                 # If it's a list of options, present the choices.
                 elif isinstance(default_value, list):
