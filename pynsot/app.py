@@ -19,7 +19,7 @@ import sys
 
 import pynsot
 from . import client
-from .models import ApiModel
+from .util import get_result
 
 from .vendor import click
 from .vendor import prettytable
@@ -248,7 +248,6 @@ class App(object):
                 self.handle_response(action, item, result)
             return None
 
-        pretty_dict = self.pretty_dict(data)
         t_ = '%s %s!'
         if action.endswith('e'):
             action = action[:-1]  # "remove" -> "remov"
@@ -452,20 +451,37 @@ class App(object):
         # Get the results
         try:
             r = resource.get(**params)
-        except HTTP_ERRORS as err:
+        except HTTP_ERRORS:
             return None
 
         # Assert only 1 matching result.
-        total = r['data']['total']
+        try:
+            total = r['data']['total']
+        except KeyError:
+            total = r['count']
+
         if total > 1:
             log.debug('get_single_object: More than one object found!')
             return None
 
         # Return a single result.
+        r = get_result(r)
+        r = self.get_paginated_results(r)
         try:
-            return r['data'][self.resource_name][0]
-        except IndexError as err:
+            return r[0]
+        except IndexError:
             return None
+
+    def get_paginated_results(self, objects):
+        """
+        If ``objects`` has a results key, return that instead.
+
+        :param objects:
+            List or dict of objects.
+        """
+        if 'results' in objects:
+            return objects['results']
+        return objects
 
     def list(self, data, display_fields=None, resource=None,
              verbose_fields=None):
@@ -530,9 +546,12 @@ class App(object):
 
             # Or just list all of them.
             elif result:
-                objects = result['data'][self.resource_name]
+                # FIXME(jathan): Once API is fully-versioned, deprecate this
+                # call.
+                objects = get_result(result)
 
             if objects:
+                objects = self.get_paginated_results(objects)
                 self.print_list(objects, display_fields)
             else:
                 pretty_dict = self.pretty_dict(data)
@@ -600,15 +619,17 @@ class App(object):
                     if val in attrs[key]:
                         attrs[key].remove(val)
 
-                    # If the value wasn't provided, or if the list is now empty,
-                    # remove it.
+                    # If the value wasn't provided, or if the list is now
+                    # empty, remove it.
                     if not val or not attrs[key]:
                         attrs.pop(key)
 
             # Default string-based handler
             else:
                 if action in ('add', 'replace'):
-                    log.debug('[single] Adding/replacing %r to %r' % (val, key))
+                    log.debug(
+                        '[single] Adding/replacing %r to %r' % (val, key)
+                    )
                     attrs[key] = val
                 elif action == 'delete':
                     log.debug('[single] Removing %r from %r' % (val, key))
@@ -647,7 +668,7 @@ class App(object):
                     'Update failed. Try again with --verbose for more info.'
                 )
 
-            obj_id = obj.pop('id') # We don't want id when doing a PUT
+            obj_id = obj.pop('id')  # We don't want id when doing a PUT
             payload = obj
 
         log.debug('PAYLOAD [in]: %r', payload)
@@ -658,7 +679,7 @@ class App(object):
             if key == 'attributes':
                 attrs = payload['attributes']
                 payload['attributes'] = self.process_attributes(
-                        attrs, attr_action, multi=multi
+                    attrs, attr_action, multi=multi
                 )
 
             # Otherwise, if the value was provided, replace it outright

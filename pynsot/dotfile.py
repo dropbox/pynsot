@@ -9,7 +9,7 @@ __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
 
 
 from ConfigParser import RawConfigParser
-
+import copy
 import logging
 import os
 
@@ -20,16 +20,17 @@ from .vendor import rcfile
 # Logging object
 log = logging.getLogger(__name__)
 
-# Default authentication method (one of user_auth_header, auth_token)
-AUTH_METHOD = 'auth_token'
-
 # Mapping of required field names and default values we want to be in the
 # dotfile.
 REQUIRED_FIELDS = {
-    'auth_method': AUTH_METHOD,
+    'auth_method': ['auth_token', 'auth_header'],
     'url': None,
-    'email': None,
-    'secret_key': None,
+}
+
+# Mapping of optional field names and default values (if any)
+OPTIONAL_FIELDS = {
+    'default_site': None,
+    'api_version': None,
 }
 
 # Path stuff
@@ -73,11 +74,13 @@ class Dotfile(object):
 
         self.config = config
 
-        # If we have configuration values, validate the permissions and presence
-        # of fields in the dotfile
-        if self.config.get('auth_method') == 'auth_token':
+        # If we have configuration values, validate the permissions and
+        # presence of fields in the dotfile.
+        auth_method = config.get('auth_method')
+        if auth_method == 'auth_token':
             self.validate_perms()
-            self.validate_fields(config)
+            required_fields = self.get_required_fields(auth_method)
+            self.validate_fields(config, required_fields)
 
         return config
 
@@ -95,14 +98,17 @@ class Dotfile(object):
         # Permissions
         self.enforce_perms()
 
-    def validate_fields(self, field_names):
+    def validate_fields(self, field_names, required_fields=None):
         """
         Make sure all the fields are set.
 
         :param field_names:
             List of field names to validate
         """
-        for rname in sorted(REQUIRED_FIELDS):
+        if required_fields is None:
+            required_fields = REQUIRED_FIELDS
+
+        for rname in sorted(required_fields):
             if rname not in field_names:
                 msg = '%s: Missing required field: %s' % (self.filepath, rname)
                 raise DotfileError(msg)
@@ -143,8 +149,31 @@ class Dotfile(object):
         self.enforce_perms()
         log.debug('wrote %s' % filepath)
 
-    @staticmethod
-    def get_config_data(required_fields=REQUIRED_FIELDS, **kwargs):
+    @classmethod
+    def get_required_fields(cls, auth_method, required_fields=None):
+        """
+        Return union of all required fields for ``auth_method``.
+
+        :param auth_method:
+            Authentication method
+
+        :param required_fields:
+            Mapping of required field names to default values
+        """
+        if required_fields is None:
+            required_fields = copy.deepcopy(REQUIRED_FIELDS)
+
+        from .client import AUTH_CLIENTS  # To avoid circular import
+
+        auth_fields = AUTH_CLIENTS[auth_method].required_arguments
+        auth_items = dict.fromkeys(auth_fields)
+        required_fields.update(auth_items)
+
+        return required_fields
+
+    @classmethod
+    def get_config_data(cls, required_fields=None, optional_fields=None,
+                        **kwargs):
         """
         Enumerate required fields and prompt for ones that weren't provided if
         they don't have default values.
@@ -152,22 +181,103 @@ class Dotfile(object):
         :param required_fields:
             Mapping of required field names to default values
 
+        :param optional_fields:
+            Mapping of optional field names to default values
+
         :param kwargs:
-            Dict of config settings
+            Dict of prepared config settings
+
+        :returns:
+            Dict of config data
         """
+        if required_fields is None:
+            required_fields = REQUIRED_FIELDS
+
+        if optional_fields is None:
+            optional_fields = OPTIONAL_FIELDS
+
         config_data = {}
-        for field, default_value in required_fields.iteritems():
-            # If the field was not provided and does not have a default value
-            # prompt for it
-            if field not in kwargs and default_value is None:
-                prompt = 'Please enter %s' % (field.upper(),)
-                value = click.prompt(prompt, type=str)
-            # Or, use the provided value
+
+        # Base required fields
+        cls.process_fields(config_data, required_fields, **kwargs)
+
+        # Auth-related fields
+        auth_method = config_data['auth_method']
+        auth_fields = cls.get_required_fields(auth_method)
+        cls.process_fields(config_data, auth_fields, **kwargs)
+
+        # Optional fields
+        cls.process_fields(
+            config_data, optional_fields, optional=True, **kwargs
+        )
+
+        return config_data
+
+    @staticmethod
+    def process_fields(config_data, field_items, optional=False, **kwargs):
+        """
+        Enumerate fields to update ``config_data``.
+
+        Any fields not already in ``config_data`` will be prompted for a value
+        from ``field_items``.
+
+        :param config_data:
+            Dict of config data
+
+        :param field_items:
+            Dict of desired fields to be populated
+
+        :param optional:
+            Whether to consider values for ``field_items`` as optional
+
+        :param kwargs:
+            Keyword arguments of prepared values
+        """
+        for field, default_value in field_items.iteritems():
+            # If it's already in the config data, move on.
+            if field in config_data:
+                continue
+
+            # If the field was not provided
+            if field not in kwargs:
+                # If it does not have a default value prompt for it
+                if default_value is None:
+                    prompt = 'Please enter %s' % (field,)
+                    if not optional:
+                        value = click.prompt(prompt, type=str)
+                    else:
+                        prompt += ' (optional)'
+                        value = click.prompt(prompt, default='',
+                                             show_default=False)
+
+                # If it's a list of options, present the choices.
+                elif isinstance(default_value, list):
+                    choices = ', '.join(default_value)
+                    prompt = 'Please choose %s [%s]' % (field, choices)
+                    while True:
+                        value = click.prompt(prompt, type=str)
+                        if value not in default_value:
+                            click.echo('Invalid choice: %s' % value)
+                            continue
+                        break
+                else:
+                    raise RuntimeError(
+                        'Unexpected error condition when processing config '
+                        'fields.'
+                    )
+
+            # Or, use the value provided in kwargs
             elif field in kwargs:
                 value = kwargs[field]
+
             # Otherwise, use the default value
             else:
                 value = default_value
 
+            # If a value wasn't set, don't save it.
+            if value == '':
+                continue
+
             config_data[field] = value
+
         return config_data
