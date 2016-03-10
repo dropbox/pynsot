@@ -56,6 +56,15 @@ NATURAL_KEYS = {
     'interfaces': ['name', 'device'],
 }
 
+# Mapping of resource_names to what we want objects to look like when formatted
+# to stdout for grep-friendliness. These are string interpolation style.
+GREP_FORMATS = {
+    'devices': '%(hostname)s',
+    'networks': '%(network_address)s/%(prefix_length)s',
+    'attributes': '%(name)s:%(resource_name)s',
+    'interfaces': '%(device)s:%(name)s',
+}
+
 
 __all__ = (
     'NsotCLI', 'App', 'app'
@@ -319,6 +328,34 @@ class App(object):
 
         return field_data
 
+    def format_object_for_grep(self, obj):
+        """
+        Formats an object... for grep.
+
+        :param obj:
+            Object
+        """
+        return GREP_FORMATS[self.resource_name] % obj
+
+    def print_grep(self, objects):
+        """
+        Print a list of objects in a grep-friendly format.
+
+        Attributes are displayed in key=value style, one per line.
+
+        :param objects:
+            List of objects
+        """
+        output = []
+        for obj in objects:
+            prefix = self.format_object_for_grep(obj)
+            attrs = obj['attributes']
+            keys = sorted(attrs)
+            for k in keys:
+                output.append('%s %s=%s' % (prefix, k, attrs[k]))
+
+        click.echo('\n'.join(output))
+
     def print_list(self, objects, display_fields):
         """
         Print a list of objects in a table format.
@@ -507,6 +544,8 @@ class App(object):
         log.debug('listing %s' % data)
         obj_id = data.get('id')  # If obj_id, it's a single object
 
+        grep = data.pop('grep', False)
+
         # If a resource object is provided, call it instead, and only rebase if
         # we haven't provided our own resource.
         if resource is None:
@@ -554,7 +593,10 @@ class App(object):
 
             if objects:
                 objects = self.get_paginated_results(objects)
-                self.print_list(objects, display_fields)
+                if grep:
+                    self.print_grep(objects)
+                else:
+                    self.print_list(objects, display_fields)
             else:
                 pretty_dict = self.pretty_dict(data)
                 t_ = 'No %s found matching args: %s!'
