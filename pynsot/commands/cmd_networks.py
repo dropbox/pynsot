@@ -13,15 +13,16 @@ fundamentally simplified to this::
     getattr(ctx.obj, ctx.info_name)(ctx.params)
 """
 
+from __future__ import unicode_literals
+
+from ..vendor import click
+from . import callbacks
+
+
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
-
-
-from ..vendor import click
-
-from . import callbacks
+__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -145,6 +146,14 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     show_default=True,
 )
 @click.option(
+    '-g',
+    '--grep',
+    is_flag=True,
+    help='Display list results in a grep-friendly format.',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '-i',
     '--id',
     metavar='ID',
@@ -164,6 +173,13 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     help='Include/exclude IP addresses.',
     default=True,
     show_default=True,
+)
+@click.option(
+    '-V',
+    '--ip-version',
+    metavar='IP_VERSION',
+    type=click.Choice(['4', '6']),
+    help='Filter to Networks matchin this IP version.',
 )
 @click.option(
     '-l',
@@ -219,9 +235,9 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, attributes, cidr, delimited, id, include_ips, include_networks,
-         limit, network_address, offset, prefix_length, query, root_only,
-         state, site_id):
+def list(ctx, attributes, cidr, delimited, grep, id, include_ips,
+         include_networks, ip_version, limit, network_address, offset,
+         prefix_length, query, root_only, state, site_id):
     """
     List existing Networks for a Site.
 
@@ -331,8 +347,8 @@ def remove(ctx, id, site_id):
     '--cidr',
     metavar='CIDR',
     help=(
-	'A network or IP address in CIDR notation. Used for lookup only in '
-	'place of -i/--id!'
+        'A network or IP address in CIDR notation. Used for lookup only in '
+        'place of -i/--id!'
     )
 )
 @click.option(
@@ -378,8 +394,8 @@ def remove(ctx, id, site_id):
     'attr_action',
     flag_value='replace',
     help=(
-        'Causes attributes to be replaced instead of updated. If combined with '
-        '--multi, the entire list will be replaced.'
+        'Causes attributes to be replaced instead of updated. If combined '
+        'with --multi, the entire list will be replaced.'
     ),
 )
 @click.option(

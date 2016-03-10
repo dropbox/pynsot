@@ -13,16 +13,17 @@ fundamentally simplified to this::
     getattr(ctx.obj, ctx.info_name)(ctx.params)
 """
 
+from __future__ import unicode_literals
+
+from ..vendor import click
+from . import callbacks
+from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
+
+
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
-
-
-from ..vendor import click
-
-from . import callbacks
-from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
+__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -153,6 +154,14 @@ def add(ctx, attributes, bulk_add, device_id, name):
     help='Filter by Interfaces matching this description.',
 )
 @click.option(
+    '-g',
+    '--grep',
+    is_flag=True,
+    help='Display list results in a grep-friendly format.',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '-i',
     '--id',
     metavar='ID',
@@ -212,15 +221,15 @@ def add(ctx, attributes, bulk_add, device_id, name):
     help='Filter by integer of the interface type (e.g. 6 for ethernet)',
 )
 @click.pass_context
-def list(ctx, attributes, delimited, device, description, id, limit, name, offset,
-         parent_id, query, site_id, speed, type):
+def list(ctx, attributes, delimited, device, description, grep, id, limit,
+         name, offset, parent_id, query, site_id, speed, type):
     """
     List existing Interfaces for a Site.
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When listing Interfaces, all objects are displayed by default. You optionally
-    may lookup a single Interfaces by ID using the -i/--id option.
+    When listing Interfaces, all objects are displayed by default. You
+    optionally may lookup a single Interfaces by ID using the -i/--id option.
 
     You may limit the number of results using the -l/--limit option.
     """

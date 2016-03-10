@@ -265,6 +265,14 @@ def test_devices_list(config):
         expected_output = 'foo-bar1,foo-bar2\n'
         assert result.output == expected_output
 
+        # Grep-friendly output (--grep)
+        result = runner.invoke(
+            app, shlex.split('devices list -s 1 -a owner=jathan -g')
+        )
+        expected_output = u'foo-bar1 owner=jathan\nfoo-bar2 owner=jathan\n'
+        assert result.exit_code == 0
+        assert result.output == expected_output
+
 
 def test_devices_update(config):
     """Test ``nsot devices update -s 1 -i 1 -a monitored``"""
@@ -797,6 +805,18 @@ def test_networks_list(config):
         assert result.exit_code == 0
 
         expected_output = '10.0.0.0/8,10.0.0.0/24\n'
+        assert result.output == expected_output
+
+        # Set query display comma-delimited (--delimited)
+        result = runner.invoke(
+            app, shlex.split('networks list -s 1 -a owner=jathan -g')
+        )
+        assert result.exit_code == 0
+
+        expected_output = (
+            '10.0.0.0/8 owner=jathan\n'
+            '10.0.0.0/24 owner=jathan\n'
+        )
         assert result.output == expected_output
 
 
