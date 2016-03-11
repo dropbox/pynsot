@@ -13,15 +13,16 @@ fundamentally simplified to this::
     getattr(ctx.obj, ctx.info_name)(ctx.params)
 """
 
+from __future__ import unicode_literals
+
+from ..vendor import click
+from . import callbacks
+
+
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
-
-
-from ..vendor import click
-
-from . import callbacks
+__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -121,6 +122,14 @@ def add(ctx, attributes, bulk_add, hostname, site_id):
     show_default=True,
 )
 @click.option(
+    '-g',
+    '--grep',
+    is_flag=True,
+    help='Display list results in a grep-friendly format.',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '-H',
     '--hostname',
     metavar='HOSTNAME',
@@ -161,7 +170,8 @@ def add(ctx, attributes, bulk_add, hostname, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, attributes, delimited, hostname, id, limit, offset, query, site_id):
+def list(ctx, attributes, delimited, grep, hostname, id, limit, offset, query,
+         site_id):
     """
     List existing Devices for a Site.
 
@@ -280,8 +290,8 @@ def remove(ctx, id, site_id):
     'attr_action',
     flag_value='replace',
     help=(
-        'Causes attributes to be replaced instead of updated. If combined with '
-        '--multi, the entire list will be replaced.'
+        'Causes attributes to be replaced instead of updated. If combined '
+        ' with --multi, the entire list will be replaced.'
     ),
 )
 @click.option(
