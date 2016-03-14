@@ -105,7 +105,8 @@ def add(ctx, attributes, bulk_add, hostname, site_id):
 
 
 # List
-@cli.command()
+# @cli.command()
+@cli.group(invoke_without_command=True)
 @click.option(
     '-a',
     '--attributes',
@@ -185,15 +186,25 @@ def list(ctx, attributes, delimited, grep, hostname, id, limit, offset, query,
     data = ctx.params
     data.pop('delimited')  # We don't want this going to the server.
 
-    if query:
-        results = ctx.obj.api.sites(site_id).devices.query.get(
-            query=query, limit=limit, offset=offset)
-        objects = results['data']['devices']
-        devices = sorted(d['hostname'] for d in objects)
-        joiner = ',' if delimited else '\n'
-        click.echo(joiner.join(devices))
-    else:
-        ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
+    if ctx.invoked_subcommand is None:
+        if query:
+            results = ctx.obj.api.sites(site_id).devices.query.get(
+                query=query, limit=limit, offset=offset)
+            devices = sorted(d['hostname'] for d in results)
+            joiner = ',' if delimited else '\n'
+            click.echo(joiner.join(devices))
+        else:
+            ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
+
+
+@list.command()
+@click.pass_context
+def interfaces(ctx, *args, **kwargs):
+    """Get interfaces for a Device."""
+    from .cmd_interfaces import DISPLAY_FIELDS as INTERFACE_DISPLAY_FIELDS
+    callbacks.list_subcommand(
+        ctx, display_fields=INTERFACE_DISPLAY_FIELDS, my_name='interfaces'
+    )
 
 
 # Remove

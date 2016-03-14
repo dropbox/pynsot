@@ -13,15 +13,16 @@ fundamentally simplified to this::
     getattr(ctx.obj, ctx.info_name)(ctx.params)
 """
 
+from __future__ import unicode_literals
+
+from ..vendor import click
+from . import callbacks
+
+
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
-
-
-from ..vendor import click
-
-from . import callbacks
+__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object

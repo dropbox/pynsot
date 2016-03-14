@@ -53,7 +53,7 @@ NATURAL_KEYS = {
     'devices': ['hostname'],
     'networks': ['cidr'],
     'attributes': ['name', 'resource_name'],
-    'interfaces': ['name', 'device'],
+    # 'interfaces': ['name', 'device'],
 }
 
 # Mapping of resource_names to what we want objects to look like when formatted
@@ -107,6 +107,10 @@ class App(object):
     def __init__(self, ctx, client_args=None, verbose=False):
         if client_args is None:
             client_args = {}
+
+        # Force api_version 1.0 for CLI util.
+        client_args['extra_args'] = {'api_version': '1.0'}
+
         self.client_args = client_args
         self.ctx = ctx
         self.verbose = verbose
@@ -558,7 +562,7 @@ class App(object):
             if obj_id:
                 log.debug('Retrieving by obj_id=%r' % obj_id)
                 result = resource(obj_id).get()
-                obj = result['data'][self.singular]
+                obj = get_result(result)
 
             # If we still don't have an object try param-based lookup.
             if obj is None:
@@ -698,7 +702,7 @@ class App(object):
             if obj_id:
                 log.debug('Retrieving by obj_id=%r' % obj_id)
                 result = self.resource(obj_id).get()
-                obj = result['data'][self.singular]
+                obj = get_result(result)
             else:
                 obj = self.get_single_object(data)
         except HTTP_ERRORS as err:

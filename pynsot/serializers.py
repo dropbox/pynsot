@@ -13,15 +13,16 @@ return objects instead of dicts::
     <Site(id=1, description=u'Foo site', name=u'Foo')>
 """
 
+from __future__ import unicode_literals
+
+from .vendor.slumber.serialize import JsonSerializer
+from .import models
+
+
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
-
-
-import models
-
-from .vendor.slumber.serialize import JsonSerializer
+__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 class ModelSerializer(JsonSerializer):

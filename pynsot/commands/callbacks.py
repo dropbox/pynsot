@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
+
 """
 Callbacks used in handling command plugins.
 """
 
+from __future__ import unicode_literals
 import ast
 import csv
 from itertools import chain
@@ -130,7 +133,7 @@ def process_bulk_add(ctx, param, value):
     objects = []
 
     # Value is already an open file handle
-    reader = csv.DictReader(value, delimiter=':')
+    reader = csv.DictReader(value, delimiter=b':')
     for r in reader:
         lineno = reader.line_num
 
@@ -147,7 +150,7 @@ def process_bulk_add(ctx, param, value):
             r['attributes'] = attributes
 
         # Transform True, False into booleans
-        log.debug ('FILE ROW: %r', r)
+        log.debug('FILE ROW: %r', r)
         for k, v in r.iteritems():
             # Don't evaluate dicts
             if isinstance(v, dict):
@@ -237,9 +240,9 @@ def list_subcommand(ctx, display_fields, my_name=None):
     # endpoint resource used to call this endpoint.
     parent_resource_name = app.parent_resource_name  # e.g. 'networks'
 
-    if my_name is not None:
-        app.resource_name = my_name
-    else:
+    # If we've provided my_name, overload the App's resource_name to match
+    # it.
+    if my_name is None:
         my_name = ctx.info_name  # e.g. 'supernets'
 
     # e.g. /api/sites/1/networks/
@@ -255,4 +258,5 @@ def list_subcommand(ctx, display_fields, my_name=None):
     # e.g. /api/sites/1/networks/5/supernets/
     my_resource = getattr(parent_resource(parent_resource_id), my_name)
 
+    app.resource_name = my_name
     app.list(data, display_fields=display_fields, resource=my_resource)

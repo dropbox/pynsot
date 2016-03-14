@@ -256,9 +256,8 @@ def list(ctx, attributes, cidr, delimited, grep, id, include_ips,
     if ctx.invoked_subcommand is None:
         if query:
             results = ctx.obj.api.sites(site_id).networks.query.get(**data)
-            objects = results['data']['networks']
             networks = sorted(
-                (d['network_address'], d['prefix_length']) for d in objects
+                (d['network_address'], d['prefix_length']) for d in results
             )
             networks = ['%s/%s' % obj for obj in networks]
             joiner = ',' if delimited else '\n'

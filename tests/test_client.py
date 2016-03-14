@@ -1,70 +1,37 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 """
 Test the API client.
 """
 
-import json
+from __future__ import unicode_literals
 import logging
-import os
 import pytest
-import requests
-import requests_mock
-import shlex
 
-from pynsot import client
-from pynsot.vendor import click
-from pynsot.vendor.click.testing import CliRunner
-
-from .fixtures import (
-    auth_token_config as config, auth_header_config, API_URL, AUTH_RESPONSE,
-    SITES_RESPONSE
-)
+from pynsot.util import get_result
+from .fixtures import config, client
 
 
-@requests_mock.Mocker()
-class Server(object):
-    def __init__(self, base_url=API_URL):
-        self.base_url = base_url
-
-    def test_authenticate(self, m):
-        uri = self.base_url + '/authenticate/'
-        m.register_uri('POST', uri, json=AUTH_RESPONSE)
-        return requests.post(uri).text
+__all__ = ('client', 'config', 'pytest')
 
 
-def test_authentication(config):
-    auth = {'email': config['email'], 'secret_key': config['secret_key']}
-    url = config['url'] + '/authenticate/'
-    payload = json.dumps(auth)
-
-    with requests_mock.Mocker() as mock:
-        mock.post(url, json=AUTH_RESPONSE)
-        resp = requests.post(url, data=payload)
-
-        assert resp.status_code == 200
-        assert 'auth_token' in resp.json()['data']
+log = logging.getLogger(__name__)
 
 
-def test_sites(config):
-    headers = {'Content-Type': 'application/json'}
-    url = config['url'] + '/sites/'
-    auth = {'email': config['email'], 'secret_key': config['secret_key']}
-    payload = json.dumps(auth)
+def test_authentication(client):
+    """Test manual client authentication."""
+    auth = {
+        'email': client.config['email'],
+        'secret_key': client.config['secret_key']
+    }
+    # Good
+    resp = client.authenticate.post(auth)
+    result = get_result(resp)
+    assert 'auth_token' in result
 
-    with requests_mock.Mocker() as mock:
-        # Mock authentication
-        auth_url = config['url'] + '/authenticate/'
-        mock.post(auth_url, json=AUTH_RESPONSE, headers=headers)
-        api = client.AuthTokenClient(
-            config['url'],
-            email=config['email'],
-            secret_key=config['secret_key']
-        )
 
-        # Mock sites response
-        mock.get(url, json=SITES_RESPONSE, headers=headers)
-        resp = api.sites.get()
-
-        assert resp['data']['total'] == 1
+def test_sites(client):
+    """Test working with sites using the client."""
+    site = client.sites.post({'name': 'Foo'})
+    assert client.sites.get() == [site]
+    assert client.sites(site['id']).get() == site

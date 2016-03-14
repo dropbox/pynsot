@@ -13,13 +13,15 @@ fundamentally simplified to this::
     getattr(ctx.obj, ctx.info_name)(ctx.params)
 """
 
+from __future__ import unicode_literals
+
+from ..vendor import click
+
+
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
-
-
-from ..vendor import click
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -46,9 +48,6 @@ def cli(ctx):
     resources. This could be beneficial for isolating corporeate vs. production
     environments, or pulling in the IP space of an acquisition.
     """
-    # if ctx.obj.verbose:
-    #     print 'I am:', ctx.info_name
-    #     print 'my parent is:', ctx.parent.info_name
 
 
 # Add

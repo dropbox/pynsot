@@ -13,15 +13,16 @@ fundamentally simplified to this::
     getattr(ctx.obj, ctx.info_name)(ctx.params)
 """
 
+from __future__ import unicode_literals
+
+from ..vendor import click
+from . import callbacks
+
+
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
 __copyright__ = 'Copyright (c) 2016 Dropbox, Inc.'
-
-
-from ..vendor import click
-
-from . import callbacks
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -98,6 +99,5 @@ def list(ctx, name, resource_name, site_id):
     # Fetch the matching values directly from the API client, filter
     # duplicates, and sort the output.
     results = ctx.obj.api.sites(site_id).values.get(**data)
-    objects = results['data']['values']
-    values = {d['value'] for d in objects}
+    values = {d['value'] for d in results}
     click.echo('\n'.join(sorted(values)))
