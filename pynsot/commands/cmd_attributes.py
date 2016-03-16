@@ -31,9 +31,7 @@ DISPLAY_FIELDS = (
     ('id', 'ID'),
     ('name', 'Name'),
     ('resource_name', 'Resource'),
-    # ('site_id': 'Site ID'),
     ('required', 'Required?'),
-    ('display', 'Display?'),
     ('multi', 'Multi?'),
     ('description', 'Description'),
 )
@@ -198,6 +196,14 @@ def add(ctx, allow_empty, bulk_add, description, display, multi, name, pattern,
     help='Filter to Attribute with this name.',
 )
 @click.option(
+    '-N',
+    '--natural-key',
+    is_flag=True,
+    help='Display list results by their natural key',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '-o',
     '--offset',
     metavar='OFFSET',
@@ -225,8 +231,8 @@ def add(ctx, allow_empty, bulk_add, description, display, multi, name, pattern,
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, id, display, limit, multi, name, offset, required, resource_name,
-         site_id):
+def list(ctx, id, display, limit, multi, name, natural_key, offset, required,
+         resource_name, site_id):
     """
     List existing Attributes for a Site.
 

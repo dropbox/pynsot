@@ -194,6 +194,14 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     help='Filter to Networks matching this network address.',
 )
 @click.option(
+    '-N',
+    '--natural-key',
+    is_flag=True,
+    help='Display list results by their natural key',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '-o',
     '--offset',
     metavar='OFFSET',
@@ -236,8 +244,8 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
 )
 @click.pass_context
 def list(ctx, attributes, cidr, delimited, grep, id, include_ips,
-         include_networks, ip_version, limit, network_address, offset,
-         prefix_length, query, root_only, state, site_id):
+         include_networks, ip_version, limit, network_address, natural_key,
+         offset, prefix_length, query, root_only, state, site_id):
     """
     List existing Networks for a Site.
 

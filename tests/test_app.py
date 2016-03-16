@@ -60,15 +60,20 @@ def test_sites_list(client, site):
         assert result.exit_code == 0
         assert site['name'] in result.output
 
-        # Test -i
+        # Test -i/--id
         result = runner.run('sites list -i %s' % site['id'])
         assert result.exit_code == 0
         assert site['name'] in result.output
 
-        # Test -n
+        # Test -n/--name
         result = runner.run('sites list -n %s' % site['name'])
         assert result.exit_code == 0
         assert site['name'] in result.output
+
+        # Test -N/--natural-key
+        result = runner.run('sites list -N')
+        assert result.exit_code == 0
+        assert site['name'] == result.output.strip()
 
 
 def test_sites_update(client, site):
@@ -126,6 +131,11 @@ def test_attributes_list(site_client):
         # Simple list
         result = runner.run('attributes list')
         assert result.exit_code == 0
+
+        # Test -N/--natural-key
+        result = runner.run('attributes list -N')
+        assert result.exit_code == 0
+        assert 'Device:monitored\n' == result.output
 
         # List a single attribute by name
         attr = site_client.attributes.get(name='monitored')[0]
@@ -260,6 +270,11 @@ def test_devices_list(site_client):
         )
         assert result.exit_code == 0
         assert result.output == expected_output
+
+        # Test -N/--natural-key
+        result = runner.run('devices list -N')
+        assert result.exit_code == 0
+        assert result.output == expected_output  # Same output as above
 
         # Set query display comma-delimited (-d/--delimited)
         result = runner.run('devices list -q owner=jathan -d')
@@ -489,6 +504,11 @@ def test_networks_list(site_client):
         assert result.exit_code == 0
         assert result.output == expected_output
 
+        # Test -N/--natural-key
+        result = runner.run('networks list -N')
+        assert result.exit_code == 0
+        assert result.output == expected_output  # Same output as above
+
         # Set query display comma-delimited (-d/--delimited)
         result = runner.run('networks list -q owner=jathan -d')
         expected_output = '10.0.0.0/8,10.0.0.0/24\n'
@@ -570,12 +590,11 @@ def test_networks_remove(site_client, network):
         assert 'Removed network!' in result.output
 
 
-
 ##########
 # Values #
 ##########
 def test_values_list(site_client):
-    """Test ``nsot devices list -n owner -r device``."""
+    """Test ``nsot values list``."""
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
         # Create the owner attribute

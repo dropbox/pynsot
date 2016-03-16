@@ -103,6 +103,14 @@ def add(ctx, description, name):
     help='Filter by Site name.'
 )
 @click.option(
+    '-N',
+    '--natural-key',
+    is_flag=True,
+    help='Display list results by their natural key',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '-o',
     '--offset',
     metavar='OFFSET',
@@ -110,7 +118,7 @@ def add(ctx, description, name):
     help='Skip the first N resources.',
 )
 @click.pass_context
-def list(ctx, id, limit, name, offset):
+def list(ctx, id, limit, name, natural_key, offset):
     """
     List existing Sites.
 
