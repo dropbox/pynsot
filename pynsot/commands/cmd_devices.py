@@ -144,6 +144,14 @@ def add(ctx, attributes, bulk_add, hostname, site_id):
     help='Unique ID of the Device being retrieved.',
 )
 @click.option(
+    '-N',
+    '--natural-key',
+    is_flag=True,
+    help='Display list results by their natural key',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '-l',
     '--limit',
     metavar='LIMIT',
@@ -171,8 +179,8 @@ def add(ctx, attributes, bulk_add, hostname, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, attributes, delimited, grep, hostname, id, limit, offset, query,
-         site_id):
+def list(ctx, attributes, delimited, grep, hostname, id, limit, natural_key,
+         offset, query, site_id):
     """
     List existing Devices for a Site.
 

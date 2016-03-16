@@ -12,6 +12,7 @@ import datetime
 import logging
 import os
 import sys
+import textwrap
 
 import pynsot
 from . import client
@@ -25,7 +26,7 @@ from .vendor.slumber.exceptions import (HttpClientError, HttpServerError)
 __author__ = 'Jathan McCollum'
 __maintainer__ = 'Jathan McCollum'
 __email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
+__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Constants/Globals
@@ -53,7 +54,7 @@ NATURAL_KEYS = {
     'devices': ['hostname'],
     'networks': ['cidr'],
     'attributes': ['name', 'resource_name'],
-    # 'interfaces': ['name', 'device'],
+    'interfaces': ['name', 'device'],
 }
 
 # Mapping of resource_names to what we want objects to look like when formatted
@@ -61,8 +62,9 @@ NATURAL_KEYS = {
 GREP_FORMATS = {
     'devices': '%(hostname)s',
     'networks': '%(network_address)s/%(prefix_length)s',
-    'attributes': '%(name)s:%(resource_name)s',
+    'attributes': '%(resource_name)s:%(name)s',
     'interfaces': '%(device)s:%(name)s',
+    'sites': '%(name)s',
 }
 
 
@@ -306,6 +308,10 @@ class App(object):
         if field == 'user':
             field_data = field_data['email']
 
+        # Arbitrarily wrap description field at 20 chars
+        if field == 'description':
+            field_data = '\n'.join(textwrap.wrap(field_data, 20))
+
         # If the field is a dict, pretty_dict it!
         if isinstance(field_data, dict):
             # If this is an inner dict, prettify it, too.
@@ -360,6 +366,24 @@ class App(object):
 
         click.echo('\n'.join(output))
 
+    def print_by_natural_key(self, objects):
+        """
+        Print a list of objects by their natural_key
+
+        :param objects:
+            List of objects
+        """
+        output = []
+        for obj in objects:
+            output.append(self.format_object_for_grep(obj))
+
+        # Networks results are already sorted, so don't re-sort them,
+        # because it gets screwed up.
+        if self.resource_name != 'networks':
+            output = sorted(output)
+
+        click.echo('\n'.join(output))
+
     def print_list(self, objects, display_fields):
         """
         Print a list of objects in a table format.
@@ -397,7 +421,7 @@ class App(object):
         table = prettytable.PrettyTable(headers)
 
         # Display table in a frame
-        table.vrules = prettytable.FRAME
+        table.vrules = prettytable.prettytable.FRAME
 
         # *or* Display table with row separators
         # table.hrules = prettytable.ALL
@@ -549,6 +573,7 @@ class App(object):
         obj_id = data.get('id')  # If obj_id, it's a single object
 
         grep = data.pop('grep', False)
+        by_natural_key = data.pop('natural_key', False)
 
         # If a resource object is provided, call it instead, and only rebase if
         # we haven't provided our own resource.
@@ -599,6 +624,8 @@ class App(object):
                 objects = self.get_paginated_results(objects)
                 if grep:
                     self.print_grep(objects)
+                elif by_natural_key:
+                    self.print_by_natural_key(objects)
                 else:
                     self.print_list(objects, display_fields)
             else:

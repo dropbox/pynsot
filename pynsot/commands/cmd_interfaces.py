@@ -149,7 +149,7 @@ def add(ctx, attributes, bulk_add, device_id, name):
 @click.option(
     '-e',
     '--description',
-    metavar='DESCRIPTOIN',
+    metavar='DESCRIPTION',
     type=str,
     help='Filter by Interfaces matching this description.',
 )
@@ -179,6 +179,14 @@ def add(ctx, attributes, bulk_add, device_id, name):
     '--name',
     metavar='NAME',
     help='Filter to Interfaces matching this name.'
+)
+@click.option(
+    '-N',
+    '--natural-key',
+    is_flag=True,
+    help='Display list results by their natural key',
+    default=False,
+    show_default=True,
 )
 @click.option(
     '-o',
@@ -222,7 +230,7 @@ def add(ctx, attributes, bulk_add, device_id, name):
 )
 @click.pass_context
 def list(ctx, attributes, delimited, device, description, grep, id, limit,
-         name, offset, parent_id, query, site_id, speed, type):
+         name, natural_key, offset, parent_id, query, site_id, speed, type):
     """
     List existing Interfaces for a Site.
 
