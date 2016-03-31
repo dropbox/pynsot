@@ -1,104 +1,660 @@
 # -*- coding: utf-8 -*-
 
-"""
-Model classes to represent API dict results as objects in an ORM style.
+'''API Model Classes
 
-See the examples in the docstring for ``ApiModel``.
-"""
+These resource models are derrived from collections.MutableMapping and, thus,
+act like dicts and can instantiate with raw resource output from API as well as
+simplifying by providing site_id and (usually) the natural key (cidr, hostname,
+etc).
+
+Example
+-------
+
+As always, refer to official docs vs. the docstring but here is an example
+
+>>> from pynsot.models import Network, Device, Interface
+>>> from pynsot.client import get_api_client
+>>> client = get_api_client()
+>>> net = Network(raw=client.networks.get()[-1])
+
+# Or also...
+# >>> net = Network(client=client, site_id=1, cidr='8.8.8.0/24')
+
+>>> net.exists()
+>>> True
+
+>>> net.existing_resource()
+{u'attributes': {},
+ u'id': 81,
+ u'ip_version': u'4',
+ u'is_ip': False,
+ u'network_address': u'254.0.0.0',
+ u'parent_id': 1,
+ u'prefix_length': 24,
+ u'site_id': 1,
+ u'state': u'allocated'}
+
+>>> net.purge()
+True
+
+>>> net.exists()
+False
+
+>>> net.ensure()
+True
+
+>>> net.exists()
+True
+
+>>> net['site_id']
+2
+
+>>> net['site_id'] = 4
+
+>>> net.exists()
+False
+
+>>> net['site_id'] = 2
+
+>>> net.exists()
+True
+'''
 
 from __future__ import unicode_literals
+import logging
 import collections
+from abc import abstractproperty, abstractmethod, ABCMeta
+from netaddr import IPNetwork
+from pynsot.util import get_result
+from pynsot.client import get_api_client
 
 
-__author__ = 'Jathan McCollum'
-__maintainer__ = 'Jathan McCollum'
-__email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015 Dropbox, Inc.'
+class Resource(collections.MutableMapping):
+    '''Base Resource
 
+    This class represents a model for subclassing NSoT resources, including
+    methods to represent itself and upload to an NSoT server.
 
-# Valid top-level types.
-TYPES = ('network', 'attribute', 'user', 'site', 'device')
+    Instead of overloading __init__, this base class accepts **kwargs and
+    passes them to self.postinit(**kwargs). Overload postinit for setting
+    resource specific parameters and setup. Note: This does NOT execute when
+    `raw` is provided
 
+    __getitem__ and __iter__ are set so you can render what the NSoT payload
+    will look like by doing dict(obj) and fetch individual keys like a
+    dictionary with obj['attributes']
 
-class ApiModel(collections.MutableMapping):
-    """
-    Simple class to make an API response dict into an object.
+    Attributes:
+        identifier (str)
+        resource (pynsot.vendor.slumber.Resource)
+        resource_name (str)
+        logger (logging.Logger)
+        payload (dict): This represents the exact payload sent to NSoT server
+        errors (list): Collection of any errors to happen during operations
+        last_error: The last error to happen
 
-    For example, for a site object::
+    Options:
+        site_id (int): (kwarg) Site ID for operations
+            Required unless `raw['site']`. If both provided, raw takes
+            precedence.
+        attributes (dict): (kwarg) Attributes to add to resource
+        client (pynsot.client.BaseClient): (kwarg) pynsot client
+            If client is not provided, `get_api_client` will be lazily loaded
+            on first API interaction. If you're dealing with many resource
+            objects that will talk to API, it'd be `n` less function calls to
+            pass in this parameter
+        raw (dict): (kwarg) Use this to pass in raw NSoT resource
+            Useful for instantiating objects as they return from API.
+    '''
 
-        >>> site1 = api.sites(1).get()
-        >>> site1
-        {u'data': {u'site': {u'description': u'Foo site', u'id': 1, u'name':
-         u'Foo'}},
-         u'status': u'ok'}
-        >>> site_obj = ApiModel(site1)
-        >>> site_obj
-        <Site(id=1, name=u'Foo', description=u'Foo site')>
-        >>> site_obj.name
-        u'Foo'
+    __metaclass__ = ABCMeta
 
-    Network object::
+    def __init__(
+        self,
+        site_id=None,
+        client=None,
+        raw=None,
+        attributes=None,
+        **kwargs
+    ):
+        if raw is None:
+            raw = {}
+        if attributes is None:
+            attributes = {}
 
-        >>> site = api.sites(1).get()
-        >>> nw1 = site.networks(1).get()
-        >>> nw1 = api.sites(1).networks(1).get()
-        {u'data': {u'network': {u'attributes': {},
-           u'id': 1,
-           u'ip_version': u'4',
-           u'is_ip': False,
-           u'network_address': u'10.0.0.0',
-           u'parent_id': None,
-           u'prefix_length': 8,
-           u'site_id': 1}},
-         u'status': u'ok'}
-        >>> nw_obj = ApiModel(nw1)
-        >>> nw_obj
-        <Network(is_ip=False, network_address=u'10.0.0.0', site_id=1,
-         parent_id=None, prefix_length=8, ip_version=u'4', attributes={},
-         id=1)>
-        >>> nw_obj.network_address
-        u'10.0.0.0'
-    """
-    def __init__(self, data, **kwargs):
-        if 'data' not in data:
-            raise SyntaxError("Data must contain a 'data' field.")
-        obj = data['data']
+        self.logger = logging.getLogger(__name__)
+        self.errors = []
+        self.last_error = None
+        # Placeholder for .existing_resource() state
+        self._existing_resource = {}
+        self._payload = {}
+        # Parameter validations
 
-        if len(obj) > 1:
-            raise SyntaxError('More than one object type found.')
-        obj_type = obj.keys()[0]
+        # Site ID is required but can come from either kwarg or raw resource
+        # dict, latter being preferred.
+        if raw.get('site_id'):
+            site_id = raw['site_id']
+        elif site_id:
+            pass  # Already set
+        else:
+            raise TypeError('Resource requires site_id via param or `raw` key')
 
-        if obj_type not in TYPES:
-            raise SyntaxError('Invalid type: %s' % (obj_type,))
+        self._site_id = site_id
+        self.client = client
+        self.raw = raw
+        self.attributes = attributes
 
-        self._object_type = obj_type
-        obj_data = obj[obj_type]
-        self.__dict__.update(obj_data)
+        if not self.raw:
+            self.postinit(**kwargs)
+        else:
+            # This is done here because subclases do this in their postinit().
+            # If raw is passed, there's no reason to go through the postinit
+            # process which takes things like network_address, hostname, etc.
+            #
+            # Every subclasses init_payload method has a condition for 'if raw
+            # set raw' basically.
+            self.init_payload()
 
-    def _repr_name(self):
-        """Normalize object type to display in repr."""
-        cls_name = self._object_type.title().replace('_', '')
-        return cls_name
+    def postinit(self, **kwargs):
+        '''Overloadable method for post __init__
 
-    def __repr__(self):
-        cls_name = self._repr_name()
-        attrs = ', '.join('%s=%r' % (k, v) for k, v in self.items())
-        return '<%s(%s)>' % (cls_name, attrs)
+        This method is called at the very end of __init__ unless `raw` is
+        given. Use-case here is that each resource type needs varying
+        information to compile itself and overloading __init__ + calling
+        `super()` is no fun.
 
-    # collections.MutableMapping requires these to be defined to dictate the
-    # dictionary-like behavior.
+        Options:
+            kwargs (dict): All unhandled kwargs from __init__ are passed here.
+        '''
+        pass
 
-    def __getitem__(self, val):
-        return self.__dict__[val]
+    def ensure_client(self, **kwargs):
+        '''Ensure that object has a client object
 
-    def __setitem__(self, key, val):
-        self.__dict__[key] = val
+        Client may be passed during __init__ as a kwarg, but call this before
+        doing any client work to ensure
+        '''
+        if self.client:
+            return
+        else:
+            self.client = get_api_client(**kwargs)
 
-    def __delitem__(self, key):
-        del self.__dict__[key]
+    @abstractproperty
+    def identifier(self):
+        '''Human-friendly string to represent the resource
+
+        Used in log messages and magic methods for comparison. Examples here
+        would be CIDR, hostname, etc
+
+        Returns:
+            str
+        '''
+        pass
+
+    @property
+    def resource(self):
+        '''Pynsot client for resource type
+
+        For example using a network type:
+
+            client.networks
+            /api/networks/ equivalent
+
+        Returns:
+            pynsot.client.BaseClient
+        '''
+        self.ensure_client()
+        return getattr(self.client, self.resource_name)
+
+    @abstractproperty
+    def resource_name(self):
+        '''Name of resource
+
+        Must be plural
+
+        Returns:
+            str
+        '''
+        pass
+
+    @abstractmethod
+    def init_payload(self):
+        '''Initializes the _payload dictionary using resource specific data
+
+        This must be called in a subclass' postinit to get a populated
+        `self.payload` when `raw` isn't provided.
+        '''
+        pass
+
+    @property
+    def payload(self):
+        '''Represents exact payload sent to NSoT server
+
+        Returns:
+            _payload (dict)
+        '''
+        return self._payload
+
+    @payload.setter
+    def payload(self, value):
+        '''Setter for payload'''
+        self._payload = value
 
     def __iter__(self):
-        return iter(k for k in self.__dict__ if not k.startswith('_'))
+        '''Iterate through payload keys'''
+        return iter(self.payload)
+
+    def __getitem__(self, key):
+        '''Get item from payload'''
+        return self.payload[key]
+
+    def __setitem__(self, key, value):
+        '''Set item in payload
+
+        Cache is cleared here since the current resource has changed
+        '''
+        self.clear_cache()
+        self.payload[key] = value
+
+    def __delitem__(self, key):
+        '''Delete item from payload
+
+        Cache is cleared here since the current resource has changed
+        '''
+        self.clear_cache()
+        del self.payload[key]
 
     def __len__(self):
-        return len(self.__dict__)
+        return len(self._payload)
+
+    def __repr__(self):
+        '''Human-friendly representation'''
+        title = self.resource_name[:-1].title()
+        return '<%s: %s>' % (title, str(self))
+
+    def __str__(self):
+        return str(self.identifier)
+
+    def __eq__(self, other):
+        '''Using `identifier` and `site_id`, compare to another resource'''
+        x = '%s:%s' % (self.identifier, self._site_id)
+        y = '%s:%s' % (other.identifier, other._site_id)
+        return x == y
+
+    def log_error(self, error):
+        '''Log and append errors to object
+
+        This does a check to see if response object available from HTTP
+        request. If not, that's OK too and it'll just append the raw error.
+        '''
+        if hasattr(error, 'response') and hasattr(error.response, 'json'):
+            try:
+                meta = error.response.json()
+            except:
+                meta = error.response
+        else:
+            meta = error
+
+        self.logger.debug(
+            '[%s] %s' % (self.identifier, meta),
+            exc_info=True,
+        )
+        self.logger.warning(
+            '[%s] %s' % (self.identifier, meta),
+        )
+        self.errors.append(meta)
+        self.last_error = meta
+
+    def existing_resource(self):
+        '''Returns upstream resource
+
+        If nothing exists, empty dict is returned. The result of this is cached
+        in a property (_existing_resource) for cheaper re-checks. This can be
+        cleared via `.clear_cache()`
+
+        Returns:
+            dict
+        '''
+        self.ensure_client()
+        if self._existing_resource:
+            return self._existing_resource
+        else:
+            cur = dict(self)
+            cur.pop('attributes', None)
+            # We pop attributes because the query fails leaving them in
+            try:
+                # Site client of resource type because NSoT doesn't support
+                # passing site_id as a query parameter
+                site = getattr(
+                    self.client.sites(self['site_id']),
+                    self.resource_name,
+                )
+                lookup = get_result(site.get(**cur))
+            except Exception as e:
+                self.log_error(e)
+                # There might be a better way to do this. If the NSoT server is
+                # unreachable or otherwise the lookup fails it'll log properly
+                # and return as if nothing exists. If the resource actually
+                # exists but due to reachability it couldn't confirm some
+                # action may be unnecessarily took user-side.
+                #
+                # Honestly, though, I think this is a decent trade-off
+                self._existing_resource = {}
+                return self._existing_resource
+
+            existing = len(lookup) > 0
+            if existing:
+                # This is where state will be kept for this
+                self._existing_resource = lookup[0]
+                return self._existing_resource
+            else:
+                self._existing_resource = {}
+                return self._existing_resource
+
+    def clear_cache(self):
+        '''Clears state of certain properties
+
+        This is ideally done during a write operation against the API, such as
+        `.purge()` or `.ensure()`. Helps prevent representing out-of-date
+        information
+        '''
+        self._existing_resource = {}
+
+    def exists(self):
+        '''Does the current resource exist?
+
+        Returns:
+            bool
+        '''
+        return bool(self.existing_resource())
+
+    def ensure(self):
+        '''Ensure object in current state exists in NSoT
+
+        By site, make sure resource exists. True if it is or was able to get to
+        the desired state, False if not and logged in `last_error`.
+
+        Having this operation be done individually for each resource
+        has some pros and cons. Generally as long as the amount of items
+        is small enough, it's not a huge difference but it is an extra
+        HTTP request.
+
+        Sending in bulk halts at the first error and fails the following
+        so it requires more handling.
+
+        Cache is cleared first thing and before return.
+        '''
+        self.clear_cache()
+        to_ensure = dict(self)
+
+        try:
+            # PATCH instead of POST
+            if self.exists() and self.resource_name != 'interfaces':
+                self.logger.debug('[%s] Patching', self.identifier)
+                to_ensure['id'] = self.existing_resource()['id']
+                self.resource.patch([to_ensure])
+                self.logger.info('[%s] has been patched!', self.identifier)
+                self.clear_cache()
+                return True
+
+            else:  # POST for initially creating
+                self.logger.debug('[%s] Creating', self.identifier)
+                self.resource.post([to_ensure])
+                self.logger.info('[%s] has been created!', self.identifier)
+                return True
+        except Exception as e:
+            self.log_error(e)
+            self.clear_cache()
+            return False
+
+    def purge(self):
+        '''Ensure resource doesn't exist upstream
+
+        By site, make sure resource is deleted. True if it is or was able to
+        get to the desired state, False if not and logged in `last_error`.
+
+        Cache is cleared first thing and before return.
+        '''
+        self.clear_cache()
+        try:
+            if self.exists():
+                self.logger.debug('[%s] Deleting', self.identifier)
+                id_ = self.existing_resource()['id']
+                self.resource(id_).delete()
+                self.logger.info('[%s] has been deleted!', self.identifier)
+                self.clear_cache()
+                return True
+
+            else:
+                # We should return True to show the state is already how we
+                # want it to be. False should be for unable to ensure resource
+                # is gone
+                return True
+        except Exception as e:
+            self.log_error(e)
+            self.clear_cache()
+            return False
+
+
+class Network(Resource):
+    '''Network Resource
+
+    Subclass of Resource.
+
+    >>> n = Network(CLIENT, 1, network='8.8.8.0/32')
+    >>> n.exists()
+    False
+    >>> n.ensure()
+    True
+    >>> n.exists()
+    True
+    >>> n.existing_resource()
+    {u'attributes': {},
+     u'id': 31,
+     u'ip_version': u'4',
+     u'is_ip': True,
+     u'network_address': u'8.8.8.0',
+     u'parent_id': 1,
+     u'prefix_length': 32,
+     u'site_id': 1,
+     u'state': u'assigned'}
+
+    >>> n.purge()
+    True
+    >>> n.exists()
+    False
+
+    Attributes:
+        self.net (str): Network
+        self.mask (str): Netmask
+    Options:
+        network (str): (kwarg) network in the form of "IP/NM"
+    '''
+
+    def postinit(self, cidr=None):
+        if not any([cidr, self.raw]):
+            raise TypeError('Networks require a cidr')
+        net = IPNetwork(cidr)
+
+        ver = net.version
+        self.network_address = str(net.network)
+        self.prefix_length = int(net.prefixlen)
+        self.is_host = ver == 4 and net.prefixlen == 32 or net.prefixlen == 128
+        self.init_payload()
+
+    @property
+    def identifier(self):
+        return '%s/%d' % (self['network_address'], self['prefix_length'])
+
+    @property
+    def resource_name(self):
+        return 'networks'
+
+    def init_payload(self):
+        '''This will init the payload property'''
+        if self.raw:
+            self.payload = self.raw
+            return
+
+        self.payload = {
+            'is_ip': self.is_host,
+            'network_address': self.network_address,
+            'prefix_length': self.prefix_length,
+            'state': self.is_host and 'assigned' or 'allocated',
+            'site_id': self._site_id,
+            'attributes': self.attributes,
+        }
+
+    def __len__(self):
+        return self['prefix_length']
+
+
+class Device(Resource):
+    '''Device Resource
+
+    Subclass of Resource.
+
+    Attributes:
+        hostname (str): Hostname
+    Options:
+        hostname (str): (kwarg) Hostname of device
+    '''
+
+    def postinit(self, hostname=None):
+        if not any([hostname, self.raw]):
+            raise TypeError('Devices require a hostname')
+        self.hostname = hostname
+        self.init_payload()
+
+    @property
+    def identifier(self):
+        return self.hostname
+
+    @property
+    def resource_name(self):
+        return 'devices'
+
+    def init_payload(self):
+        if self.raw:
+            self.payload = self.raw
+            return
+
+        self.payload = {
+            'hostname': self.hostname,
+            'site_id': self._site_id,
+            'attributes': self.attributes,
+        }
+
+
+class Interface(Resource):
+    '''Interface Resource
+
+    Subclass of Resource
+
+    Attributes:
+        addresses
+        description
+        device
+        type
+        mac_address
+        name
+        parent_id
+        speed
+
+    Options:
+        addresses (list)
+        description (str)
+        device (int or str): Required: If not device ID, will perform lookup by
+            hostname
+        type (int)
+        mac_address (str)
+        name (str): Required
+        parent_id (int)
+        speed (int)
+    '''
+
+    def postinit(self, **kwargs):
+        self.addresses = kwargs.get('addresses') or []
+        self.description = kwargs.get('description') or ''
+        self.device = kwargs.get('device') or 0
+        self._original_device = kwargs.get('device') or None
+        self.type = kwargs.get('type') or 6
+        self.mac_address = kwargs.get('mac_address') or '00:00:00:00:00:00'
+        self.name = kwargs.get('name') or None
+        self.parent_id = kwargs.get('parent_id') or None
+        self.speed = kwargs.get('speed') or 1000
+
+        if not all([self.name, self.device]) or self.raw:
+            raise TypeError('Interfaces require both a name and device!')
+
+        self.attempt_device()
+        self.init_payload()
+
+    def attempt_device(self):
+        '''Attempt to set ``device`` attribute to its ID if hostname was given
+
+        If an ID was provided during init, this happens in init. If a hostname
+        was provided, we need to take care of a couple things.
+
+        1. Attempt to fetch ID for existing device by the hostname. If this
+           works, use this ID
+
+        2. Should #1 fail, set device id to 0 to signify this device doesn't
+           exist yet, hoping this method will be called again when it's time to
+           create. The thought here is if a user is instantiating lots of
+           resources at the same time, there's a chance the device this relates
+           to is going to be created before this one actually gets called upon.
+
+           0 is used instead of a more descriptive message because should the
+           device still not exist when executing this, at least a device
+           doesn't exist error would be returned instead of expecting int not
+           str.
+        '''
+
+        rerun = isinstance(self._original_device, str) and self.device == 0
+        first_run = isinstance(self.device, str)
+        # If equal to 0, means it had failed before
+        if rerun or first_run:
+            d = Device(
+                    client=self.client,
+                    site_id=self._site_id,
+                    hostname=self._original_device,
+                )
+            if d.exists():
+                self.device = d.existing_resource()['id']
+                return True
+            else:
+                self.device = 0
+                return False
+
+    @property
+    def identifier(self):
+        return '%s on %s' % (self.name, self.device)
+
+    @property
+    def resource_name(self):
+        return 'interfaces'
+
+    def init_payload(self):
+        if self.raw:
+            self.payload = self.raw
+            return
+
+        # TODO: This currently will only work on init and not later since
+        # init_payload is only called once. This is left over from when it was
+        # just payload
+        #
+        # attempt_device should instead set self.payload['device'] directly
+        self.attempt_device()
+        self.payload = {
+            'addresses': self.addresses,
+            'description': self.description,
+            'device': self.device,
+            'type': self.type,
+            'mac_address': self.mac_address,
+            'name': self.name,
+            'parent_id': self.parent_id,
+            'speed': self.speed,
+            'attributes': self.attributes,
+            'site_id': self._site_id,
+        }
