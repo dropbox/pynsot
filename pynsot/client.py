@@ -274,16 +274,16 @@ class AuthTokenAuthentication(BaseClientAuth):
         try:
             url = base_url + '/authenticate/'
             headers = {'content-type': 'application/json'}
-            r = slumber.requests.post(
+            resp = slumber.requests.post(
                 url, data=json.dumps(data), headers=headers
             )
         except Exception as err:
             log.debug('Got error: %s' % (err,))
             self.client.error(err)
 
-        if r.ok:
-            log.debug('Got response: %r' % (r,))
-            result = get_result(r.json())
+        if resp.ok:
+            log.debug('Got response: %r' % (resp,))
+            result = get_result(resp)['auth_token']
             return result
         else:
             msg = 'Failed to fetch auth_token from %s' % base_url
