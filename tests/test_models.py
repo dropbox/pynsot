@@ -82,6 +82,22 @@ def test_existing(client, site):
     assert n.existing_resource() == n._existing_resource
 
 
+def test_net_closest_parent(client, site):
+    '''Test that Network.closest_parent returns instance of Network or dict'''
+    site_id = site['id']
+    c = client
+
+    parent = Network(client=c, site_id=site_id, cidr='8.8.8.0/24')
+    assert parent.ensure()
+
+    child = Network(client=c, site_id=site_id, cidr='8.8.8.8/32')
+    assert child.closest_parent() == parent
+
+    orphan = Network(client=c, site_id=site_id, cidr='1.1.1.1/32')
+    assert not orphan.closest_parent()
+    assert orphan.closest_parent() == {}
+
+
 def test_dict():
     '''Test methods/behavior that should work like a dictionary'''
     n = Network(site_id=1, cidr='8.8.8.0/24')

@@ -505,6 +505,24 @@ class Network(Resource):
             'attributes': self.attributes,
         }
 
+    def closest_parent(self):
+        '''Returns resource object of the closest parent network
+
+        Empty dictionary if no parent network
+
+        Returns:
+            dict
+        '''
+        self.ensure_client()
+        site = getattr(self.client.sites(self['site_id']), self.resource_name)
+        cidr = '%s/%s' % (self['network_address'], self['prefix_length'])
+        try:
+            lookup = get_result(site(cidr).closest_parent.get())
+            return Network(raw=lookup)
+        except Exception as e:
+            self.log_error(e)
+            return {}
+
     def __len__(self):
         return self['prefix_length']
 
