@@ -13,31 +13,34 @@ The client default is ``auth_token``, but ``auth_header`` is more flexible for
 If sticking with the defaults, you'll need to retrieve your key from
 ``/profile`` in the web interface.
 
-Client
-------
+Refer to :ref:`config_ref` for setting these in your ``pynsotrc``
 
-.. note::
-    The preferred method is to configure your pynsotrc as you wish and then use
-    ``pynsot.client.get_api_client`` for easier code re-use. Should you need
-    something more manual, proceed
+Python Client
+-------------
 
-Following will show you how to set up a client object in Python:
+Assuming your configuration is correct, the CLI interface doesn't need anything
+special to make authentication work. The following only applies to retrieving a
+client instance in Python.
 
 .. code-block:: python
 
    from pynsot.client import AuthTokenClient, EmailHeaderClient, get_api_client
 
-   # PREFERRED
+   # This is the preferred method, returning the appropriate client according
+   # to your dotfile if no arguments are supplied.
+   #
+   # Alteratively you can override options by passing url, auth_method, and
+   # other kwargs. See `help(get_api_client) for more details
    c = get_api_client()
 
-   # OR
+   # OR using the client objects directly
 
    email = 'jathan@localhost'
    secret_key = 'qONJrNpTX0_9v7H_LN1JlA0u4gdTs4rRMQklmQF9WF4='
    url = 'http://localhost:8990/api'
-   c = Client(url, email=email, secret_key=secret_key)
+   c = AuthTokenClient(url, email=email, secret_key=secret_key)
 
-   # OR
+   # Email Header Client
    domain = 'localhost'
    auth_header = 'X-NSoT-Email'
    c = EmailHeaderClient(
