@@ -55,7 +55,7 @@ Fetching Resources
 |               |                                              |
 |               | ``c.sites(1).networks('10.0.0.0/24').get()`` |
 |               |                                              |
-|               | ``c.sites(1).networks().get(limit=1)``       |
+|               | ``c.sites(1).networks.get(limit=1)``         |
 +---------------+----------------------------------------------+
 
 The details and comparisons are shown above to demystify what the client does.
@@ -255,9 +255,136 @@ return bool.
 Querying by Attribute Values
 ----------------------------
 
-TODO
++---------------+-------------------------------------------------------------+
+| HTTP Method   | GET                                                         |
++---------------+-------------------------------------------------------------+
+| HTTP Path     | ``GET /api/sites/1/networks/query/?query='set query here'`` |
++---------------+-------------------------------------------------------------+
+| Python Client | ``c.sites(1).networks.query.get(query='set query here')``   |
++---------------+-------------------------------------------------------------+
+
+Set queries are the way to filter based an attributes and their values. The
+syntax is typical set query syntax and is lightly discussed here:
+:ref:`set_query_ref`
+
+The query itself is passed as a query param to the ``/query/`` endpoint and can
+contain regular expressions by suffixing the attribute name, as shown below:
+
+.. code-block:: python
+
+    # Everything matching exactly desc == test
+    c.sites(1).networks.query.get(query='desc=test')
+    # [{u'attributes': {u'dc': u'sfo', u'desc': u'test'},
+    #   u'id': 2,
+    #   u'ip_version': u'4',
+    #   u'is_ip': False,
+    #   u'network_address': u'10.0.0.0',
+    #   u'parent_id': 1,
+    #   u'prefix_length': 24,
+    #   u'site_id': 1,
+    #   u'state': u'allocated'}]
+
+    # Everything with desc matching regex test.*
+    c.sites(1).networks.query.get(query='desc_regex=test.*')
+    # [{u'attributes': {u'desc': u'testing'},
+    #   u'id': 1,
+    #   u'ip_version': u'4',
+    #   u'is_ip': False,
+    #   u'network_address': u'10.0.0.0',
+    #   u'parent_id': None,
+    #   u'prefix_length': 8,
+    #   u'site_id': 1,
+    #   u'state': u'allocated'},
+    #  {u'attributes': {u'dc': u'sfo', u'desc': u'test'},
+    #   u'id': 2,
+    #   u'ip_version': u'4',
+    #   u'is_ip': False,
+    #   u'network_address': u'10.0.0.0',
+    #   u'parent_id': 1,
+    #   u'prefix_length': 24,
+    #   u'site_id': 1,
+    #   u'state': u'allocated'},
+    #  {u'attributes': {u'dc': u'chi', u'desc': u'tester'},
+    #   u'id': 4,
+    #   u'ip_version': u'4',
+    #   u'is_ip': False,
+    #   u'network_address': u'10.0.2.0',
+    #   u'parent_id': 1,
+    #   u'prefix_length': 24,
+    #   u'site_id': 1,
+    #   u'state': u'allocated'}]
+
+    # Everything NOT dc == chi
+    c.sites(1).networks.query.get(query='-dc=chi')
+    # [{u'attributes': {},
+    #   u'id': 7,
+    #   u'ip_version': u'4',
+    #   u'is_ip': False,
+    #   u'network_address': u'8.8.8.0',
+    #   u'parent_id': None,
+    #   u'prefix_length': 24,
+    #   u'site_id': 1,
+    #   u'state': u'allocated'},
+    #  {u'attributes': {u'desc': u'testing'},
+    #   u'id': 1,
+    #   u'ip_version': u'4',
+    #   u'is_ip': False,
+    #   u'network_address': u'10.0.0.0',
+    #   u'parent_id': None,
+    #   u'prefix_length': 8,
+    #   u'site_id': 1,
+    #   u'state': u'allocated'},
+    #  {u'attributes': {u'dc': u'sfo', u'desc': u'test'},
+    #   u'id': 2,
+    #   u'ip_version': u'4',
+    #   u'is_ip': False,
+    #   u'network_address': u'10.0.0.0',
+    #   u'parent_id': 1,
+    #   u'prefix_length': 24,
+    #   u'site_id': 1,
+    #   u'state': u'allocated'},
+    #  {u'attributes': {u'dc': u'sfo'},
+    #   u'id': 6,
+    #   u'ip_version': u'4',
+    #   u'is_ip': False,
+    #   u'network_address': u'10.0.1.0',
+    #   u'parent_id': 1,
+    #   u'prefix_length': 24,
+    #   u'site_id': 1,
+    #   u'state': u'allocated'},
+    #  {u'attributes': {},
+    #   u'id': 5,
+    #   u'ip_version': u'4',
+    #   u'is_ip': True,
+    #   u'network_address': u'10.0.2.1',
+    #   u'parent_id': 4,
+    #   u'prefix_length': 32,
+    #   u'site_id': 1,
+    #   u'state': u'allocated'}]
+
+    # Everything dc == chi
+    c.sites(1).networks.query.get(query='dc=chi')
+    # [{u'attributes': {u'dc': u'chi', u'desc': u'tester'},
+    #   u'id': 4,
+    #   u'ip_version': u'4',
+    #   u'is_ip': False,
+    #   u'network_address': u'10.0.2.0',
+    #   u'parent_id': 1,
+    #   u'prefix_length': 24,
+    #   u'site_id': 1,
+    #   u'state': u'allocated'}]
+
+
 
 API Abstraction Models
 ----------------------
+
+These models were created to abstract most of the API away from the user if
+they didn't want or need it. An instance can be created by providing minimal
+info such as CIDR and desired attributes or it can take raw payload from the
+API and turn it into a model instance.
+
+You can read the docstring in the :mod:`pynsot.models` module or follow along
+for examples below.
 
 TODO

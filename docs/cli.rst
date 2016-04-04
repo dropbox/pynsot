@@ -127,6 +127,8 @@ Each resource's ``list`` action supports ``-i/--id``, ``-l/--limit`` and
 Set Queries
 ~~~~~~~~~~~
 
+.. _set_query_ref:
+
 The Device and Network resources support a ``-q/--query`` option that is a
 representation of set operations for matching attribute/value pairs.
 
