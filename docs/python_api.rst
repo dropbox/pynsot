@@ -25,12 +25,13 @@ instances. Slumber is a wrapper around the `requests` library to make REST much
 more pleasant to use in Python. Each attribute of the client object represents
 part of the HTTP path.
 
-More information is found `here`_, but for the purposes of pynsot you should be
-in good hands for the rest of the document.
+For the purpose of pynsot you should be in good hands for the rest of this
+document, but for more information on Slumber, see the
+`official Slumber documentation`_
 
 It might help to also refer to the `REST docs`_ for NSoT.
 
-.. _here: http://slumber.readthedocs.org/en/v0.6.0/tutorial.html
+.. _official Slumber documentation: http://slumber.readthedocs.org/en/v0.6.0/tutorial.html
 
 .. _REST docs: http://nsot.readthedocs.org/en/latest/api/rest.html
 
@@ -106,6 +107,9 @@ different required fields and defaults for those that aren't. The easiest way
 to reference this information is via the CLI help, browsing ``/api/``, or
 try-except to catch the HTTP 400 and inspect ``e.response.json()``.
 
+NSoT also has BULK operations. The only difference is that the payload is an
+array of resources.
+
 .. code-block:: python
 
    net = {'attributes': {}, 'network_address': '10.0.1.0', 'prefix_length': 24}
@@ -155,6 +159,8 @@ others.
 A successful call will return the new payload representing the upstream
 resource.
 
+Like Creating, PUT also supports BULK operations.
+
 .. code-block:: python
 
    # Fetch example resource
@@ -202,6 +208,8 @@ As opposed to PUT which can replace existing data, PATCH is "safer" in that
 regard. If you don't provide some keys in your update, they will be untouched.
 
 As with PUT and POST, a successful one should return the new payload.
+
+Like Creating, PATCH also supports BULK operations.
 
 .. code-block:: python
 
