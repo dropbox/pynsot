@@ -16,13 +16,8 @@ fundamentally simplified to this::
 from __future__ import unicode_literals
 
 from ..vendor import click
+from ..util import get_result
 from . import callbacks
-
-
-__author__ = 'Jathan McCollum'
-__maintainer__ = 'Jathan McCollum'
-__email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -198,7 +193,8 @@ def list(ctx, attributes, delimited, grep, hostname, id, limit, natural_key,
         if query:
             results = ctx.obj.api.sites(site_id).devices.query.get(
                 query=query, limit=limit, offset=offset)
-            devices = sorted(d['hostname'] for d in results)
+            devices = get_result(results)
+            devices = sorted(d['hostname'] for d in devices)
             joiner = ',' if delimited else '\n'
             click.echo(joiner.join(devices))
         else:

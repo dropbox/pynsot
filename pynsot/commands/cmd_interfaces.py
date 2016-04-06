@@ -16,14 +16,9 @@ fundamentally simplified to this::
 from __future__ import unicode_literals
 
 from ..vendor import click
+from ..util import get_result
 from . import callbacks
 from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
-
-
-__author__ = 'Jathan McCollum'
-__maintainer__ = 'Jathan McCollum'
-__email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -255,9 +250,9 @@ def list(ctx, attributes, delimited, device, description, grep, id, limit,
     if ctx.invoked_subcommand is None:
         if query:
             results = ctx.obj.api.sites(site_id).interfaces.query.get(**data)
-            objects = results['data']['interfaces']
+            interfaces = get_result(results)
             interfaces = sorted(
-                (i['device'], i['name']) for i in objects
+                (i['device'], i['name']) for i in interfaces
             )
             interfaces = ['%s:%s' % obj for obj in interfaces]
             joiner = ',' if delimited else '\n'
