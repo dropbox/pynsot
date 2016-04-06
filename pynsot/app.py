@@ -522,10 +522,7 @@ class App(object):
             return None
 
         # Assert only 1 matching result.
-        try:
-            total = r['data']['total']
-        except KeyError:
-            total = r['count']
+        total = r['count']
 
         if total > 1:
             log.debug('get_single_object: More than one object found!')
@@ -533,22 +530,10 @@ class App(object):
 
         # Return a single result.
         r = get_result(r)
-        r = self.get_paginated_results(r)
         try:
             return r[0]
         except IndexError:
             return None
-
-    def get_paginated_results(self, objects):
-        """
-        If ``objects`` has a results key, return that instead.
-
-        :param objects:
-            List or dict of objects.
-        """
-        if 'results' in objects:
-            return objects['results']
-        return objects
 
     def list(self, data, display_fields=None, resource=None,
              verbose_fields=None):
@@ -595,8 +580,6 @@ class App(object):
                 obj = self.get_single_object(data, resource)
 
             # If obj is STILL None...
-            # Or get all of them.
-            # else:
             if obj is not None:
                 # Set display_fields to verbose
                 display_fields = verbose_fields or display_fields
@@ -616,12 +599,9 @@ class App(object):
 
             # Or just list all of them.
             elif result:
-                # FIXME(jathan): Once API is fully-versioned, deprecate this
-                # call.
                 objects = get_result(result)
 
             if objects:
-                objects = self.get_paginated_results(objects)
                 if grep:
                     self.print_grep(objects)
                 elif by_natural_key:

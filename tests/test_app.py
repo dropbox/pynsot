@@ -282,6 +282,18 @@ def test_devices_list(site_client):
         assert result.exit_code == 0
         assert result.output == expected_output
 
+        # Set query with --l/--limit
+        result = runner.run('devices list -l 1 -q owner=jathan')
+        expected_output = 'foo-bar1\n'
+        assert result.exit_code == 0
+        assert result.output == expected_output
+
+        # Set query with --l/--limit and -o/--offset
+        result = runner.run('devices list -l 1 -o 1 -q owner=jathan')
+        expected_output = 'foo-bar2\n'
+        assert result.exit_code == 0
+        assert result.output == expected_output
+
         # Grep-friendly output (-g/--grep)
         result = runner.run('devices list -a owner=jathan -g')
         expected_output = u'foo-bar1 owner=jathan\nfoo-bar2 owner=jathan\n'
@@ -508,6 +520,18 @@ def test_networks_list(site_client):
         result = runner.run('networks list -N')
         assert result.exit_code == 0
         assert result.output == expected_output  # Same output as above
+
+        # Set query w/ -l/--limit
+        result = runner.run('networks list -l 1 -q owner=jathan')
+        expected_output = '10.0.0.0/8\n'
+        assert result.exit_code == 0
+        assert result.output == expected_output
+
+        # Set query w/ -l/--limit & -o/--offset
+        result = runner.run('networks list -l 1 -o 1 -q owner=jathan')
+        expected_output = '10.0.0.0/24\n'
+        assert result.exit_code == 0
+        assert result.output == expected_output
 
         # Set query display comma-delimited (-d/--delimited)
         result = runner.run('networks list -q owner=jathan -d')

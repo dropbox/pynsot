@@ -16,13 +16,8 @@ fundamentally simplified to this::
 from __future__ import unicode_literals
 
 from ..vendor import click
+from ..util import get_result
 from . import callbacks
-
-
-__author__ = 'Jathan McCollum'
-__maintainer__ = 'Jathan McCollum'
-__email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -264,8 +259,9 @@ def list(ctx, attributes, cidr, delimited, grep, id, include_ips,
     if ctx.invoked_subcommand is None:
         if query:
             results = ctx.obj.api.sites(site_id).networks.query.get(**data)
+            networks = get_result(results)
             networks = sorted(
-                (d['network_address'], d['prefix_length']) for d in results
+                (d['network_address'], d['prefix_length']) for d in networks
             )
             networks = ['%s/%s' % obj for obj in networks]
             joiner = ',' if delimited else '\n'
