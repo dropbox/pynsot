@@ -1,6 +1,6 @@
 -r requirements.txt
 fake-factory==0.5.0
-nsot==0.17
+nsot==0.17.1
 py==1.4.26
 pytest==2.7.0
 pytest-django==2.9.1

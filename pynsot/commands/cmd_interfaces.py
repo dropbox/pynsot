@@ -248,8 +248,8 @@ def list(ctx, attributes, delimited, device, description, grep, id, limit,
     # If we aren't passing a sub-command, just call list(), otherwise let it
     # fallback to default behavior.
     if ctx.invoked_subcommand is None:
-        if query:
-            results = ctx.obj.api.sites(site_id).interfaces.query.get(**data)
+        if query is not None:
+            results = ctx.obj.set_query(data)
             interfaces = get_result(results)
             interfaces = sorted(
                 (i['device'], i['name']) for i in interfaces

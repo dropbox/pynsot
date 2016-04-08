@@ -190,9 +190,8 @@ def list(ctx, attributes, delimited, grep, hostname, id, limit, natural_key,
     data.pop('delimited')  # We don't want this going to the server.
 
     if ctx.invoked_subcommand is None:
-        if query:
-            results = ctx.obj.api.sites(site_id).devices.query.get(
-                query=query, limit=limit, offset=offset)
+        if query is not None:
+            results = ctx.obj.set_query(data)
             devices = get_result(results)
             devices = sorted(d['hostname'] for d in devices)
             joiner = ',' if delimited else '\n'
