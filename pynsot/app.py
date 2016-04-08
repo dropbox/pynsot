@@ -235,7 +235,7 @@ class App(object):
             msg = str(err)
 
         if isinstance(msg, dict):
-            msg = self.pretty_dict(msg, delim=':', joiner='')
+            msg = self.pretty_dict(msg, delim=': ', joiner='')
 
         # If we're being verbose, print some extra context.
         if self.verbose:
@@ -534,6 +534,19 @@ class App(object):
             return r[0]
         except IndexError:
             return None
+
+    def set_query(self, data):
+        """
+        Run a set query and return the results.
+
+        :param data:
+            Dict of query parameters
+        """
+        self.rebase(data)
+        try:
+            return self.resource.query.get(**data)
+        except HTTP_ERRORS as err:
+            self.handle_error('list', data, err)
 
     def list(self, data, display_fields=None, resource=None,
              verbose_fields=None):

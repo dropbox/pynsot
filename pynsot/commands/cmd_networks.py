@@ -257,8 +257,8 @@ def list(ctx, attributes, cidr, delimited, grep, id, include_ips,
     # If we aren't passing a sub-command, just call list(), otherwise let it
     # fallback to default behavior.
     if ctx.invoked_subcommand is None:
-        if query:
-            results = ctx.obj.api.sites(site_id).networks.query.get(**data)
+        if query is not None:
+            results = ctx.obj.set_query(data)
             networks = get_result(results)
             networks = sorted(
                 (d['network_address'], d['prefix_length']) for d in networks

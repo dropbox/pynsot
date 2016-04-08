@@ -21,4 +21,3 @@ def get_result(response):
 
     # Or just return the payload... (next-gen)
     return payload
-
