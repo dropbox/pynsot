@@ -15,7 +15,7 @@ in your code:
 
 .. note:: The tables under each section reflect the ``networks`` resource
 
-   Unless otherwise stated, everything applies to other resources as well
+   Unless otherwise stated, everything applies to other resources as well.
 
 What is Slumber?
 ----------------
@@ -27,7 +27,7 @@ part of the HTTP path.
 
 For the purpose of pynsot you should be in good hands for the rest of this
 document, but for more information on Slumber, see the
-`official Slumber documentation`_
+`official Slumber documentation`_.
 
 It might help to also refer to the `REST docs`_ for NSoT.
 
@@ -75,7 +75,7 @@ attribute values. (Those are covered in another section)
 
 .. note::
 
-    "all" in the following context means all, irregardless of site. Sites are
+    "all" in the following context means all, regardless of site. Sites are
     normally used to separate conflicting sets of data so unless you intend to
     span sites, try to use ``c.sites(ID)`` for your normal clienting
 
@@ -127,7 +127,7 @@ array of resources.
    try:
        net = {'network_address': '8.8.8.0', 'prefix_length': 24}
        c.sites(1).networks.post(net)
-   except Exception, e:
+   except Exception as e:
        print(e.response.json())
        # {u'error': {u'code': 400,
        # u'message': {u'attributes': [u'This field is required.']}},
@@ -272,8 +272,8 @@ Querying by Attribute Values
 +---------------+-------------------------------------------------------------+
 
 Set queries are the way to filter based an attributes and their values. The
-syntax is typical set query syntax and is lightly discussed here:
-:ref:`set_query_ref`
+syntax is typical set query syntax and is lightly discussed in
+:ref:`set_queries`.
 
 The query itself is passed as a query param to the ``/query/`` endpoint and can
 contain regular expressions by suffixing the attribute name, as shown below:
@@ -392,7 +392,10 @@ they didn't want or need it. An instance can be created by providing minimal
 info such as CIDR and desired attributes or it can take raw payload from the
 API and turn it into a model instance.
 
-You can read the docstring in the :mod:`pynsot.models` module or follow along
-for examples below.
+You can read the docstring in the :mod:`pynsot.models` module or follow the
+links below for usage examples. We think it's a pretty solid way to do most
+basic interaction.
 
-TODO
+* :class:`pynsot.models.Network`
+* :class:`pynsot.models.Device`
+* :class:`pynsot.models.Interface`

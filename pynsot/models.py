@@ -10,8 +10,6 @@ etc).
 Example
 -------
 
-As always, refer to official docs vs. the docstring but here is an example
-
 >>> from pynsot.models import Network, Device, Interface
 >>> from pynsot.client import get_api_client
 >>> client = get_api_client()
