@@ -108,9 +108,11 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
         # Required option
         if cidr is None:
             raise click.UsageError('Missing option "-c" / "--cidr"')
-        # Remove if empty, allow default assignment
+
+        # Remove if empty; allow default assignment
         if state is None:
             data.pop('state', None)
+
     ctx.obj.add(data)
 
 
@@ -362,6 +364,13 @@ def remove(ctx, id, site_id):
     help='Unique ID of the Network being updated.',
 )
 @click.option(
+    '-S',
+    '--state',
+    metavar='STATE',
+    type=str,
+    help='The allocation state of the Network.',
+)
+@click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
@@ -370,7 +379,6 @@ def remove(ctx, id, site_id):
     callback=callbacks.process_site_id,
 )
 @click.option(
-    '-A',
     '--add-attributes',
     'attr_action',
     flag_value='add',
@@ -381,7 +389,6 @@ def remove(ctx, id, site_id):
     )
 )
 @click.option(
-    '-d',
     '--delete-attributes',
     'attr_action',
     flag_value='delete',
@@ -392,7 +399,6 @@ def remove(ctx, id, site_id):
     ),
 )
 @click.option(
-    '-r',
     '--replace-attributes',
     'attr_action',
     flag_value='replace',
@@ -402,20 +408,12 @@ def remove(ctx, id, site_id):
     ),
 )
 @click.option(
-    '-m',
     '--multi',
     is_flag=True,
     help='Treat the specified attributes as a list type.',
 )
-@click.option(
-    '-S',
-    '--state',
-    metavar='STATE',
-    type=str,
-    help='The allocation state of the Network.',
-)
 @click.pass_context
-def update(ctx, attributes, cidr, id, site_id, attr_action, multi, state):
+def update(ctx, attributes, cidr, id, state, site_id, attr_action, multi):
     """
     Update a Network.
 
@@ -431,15 +429,16 @@ def update(ctx, attributes, cidr, id, site_id, attr_action, multi, state):
 
     When modifying attributes you have three actions to choose from:
 
-    * Add (-A/--add-attributes). This is the default behavior that will add
+    * Add (--add-attributes). This is the default behavior that will add
     attributes if they don't exist, or update them if they do.
 
-    * Delete (-d/--delete-attributes). This will cause attributes to be
-    deleted. If combined with --multi the attribute will be deleted if either
-    no value is provided, or if the attribute no longer contains a valid value.
+    * Delete (--delete-attributes). This will cause attributes to be
+    deleted. If combined with --multi the attribute will be deleted if
+    either no value is provided, or if the attribute no longer contains a
+    valid value.
 
-    * Replace (-r/--replace-attributes). This will cause attributes to
-    replaced. If combined with -m/--multi and multiple attributes of the same
+    * Replace (--replace-attributes). This will cause attributes to
+    replaced. If combined with --multi and multiple attributes of the same
     name are provided, only the last value provided will be used.
     """
     if not any([attributes, state]):

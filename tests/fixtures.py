@@ -110,9 +110,23 @@ def device(site_client):
         {'hostname': 'foo-bar1'}
     )
 
+
 @pytest.fixture
 def network(site_client):
     """Return a Network object."""
     return site_client.sites(site_client.default_site).networks.post(
         {'cidr': '10.20.30.0/24'}
+    )
+
+
+@pytest.fixture
+def interface(site_client, device, network):
+    """
+    Return an Interface object.
+
+    Interface is bound to ``device`` with an address assigned from ``network``.
+    """
+    device_id = device['id']
+    return site_client.sites(site_client.default_site).interfaces.post(
+        {'name': 'eth0', 'addresses': ['10.20.30.1/32'], 'device': device_id}
     )

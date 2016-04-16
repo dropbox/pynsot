@@ -30,7 +30,7 @@ __copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Constants/Globals
-if os.getenv('DEBUG'):
+if os.getenv('PYNSOT_DEBUG'):
     logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
@@ -62,6 +62,8 @@ NATURAL_KEYS = {
 GREP_FORMATS = {
     'devices': '%(hostname)s',
     'networks': '%(network_address)s/%(prefix_length)s',
+    'addresses': '%(network_address)s/%(prefix_length)s',  # Same as networks
+    'assignments': '%(hostname)s:%(interface_name)s:%(address)s',
     'attributes': '%(resource_name)s:%(name)s',
     'interfaces': '%(device)s:%(name)s',
     'sites': '%(name)s',
@@ -359,7 +361,7 @@ class App(object):
         output = []
         for obj in objects:
             prefix = self.format_object_for_grep(obj)
-            attrs = obj['attributes']
+            attrs = obj.get('attributes', {})
             keys = sorted(attrs)
             for k in keys:
                 output.append('%s %s=%s' % (prefix, k, attrs[k]))
@@ -509,7 +511,12 @@ class App(object):
         # Construct our params to retrieve a single object.
         params = {'limit': 1}
         for natural_key in natural_keys:
-            params[natural_key] = data[natural_key]
+            natural_value = data.get(natural_key)
+
+            # Only filter if the key was found. This is mostly for interfaces
+            # where (device_id,) or (device_id, name) are valid lookups.
+            if natural_value is not None:
+                params[natural_key] = natural_value
 
         # Rebase before we toilet face.
         if resource is None:

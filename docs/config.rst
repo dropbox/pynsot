@@ -1,16 +1,22 @@
+#############
 Configuration
-=============
+#############
+
+Configuration Basics
+====================
 
 Configuration for pynsot consists of a single INI with two possible locations:
 
 1. ``/etc/pynsotrc``
 2. ``~/.pynsotrc``
 
-The home directory takes precedence. Configuration elements must be under the
-``pynsot`` section.
+The files are discovered and loaded in order, with the settings found in each
+location being merged together. The home directory takes precedence.
 
-If you don't create this file, don't fret - running ``nsot`` will prompt you to
-create one interactively.
+Configuration elements must be under the ``pynsot`` section.
+
+If you don't create this file, running ``nsot`` will prompt you to create one
+interactively.
 
 Like so::
 
@@ -20,7 +26,12 @@ Like so::
     Please enter SECRET_KEY: qONJrNpTX0_9v7H_LN1JlA0u4gdTs4rRMQklmQF9WF4=
     Please enter EMAIL: jathan@localhost
 
-Example Configuration::
+.. _example_config:
+
+Example Configuration
+=====================
+
+.. code-block:: ini
 
     [pynsot]
     auth_header = X-NSoT-Email
@@ -29,10 +40,12 @@ Example Configuration::
     default_domain = company.com
     url = https://nsot.company.com/api
 
-
 .. _config_ref:
 
-.. list-table:: Configuration reference
+Configuration Reference
+=======================
+
+.. list-table::
    :header-rows: 1
 
    *  - Key
@@ -40,34 +53,34 @@ Example Configuration::
       - Default
       - Required
    *  - url
-      - API URL. Eg: http://localhost:8990/api
+      - API URL. (e.g. http://localhost:8990/api)
       -
       - Yes
    *  - email
       - User email
-      - $USER@default_domain
+      - ``$USER@{default_domain}``
       - No
    *  - api_version
-      - API version to use. Eg: 1.0
-      - None
+      - API version to use. (e.g. ``1.0``)
+      - ``None``
       - No
    *  - auth_method
-      - auth_token or auth_header
+      - ``auth_token`` or ``auth_header``
       -
       - Yes
    *  - secret_key
-      - token from your user profile
+      - Secret Key from your user profile
       -
       - No
    *  - default_site
-      - default site id when you don't explicitly say
+      - Default ``site_id`` if not provided w/ ``-s``
       -
       - No
    *  - auth_header
-      - HTTP header to send email in to url.
-      - X-NSoT-Email
+      - HTTP header used for proxy authentication
+      - ``X-NSoT-Email``
       - No
    *  - default_domain
-      - Domain for email address. Eg: example.com
-      - localhost
+      - Domain for email address
+      - ``localhost``
       - No

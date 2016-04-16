@@ -1,9 +1,10 @@
-Pynsot - The Network Source of Truth Client
-===========================================
+###########################################
+PyNSoT - The Network Source of Truth Client
+###########################################
 
-Pynsot is the official client library and command-line utility for the
-`Network Source of Truth (NSoT)`_ IPAM.  For more information on the core
-project, please follow the link above.
+PyNSoT is the official client library and command-line utility for the
+`Network Source of Truth (NSoT)`_ network source-of-truth and IPAM database.
+For more information on the core project, please follow the link above.
 
 |Build Status| |Documentation Status| |PyPI Status|
 
@@ -26,12 +27,59 @@ project, please follow the link above.
 
 .. _core project: https://github.com/dropbox/nsot
 
+**Table of Contents**:
 
-How do you use it? Here's an example of a few basic CLI lookups after adding
+.. contents::
+   :local:
+   :depth: 2
+
+Installation
+============
+
+Assuming you've got Python 2.7 and ``pip``, all you have to do is:
+
+.. code-block:: bash
+
+   $ pip install pynsot
+
+We realize that this might not work for you. More detailed install instructions
+are Coming Soon™.
+
+Quick Start
+===========
+
+How do you use it? Here are some basic examples to get you started.
+
+.. important::
+    These examples assume you've already installed and configured ``pynsot``. 
+    For a detailed walkthrough, please visit :doc:`config` and then head over
+    to the :doc:`cli` docs.
+
+Create a Site
+-------------
+
+Sites are namespaces for all other objects. Before you can do anything you'll
+need a Site:
+
+.. code-block:: bash
+
+   $ nsot sites add --name 'My Site'
+
+These examples also assume the use of a ``default_site`` so that you don't have
+to provide the ``-s/--sit-id`` argument on every query. If this is your only
+site, just add ``default_site = 1`` to your ``pynsotrc`` file.
+
+If you're throughoughly lost already, check out the :ref:`example_config`.
+
+CLI Example
+-----------
+
+Here's an example of a few basic CLI lookups after adding
 several networks:
 
 .. code-block:: bash
 
+   # Add a handful of networks
    $ nsot networks add -c 192.168.0.0/16 -a owner=jathan
    $ nsot networks add -c 192.168.0.0/24
    $ nsot networks add -c 192.168.0.0/25
@@ -40,6 +88,7 @@ several networks:
    $ nsot networks add -c 10.0.0.0/24
    $ nsot networks add -c 10.1.0.0/24
 
+   # And start looking them up!
    $ nsot networks list
    +-------------------------------------------------------------------------+
    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
@@ -71,42 +120,42 @@ several networks:
    +-----------------------------------------------------------------------+
 
    $ nsot networks list --cidr 192.168.0.0/16 subnets
-    +-----------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
-    +-----------------------------------------------------------------------+
-    | 6    192.168.0.0   24       False    4         1                      |
-    | 7    192.168.0.0   25       False    4         6                      |
-    +-----------------------------------------------------------------------+
+   +-----------------------------------------------------------------------+
+   | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
+   +-----------------------------------------------------------------------+
+   | 6    192.168.0.0   24       False    4         1                      |
+   | 7    192.168.0.0   25       False    4         6                      |
+   +-----------------------------------------------------------------------+
 
-    $ nsot networks list -c 192.168.0.0/24 supernets
-    +-------------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
-    +-------------------------------------------------------------------------+
-    | 1    192.168.0.0   16       False    4         None        owner=jathan |
-    |                                                            cluster=     |
-    |                                                            foo=baz      |
-    +-------------------------------------------------------------------------+
+   $ nsot networks list -c 192.168.0.0/24 supernets
+   +-------------------------------------------------------------------------+
+   | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
+   +-------------------------------------------------------------------------+
+   | 1    192.168.0.0   16       False    4         None        owner=jathan |
+   |                                                            cluster=     |
+   |                                                            foo=baz      |
+   +-------------------------------------------------------------------------+
 
+API Example
+-----------
 
-And for the Python API?
+And for the Python API? Run some Python!
+
+If you want a more detailed walkthrough, check out the :doc:`python_api` guide.
 
 .. code-block:: python
 
    from pynsot.client import get_api_client
 
-   # get_api_client is a magical function that returns the proper client
-   # according to your pynsotrc configuration
+   # get_api_client() is a magical function that returns the proper client
+   # according to your ``pynsotrc`` configuration
    c = get_api_client()
    nets = c.sites(1).networks.get()
    subnets = c.sites(1).networks('192.168.0.0/16').subnets.get()
    supernets = c.sites(1).networks('192.168.0.0/24').supernets.get()
 
-
-You can install by running ``pip install pynsot``!
-
-
-Documentation Contents
-----------------------
+Documentation
+=============
 
 .. toctree::
    :maxdepth: 2
@@ -117,7 +166,7 @@ Documentation Contents
    python_api
 
 API Reference
--------------
+=============
 
 If you are looking for information on a specific function, class, or
 method, go forward.
@@ -128,7 +177,9 @@ method, go forward.
    api
 
 Miscellaneous Pages
--------------------
+===================
+
+TBD
 
 .. toctree::
    :maxdepth: 2

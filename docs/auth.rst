@@ -13,7 +13,7 @@ The client default is ``auth_token``, but ``auth_header`` is more flexible for
 If sticking with the defaults, you'll need to retrieve your key from
 ``/profile`` in the web interface.
 
-Refer to :ref:`config_ref` for setting these in your ``pynsotrc``
+Refer to :ref:`config_ref` for setting these in your ``pynsotrc``.
 
 Python Client
 -------------
