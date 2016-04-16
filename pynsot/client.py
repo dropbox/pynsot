@@ -287,7 +287,7 @@ class AuthTokenAuthentication(BaseClientAuth):
             return result
         else:
             msg = 'Failed to fetch auth_token from %s' % base_url
-            err = HttpClientError(msg, response=r, content=r.content)
+            err = HttpClientError(msg, response=resp, content=resp.content)
             self.client.error(err)
 
     def __call__(self, r):
