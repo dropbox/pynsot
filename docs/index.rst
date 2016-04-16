@@ -1,6 +1,5 @@
-Welcome to pynsot's documentation!
-==================================
-
+Pynsot - The Network Source of Truth Client
+===========================================
 
 Pynsot is the official client library and command-line utility for the
 :abbr:`NSoT (Network Source of Truth)` IPAM.  For more information on the core
