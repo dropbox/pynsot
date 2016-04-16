@@ -8,8 +8,8 @@ Utilities and stuff.
 def get_result(response):
     """
     Get the desired result from an API response.
-    :param response:
-        Requests API response object
+
+    :param response: Requests API response object
     """
     try:
         payload = response.json()

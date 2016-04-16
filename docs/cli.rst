@@ -124,6 +124,8 @@ Each resource's ``list`` action supports ``-i/--id``, ``-l/--limit`` and
 * The ``-l/--limit`` option will limit the set of results to ``N`` resources.
 * The ``-o/--offset`` option will skip the first ``N`` resources.
 
+.. _set_queries:
+
 Set Queries
 ~~~~~~~~~~~
 

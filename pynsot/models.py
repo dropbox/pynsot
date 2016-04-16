@@ -10,19 +10,17 @@ etc).
 Example
 -------
 
-As always, refer to official docs vs. the docstring but here is an example
-
 >>> from pynsot.models import Network, Device, Interface
 >>> from pynsot.client import get_api_client
 >>> client = get_api_client()
 >>> net = Network(raw=client.networks.get()[-1])
-
-# Or also...
-# >>> net = Network(client=client, site_id=1, cidr='8.8.8.0/24')
-
+>>>
+>>> # Or also...
+>>> # >>> net = Network(client=client, site_id=1, cidr='8.8.8.0/24')
+>>>
 >>> net.exists()
 >>> True
-
+>>>
 >>> net.existing_resource()
 {u'attributes': {},
  u'id': 81,
@@ -33,29 +31,29 @@ As always, refer to official docs vs. the docstring but here is an example
  u'prefix_length': 24,
  u'site_id': 1,
  u'state': u'allocated'}
-
+>>>
 >>> net.purge()
 True
-
+>>>
 >>> net.exists()
 False
-
+>>>
 >>> net.ensure()
 True
-
+>>>
 >>> net.exists()
 True
-
+>>>
 >>> net['site_id']
 2
-
+>>>
 >>> net['site_id'] = 4
-
+>>>
 >>> net.exists()
 False
-
+>>>
 >>> net['site_id'] = 2
-
+>>>
 >>> net.exists()
 True
 '''
@@ -70,41 +68,42 @@ from pynsot.client import get_api_client
 
 
 class Resource(collections.MutableMapping):
-    '''Base Resource
+    '''Base API Abstraction Models Class
 
-    This class represents a model for subclassing NSoT resources, including
-    methods to represent itself and upload to an NSoT server.
+    Instances of an API abstraction model represent a single NSoT resource and
+    provide methods for managing the state of it upstream. They can be
+    instantiated by the raw returned object from NSoT API or more simply by a
+    few descriptive kwargs.
 
-    Instead of overloading __init__, this base class accepts **kwargs and
-    passes them to self.postinit(**kwargs). Overload postinit for setting
-    resource specific parameters and setup. Note: This does NOT execute when
-    `raw` is provided
+    Resource is a subclass of :class:``collections.MutableMapping`` which makes
+    it act as a dictionary would. The mapping represents the payload that would
+    be accepted by NSoT and can be manipulated as desired like a normal dict.
 
-    __getitem__ and __iter__ are set so you can render what the NSoT payload
-    will look like by doing dict(obj) and fetch individual keys like a
-    dictionary with obj['attributes']
+    Subclassing:
+        Subclasses must adhere to a simple contract:
+            * Overload the abstractmethods and abstractproperties this class
+              uses
+            * If custom arguments are needed, overload ``self.postinit``.
+              Just make sure to call ``self.init_payload()`` at the end. All
+              kwargs that aren't handled by ``self.__init__`` are passed here
 
-    Attributes:
-        identifier (str)
-        resource (pynsot.vendor.slumber.Resource)
-        resource_name (str)
-        logger (logging.Logger)
-        payload (dict): This represents the exact payload sent to NSoT server
-        errors (list): Collection of any errors to happen during operations
-        last_error: The last error to happen
+    :param site_id: Site ID this reseource belongs to. Required unless ``raw``
+        is supplied.
+    :type site_id: int
+    :param attributes: Attributes to add to resource. If supplying ``raw``, add
+        these after the instantiation like:
 
-    Options:
-        site_id (int): (kwarg) Site ID for operations
-            Required unless `raw['site']`. If both provided, raw takes
-            precedence.
-        attributes (dict): (kwarg) Attributes to add to resource
-        client (pynsot.client.BaseClient): (kwarg) pynsot client
-            If client is not provided, `get_api_client` will be lazily loaded
-            on first API interaction. If you're dealing with many resource
-            objects that will talk to API, it'd be `n` less function calls to
-            pass in this parameter
-        raw (dict): (kwarg) Use this to pass in raw NSoT resource
-            Useful for instantiating objects as they return from API.
+            >>> obj = Device(raw=RAW_API_DICT)
+            >>> obj['attributes'] = {}
+
+    :type attributes: dict
+    :param client: Pynsot client for API interactions. Will be lazily loaded if
+        not provided, but might be cheaper to supply it up front.
+    :type client: pynsot.client.BaseClient
+    :param raw: Raw NSoT resource object. What would be returned from a GET,
+        POST, PUT, or PATCH operation for a single resource. Gets mapped
+        directly to payload
+    :type raw: dict
     '''
 
     __metaclass__ = ABCMeta
@@ -137,7 +136,7 @@ class Resource(collections.MutableMapping):
         elif site_id:
             pass  # Already set
         else:
-            raise TypeError('Resource requires site_id via param or `raw` key')
+            raise TypeError('Resource requires site_id via param or ``raw`` key')
 
         self._site_id = site_id
         self.client = client
@@ -158,14 +157,18 @@ class Resource(collections.MutableMapping):
     def postinit(self, **kwargs):
         '''Overloadable method for post __init__
 
-        This method is called at the very end of __init__ unless `raw` is
-        given. Use-case here is that each resource type needs varying
-        information to compile itself and overloading __init__ + calling
-        `super()` is no fun.
+        Use this for things that need to happen post-init, including
+        subclass-specific argument handling.
 
-        Options:
-            kwargs (dict): All unhandled kwargs from __init__ are passed here.
+        This method is called at the very end of __init__ unless ``raw`` is
+        given.
+
+        :params kwargs: All unhandled kwargs from __init__ are passed here
+        :type kwargs: dict
         '''
+        # If not being overloaded by subclass, still need to call this required
+        # method if ``raw`` isn't provided
+        self.init_payload()
         pass
 
     def ensure_client(self, **kwargs):
@@ -173,6 +176,9 @@ class Resource(collections.MutableMapping):
 
         Client may be passed during __init__ as a kwarg, but call this before
         doing any client work to ensure
+
+        :param kwargs: These will be passed to get_api_client.
+        :type kwargs: dict
         '''
         if self.client:
             return
@@ -186,8 +192,7 @@ class Resource(collections.MutableMapping):
         Used in log messages and magic methods for comparison. Examples here
         would be CIDR, hostname, etc
 
-        Returns:
-            str
+        :rtype: str
         '''
         pass
 
@@ -195,13 +200,7 @@ class Resource(collections.MutableMapping):
     def resource(self):
         '''Pynsot client for resource type
 
-        For example using a network type:
-
-            client.networks
-            /api/networks/ equivalent
-
-        Returns:
-            pynsot.client.BaseClient
+        :rtype: pynsot.client.BaseClient
         '''
         self.ensure_client()
         return getattr(self.client, self.resource_name)
@@ -212,17 +211,14 @@ class Resource(collections.MutableMapping):
 
         Must be plural
 
-        Returns:
-            str
+        :rtype: str
         '''
         pass
 
     @abstractmethod
     def init_payload(self):
-        '''Initializes the _payload dictionary using resource specific data
-
-        This must be called in a subclass' postinit to get a populated
-        `self.payload` when `raw` isn't provided.
+        '''
+        Initializes the payload dictionary using resource specific data
         '''
         pass
 
@@ -230,8 +226,8 @@ class Resource(collections.MutableMapping):
     def payload(self):
         '''Represents exact payload sent to NSoT server
 
-        Returns:
-            _payload (dict)
+        :returns: _payload
+        :rtype: dict
         '''
         return self._payload
 
@@ -276,10 +272,13 @@ class Resource(collections.MutableMapping):
         return str(self.identifier)
 
     def __eq__(self, other):
-        '''Using `identifier` and `site_id`, compare to another resource'''
-        x = '%s:%s' % (self.identifier, self._site_id)
-        y = '%s:%s' % (other.identifier, other._site_id)
-        return x == y
+        '''Using ``identifier`` and ``site_id``, compare to another resource'''
+        try:
+            x = '%s:%s' % (self.identifier, self._site_id)
+            y = '%s:%s' % (other.identifier, other._site_id)
+            return x == y
+        except:
+            raise TypeError('Other object is not a Resource type')
 
     def log_error(self, error):
         '''Log and append errors to object
@@ -310,10 +309,9 @@ class Resource(collections.MutableMapping):
 
         If nothing exists, empty dict is returned. The result of this is cached
         in a property (_existing_resource) for cheaper re-checks. This can be
-        cleared via `.clear_cache()`
+        cleared via ``.clear_cache()``
 
-        Returns:
-            dict
+        :rtype: dict
         '''
         self.ensure_client()
         if self._existing_resource:
@@ -355,7 +353,7 @@ class Resource(collections.MutableMapping):
         '''Clears state of certain properties
 
         This is ideally done during a write operation against the API, such as
-        `.purge()` or `.ensure()`. Helps prevent representing out-of-date
+        ``.purge()`` or ``.ensure()``. Helps prevent representing out-of-date
         information
         '''
         self._existing_resource = {}
@@ -363,8 +361,7 @@ class Resource(collections.MutableMapping):
     def exists(self):
         '''Does the current resource exist?
 
-        Returns:
-            bool
+        :rtype: bool
         '''
         return bool(self.existing_resource())
 
@@ -372,7 +369,7 @@ class Resource(collections.MutableMapping):
         '''Ensure object in current state exists in NSoT
 
         By site, make sure resource exists. True if it is or was able to get to
-        the desired state, False if not and logged in `last_error`.
+        the desired state, False if not and logged in ``last_error``.
 
         Having this operation be done individually for each resource
         has some pros and cons. Generally as long as the amount of items
@@ -383,6 +380,8 @@ class Resource(collections.MutableMapping):
         so it requires more handling.
 
         Cache is cleared first thing and before return.
+
+        :rtype: bool
         '''
         self.clear_cache()
         to_ensure = dict(self)
@@ -411,9 +410,11 @@ class Resource(collections.MutableMapping):
         '''Ensure resource doesn't exist upstream
 
         By site, make sure resource is deleted. True if it is or was able to
-        get to the desired state, False if not and logged in `last_error`.
+        get to the desired state, False if not and logged in ``last_error``.
 
         Cache is cleared first thing and before return.
+
+        :rtype: bool
         '''
         self.clear_cache()
         try:
@@ -437,11 +438,11 @@ class Resource(collections.MutableMapping):
 
 
 class Network(Resource):
-    '''Network Resource
+    '''Network API Abstraction Model
 
     Subclass of Resource.
 
-    >>> n = Network(CLIENT, 1, network='8.8.8.0/32')
+    >>> n = Network(cidr='8.8.8.0/24', site_id=1)
     >>> n.exists()
     False
     >>> n.ensure()
@@ -455,20 +456,18 @@ class Network(Resource):
      u'is_ip': True,
      u'network_address': u'8.8.8.0',
      u'parent_id': 1,
-     u'prefix_length': 32,
+     u'prefix_length': 24,
      u'site_id': 1,
      u'state': u'assigned'}
-
+    >>>
     >>> n.purge()
     True
     >>> n.exists()
     False
+    >>> n.closest_parent()
+    <Network: 8.8.0.0/16>
 
-    Attributes:
-        self.net (str): Network
-        self.mask (str): Netmask
-    Options:
-        network (str): (kwarg) network in the form of "IP/NM"
+    :param cidr: CIDR for network
     '''
 
     def postinit(self, cidr=None):
@@ -510,8 +509,8 @@ class Network(Resource):
 
         Empty dictionary if no parent network
 
-        Returns:
-            dict
+        :returns: Parent resource
+        :rtype: pynsot.models.Network or dict
         '''
         self.ensure_client()
         site = getattr(self.client.sites(self['site_id']), self.resource_name)
@@ -532,10 +531,22 @@ class Device(Resource):
 
     Subclass of Resource.
 
-    Attributes:
-        hostname (str): Hostname
-    Options:
-        hostname (str): (kwarg) Hostname of device
+    >>> dev = Device(hostname='router1-nyc', site_id=1)
+    >>> dev.exists()
+    False
+    >>>
+    >>> dev.ensure()
+    True
+    >>>
+    >>> dev.existing_resource()
+    {u'attributes': {}, u'hostname': u'router1-nyc', u'id': 1, u'site_id': 1}
+    >>> dev.purge()
+    True
+    >>>
+    >>> dev.exists()
+    False
+
+    :param hostname: Device hostname
     '''
 
     def postinit(self, hostname=None):
@@ -569,26 +580,20 @@ class Interface(Resource):
 
     Subclass of Resource
 
-    Attributes:
-        addresses
-        description
-        device
-        type
-        mac_address
-        name
-        parent_id
-        speed
-
-    Options:
-        addresses (list)
-        description (str)
-        device (int or str): Required: If not device ID, will perform lookup by
-            hostname
-        type (int)
-        mac_address (str)
-        name (str): Required
-        parent_id (int)
-        speed (int)
+    :param addresses: Addresses on interface
+    :type addresses: list
+    :param description: Interface description
+    :param device: Required, device interface is on. TODO: broken as currently
+        implemented but will soon reflect the following type
+    :type device: pynsot.models.Device
+    :param type: Interface type as described by SNMP IF-TYPE's
+    :type type: int
+    :param mac_address: MAC of interface
+    :param name: Required, name of interface
+    :param parent_id: ID of parent interface
+    :type parent_id: int
+    :param speed: Speed of interface
+    :type speed: int
     '''
 
     def postinit(self, **kwargs):

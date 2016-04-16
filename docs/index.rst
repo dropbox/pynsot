@@ -1,12 +1,23 @@
-Welcome to pynsot's documentation!
-==================================
-
+Pynsot - The Network Source of Truth Client
+===========================================
 
 Pynsot is the official client library and command-line utility for the
-:abbr:`NSoT (Network Source of Truth)` IPAM.  For more information on the core
-project, please check it out `here`_.
+`Network Source of Truth (NSoT)`_ IPAM.  For more information on the core
+project, please follow the link above.
 
-.. _here: https://github.com/dropbox/nsot
+|Build Status| |Documentation Status| |PyPI Status|
+
+.. _Network Source of Truth (NSoT): https://github.com/dropbox/nsot
+
+.. |Build Status| image:: https://img.shields.io/travis/dropbox/pynsot/master.svg?style=flat
+   :target: https://travis-ci.org/dropbox/pynsot
+   :width: 88px
+.. |Documentation Status| image:: https://readthedocs.org/projects/pynsot/badge/?version=latest&style=flat
+   :target: https://readthedocs.org/projects/pynsot/?badge=latest
+   :width: 76px
+.. |PyPI Status| image:: https://img.shields.io/pypi/v/pynsot.svg?style=flat
+   :target: https://pypi.python.org/pypi/pynsot
+   :width: 86px
 
 .. warning::
     This project is still very much in flux and likely to have
