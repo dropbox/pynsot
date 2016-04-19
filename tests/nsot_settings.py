@@ -10,7 +10,7 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 
 
-from nsot.conf.settings import *
+from nsot.conf.settings import *  # noqa
 import os.path
 
 
@@ -80,10 +80,10 @@ USER_AUTH_HEADER = 'X-NSoT-Email'
 # Default: 600
 AUTH_TOKEN_EXPIRY = 600  # 10 minutes
 
-# A list of strings representing the host/domain names that this Django site can
-# serve. This is a security measure to prevent an attacker from poisoning caches
-# and triggering password reset emails with links to malicious hosts by
-# submitting requests with a fake HTTP Host header, which is possible even under
-# many seemingly-safe web server configurations.
+# A list of strings representing the host/domain names that this Django site
+# can serve. This is a security measure to prevent an attacker from poisoning
+# caches and triggering password reset emails with links to malicious hosts by
+# submitting requests with a fake HTTP Host header, which is possible even
+# under many seemingly-safe web server configurations.
 # https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ['*']

@@ -11,7 +11,6 @@ from itertools import islice
 import logging
 import os
 import random
-import requests_mock
 import shlex
 import shutil
 import socket
@@ -81,14 +80,6 @@ class CliRunner(BaseCliRunner):
                 shutil.rmtree(t)
             except (OSError, IOError):
                 pass
-
-    @contextlib.contextmanager
-    def isolated_requests(self):
-        """
-        A context manager that mocks requests in an isolated filesystem.
-        """
-        with requests_mock.Mocker() as mock, self.isolated_filesystem():
-            yield mock
 
     def run(self, command, **kwargs):
         """

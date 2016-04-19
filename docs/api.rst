@@ -51,7 +51,6 @@ Utilities
 ---------
 
 .. autofunction:: pynsot.util.get_result
-.. autofunction:: pynsot.util.get_result_key
 
 Dotfile
 -------
