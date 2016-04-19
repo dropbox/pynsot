@@ -136,7 +136,9 @@ class Resource(collections.MutableMapping):
         elif site_id:
             pass  # Already set
         else:
-            raise TypeError('Resource requires site_id via param or ``raw`` key')
+            raise TypeError(
+                'Resource requires site_id via param or ``raw`` key'
+            )
 
         self._site_id = site_id
         self.client = client
@@ -639,10 +641,10 @@ class Interface(Resource):
         # If equal to 0, means it had failed before
         if rerun or first_run:
             d = Device(
-                    client=self.client,
-                    site_id=self._site_id,
-                    hostname=self._original_device,
-                )
+                client=self.client,
+                site_id=self._site_id,
+                hostname=self._original_device,
+            )
             if d.exists():
                 self.device = d.existing_resource()['id']
                 return True
