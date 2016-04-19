@@ -148,9 +148,9 @@ This will be important to note later on in this documentation.
 Natural Keys
 ============
 
-A "natural key" is a field or set of fields which can a uniquely identifying
-mutable an object. Natural keys are intended to be used as a human-readable
-identifer to improve user experience and simplify interaction with NSoT.
+A "natural key" is a field or set of fields which can uniquely identify an
+object. Natural keys are intended to be used as a human-readable identifer to
+improve user experience and simplify interaction with NSoT.
 
 For the purpose of display all objects have a natural key for one or more
 fields as follows:
@@ -167,8 +167,8 @@ Updating or Removing Objects
 When updating or removing objects, you may specify their unique ID or (if
 applicable) their natural key.
 
-For objects that do not support natural key, unique IDs can be obtained using
-the ``list`` action.
+For objects that do not support update by natural key, unique IDs can be
+obtained using the ``list`` action.
 
 Currently the only :ref:`resource_types` to currently support update or removal
 by natural key are:
@@ -300,7 +300,7 @@ quickly feeding lists of objects to other utilities. For example, ``snmpwalk``:
 Output Modifiers
 ----------------
 
-The following modifing flags are available when viewing objects.
+The following modifying flags are available when viewing objects.
 
 All Objects
 ~~~~~~~~~~~
@@ -321,7 +321,7 @@ Resource Types
 The following output modifiers apply to :ref:`resource_types` only.
 
 * ``-g/--grep`` - Display list results in a grep-friendly format. This modifies
-  the output in a way where the natural key is display first, and then each
+  the output in a way where the natural key is displayed first, and then each
   attribute/value pair (if any) is displayed one per line.
 
 .. note::
