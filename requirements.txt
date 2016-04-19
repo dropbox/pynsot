@@ -1,5 +1,6 @@
 click==6.2
 PTable==0.9.2
+netaddr==0.7.18
 rcfile==0.1.4
 requests==2.9.1
 slumber==0.7.1
