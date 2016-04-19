@@ -641,10 +641,10 @@ class Interface(Resource):
         # If equal to 0, means it had failed before
         if rerun or first_run:
             d = Device(
-                    client=self.client,
-                    site_id=self._site_id,
-                    hostname=self._original_device,
-                )
+                client=self.client,
+                site_id=self._site_id,
+                hostname=self._original_device,
+            )
             if d.exists():
                 self.device = d.existing_resource()['id']
                 return True

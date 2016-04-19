@@ -185,3 +185,10 @@ TBD
    :maxdepth: 2
 
    changelog
+
+
+Logo_ by Vecteezy_ is licensed under `CC BY-SA 3.0`_
+
+.. _Logo: https://www.iconfinder.com/icons/532251
+.. _Vecteezy: https://www.iconfinder.com/Vecteezy
+.. _CC BY-SA 3.0: http://creativecommons.org/licenses/by-sa/3.0/
