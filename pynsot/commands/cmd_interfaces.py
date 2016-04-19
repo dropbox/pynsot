@@ -264,7 +264,7 @@ def add(ctx, attributes, addresses, device, description, mac_address,
     '-q',
     '--query',
     metavar='QUERY',
-    help='Perform a set query using Attributes and output matching Interfaces.',
+    help='Perform a set query using Attributes and output matching Interfaces.'
 )
 @click.option(
     '-S',

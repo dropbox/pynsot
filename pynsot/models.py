@@ -136,7 +136,9 @@ class Resource(collections.MutableMapping):
         elif site_id:
             pass  # Already set
         else:
-            raise TypeError('Resource requires site_id via param or ``raw`` key')
+            raise TypeError(
+                'Resource requires site_id via param or ``raw`` key'
+            )
 
         self._site_id = site_id
         self.client = client
