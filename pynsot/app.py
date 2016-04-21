@@ -347,7 +347,10 @@ class App(object):
         :param obj:
             Object
         """
-        return GREP_FORMATS[self.resource_name] % obj
+        # If there's a "grep_name", use that, otherwise use resource_name
+        grep_name = getattr(self, 'grep_name', self.resource_name)
+
+        return GREP_FORMATS[grep_name] % obj
 
     def print_grep(self, objects):
         """
@@ -529,7 +532,10 @@ class App(object):
             return None
 
         # Assert only 1 matching result.
-        total = r['count']
+        try:
+            total = r['count']
+        except KeyError:
+            return r  # Single result such as from /api/networks/:id/parent/
 
         if total > 1:
             log.debug('get_single_object: More than one object found!')
@@ -541,6 +547,24 @@ class App(object):
             return r[0]
         except IndexError:
             return None
+
+    def detail(self, data, resource):
+        """
+        GET a detail endpoint and return the results.
+
+        This method is currently only called for Network.next_address() and
+        Network.next_network(), so its use-case is very specific.
+
+        :param data:
+            Dict of query parameters
+
+        :param resource:
+            A prepared API resource object
+        """
+        try:
+            return resource.get(**data)
+        except HTTP_ERRORS as err:
+            self.handle_error('detail', data, err)
 
     def set_query(self, data):
         """

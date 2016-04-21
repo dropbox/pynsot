@@ -17,7 +17,7 @@ from __future__ import unicode_literals
 
 from ..vendor import click
 from ..util import get_result
-from . import callbacks
+from . import callbacks, types
 
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
@@ -283,8 +283,10 @@ def list(ctx, attributes, cidr, delimited, grep, id, include_ips,
 )
 @click.pass_context
 def subnets(ctx, *args, **kwargs):
-    """Get subnets of a Network."""
-    callbacks.list_subcommand(ctx, display_fields=DISPLAY_FIELDS)
+    """Get subnets of a network."""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, grep_name='networks'
+    )
 
 
 @list.command()
@@ -298,8 +300,179 @@ def subnets(ctx, *args, **kwargs):
 )
 @click.pass_context
 def supernets(ctx, *args, **kwargs):
-    """Get supernets of a Network."""
-    callbacks.list_subcommand(ctx, display_fields=DISPLAY_FIELDS)
+    """Get supernets of a network."""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, grep_name='networks'
+    )
+
+
+@list.command()
+@click.pass_context
+def parent(ctx, *args, **kwargs):
+    """Get parent network of a network."""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, grep_name='networks'
+    )
+
+
+@list.command()
+@click.option(
+    '--ascending',
+    is_flag=True,
+    help='Display results in ascending order.',
+    default=False,
+    show_default=True,
+)
+@click.pass_context
+def ancestors(ctx, *args, **kwargs):
+    """Recursively get all parents of a network."""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, grep_name='networks'
+    )
+
+
+@list.command()
+@click.pass_context
+def children(ctx, *args, **kwargs):
+    """Get immediate children of a network."""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, grep_name='networks'
+    )
+
+
+@list.command()
+@click.pass_context
+def descendents(ctx, *args, **kwargs):
+    """Recursively get all children of a network."""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, grep_name='networks'
+    )
+
+
+@list.command()
+@click.pass_context
+def root(ctx, *args, **kwargs):
+    """Get parent of all ancestors of a network."""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, grep_name='networks'
+    )
+
+
+@list.command()
+@click.option(
+    '--include-self',
+    is_flag=True,
+    help='Whether to include this Network in output.',
+    default=False,
+    show_default=True,
+)
+@click.pass_context
+def siblings(ctx, *args, **kwargs):
+    """Get networks with same parent as a network."""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, grep_name='networks'
+    )
+
+
+@list.command(
+    short_help='Get the closest matching parent of a network.'
+)
+@click.pass_context
+def closest_parent(ctx, *args, **kwargs):
+    """
+    Get the closest matching parent of a Network even if it doesn't exist in
+    the database.
+    """
+    # FIXME(jathan): This is a workaround until we remove the natural_key
+    # machinery that predates the builtin support for natural_key lookups on
+    # the backend from the CLI app.
+    data = ctx.parent.params
+    obj_id = data.get('id')
+    cidr = data.get('cidr')
+    if obj_id is not None or cidr is None:
+        raise click.UsageError(
+            '-i/--id is invalid for this subcommand. Use -c/--cidr.'
+        )
+
+    data['id'] = data['cidr']
+    # End workaround
+
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, grep_name='networks'
+    )
+
+
+# The fields we want to display for assignments.
+ASSIGNMENT_FIELDS = (
+    ('id', 'ID'),
+    ('hostname', 'Hostname'),
+    ('interface_name', 'Interface'),
+)
+
+
+@list.command()
+@click.pass_context
+def assignments(ctx, *args, **kwargs):
+    """Get interface assignments for a network."""
+    callbacks.list_subcommand(
+        ctx, display_fields=ASSIGNMENT_FIELDS, grep_name='assignments'
+    )
+
+
+# Reserved method
+@list.command()
+@click.pass_context
+def reserved(ctx, *args, **kwargs):
+    """Get all reserved networks."""
+    data = ctx.parent.params
+    data['id'] = 1  # FIXME(jathan): Hack so app.get_single_object() suceeds.
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, grep_name='networks',
+        with_parent=False
+    )
+
+
+# Allocation methods
+@list.command()
+@click.option(
+    '-n',
+    '--num',
+    metavar='NUM',
+    type=int,
+    help='Number of Networks to return.'
+)
+@click.option(
+    '-p',
+    '--prefix-length',
+    metavar='PREFIX',
+    type=int,
+    help='Return Networks matching this prefix length.',
+    required=True
+)
+@click.pass_context
+def next_network(ctx, *args, **kwargs):
+    """
+    Get next available networks for a network.
+    """
+    results = callbacks.list_subcommand(ctx, return_results=True)
+    click.echo('\n'.join(results))
+
+
+@list.command()
+@click.option(
+    '-n',
+    '--num',
+    metavar='NUM',
+    type=int,
+    help='Number of addresses to return.'
+)
+@click.pass_context
+def next_address(ctx, *args, **kwargs):
+    """
+    Get next available addresses for a network.
+    """
+    results = callbacks.list_subcommand(ctx, return_results=True)
+    click.echo('\n'.join(results))
 
 
 # Remove
@@ -308,8 +481,8 @@ def supernets(ctx, *args, **kwargs):
     '-i',
     '--id',
     metavar='ID',
-    type=int,
-    help='Unique ID of the Network being deleted.',
+    type=types.NETWORK_ID,
+    help='Unique ID or CIDR of the Network being deleted.',
     required=True,
 )
 @click.option(
@@ -327,11 +500,8 @@ def remove(ctx, id, site_id):
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When removing a Network, you must provide the unique ID using -i/--id. You
-    may retrieve the ID for a Network by parsing it from the list of Networks
-    for a given Site:
-
-        nsot networks list --site-id <site_id> | grep <network>
+    When removing a Network, you must use -i/--id which can either be a CIDR or
+    unique ID for a Network.
     """
     data = ctx.params
     ctx.obj.remove(**data)

@@ -7,6 +7,7 @@ Make dummy data and fixtures and stuff.
 from __future__ import unicode_literals
 import logging
 import os
+
 import pytest
 from pytest_django.fixtures import live_server, django_user_model
 

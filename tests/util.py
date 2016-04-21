@@ -96,6 +96,53 @@ class CliRunner(BaseCliRunner):
         return result
 
 
+def assert_output(result, expected, exit_code=0):
+    """
+    Assert that output matches the conditions.
+
+    :param result:
+        CliRunner result object
+
+    :param expected:
+        List/tuple of expected outputs
+
+    :param exit_code:
+        Expected exit code
+    """
+    if not isinstance(expected, (tuple, list)):
+        raise TypeError('Expected must be a list or tuple')
+
+    assert result.exit_code == exit_code
+    output = result.output.splitlines()
+
+    for line in output:
+        # Assert that the expected items are found on the same line
+        if not all((e in line) for e in expected):
+            continue
+        else:
+            log.info('matched: %r', (expected,))
+            break
+    else:
+        assert False
+
+
+def assert_outputs(result, expected_list, exit_code=0):
+    """
+    Assert output over a list of of lists of expected outputs.
+
+    :param result:
+        CliRunner result object
+
+    :param expected_list:
+        List of lists/tuples of expected outputs
+
+    :param exit_code:
+        Expected exit code
+    """
+    for expected in expected_list:
+        assert_output(result, expected, exit_code)
+
+
 def rando():
     """Flip a coin."""
     return random.choice((True, False))

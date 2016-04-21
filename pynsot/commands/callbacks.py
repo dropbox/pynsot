@@ -206,7 +206,8 @@ def get_resource_by_natural_key(ctx, data, resource_name, resource=None):
     return resource_id
 
 
-def list_subcommand(ctx, display_fields, my_name=None):
+def list_subcommand(ctx, display_fields=None, my_name=None, grep_name=None,
+                    with_parent=True, return_results=False):
     """
     Determine params and a resource object to pass to ``ctx.obj.list()``
 
@@ -220,16 +221,39 @@ def list_subcommand(ctx, display_fields, my_name=None):
 
         GET /api/sites/1/networks/5/subnets/
 
+    If ``return_results`` is set, ``data`` will be to ``ctx.obj.detail()``
+    and the results will be directly returned instead.
+
     :param ctx:
         Context from the calling command
 
     :param display_fields:
         Display fields used to list object results.
+
+    :param my_name:
+        (Optional) Overload the App's resource_name to match this value
+
+    :param grep_name:
+        (Optional) Overload the App's grep_name to match this value
+
+    :param with_parent:
+        Whether to treat the nested lookup as a detail view (default) using the
+        parent resource id, or as a list view without an id lookup.
+
+    :param return_results:
+        Whether to pass the results to ``list()`` or pass them to ``detail()``
+        and return them.
     """
+    if display_fields is None and not return_results:
+        raise SyntaxError(
+            'Display fields must be provided when not returning results.'
+        )
+
     # Gather our args from our parent and ourself
     data = ctx.parent.params
     data.update(ctx.params)
 
+    # This will be used for resource lookup for detail routes.
     parent_resource_id = data.pop('id')
 
     # Prepare the app and rebase the API to include site_id.
@@ -250,13 +274,25 @@ def list_subcommand(ctx, display_fields, my_name=None):
 
     # Make sure that parent_resource_id is provided. This seems complicated
     # because we want to maintain dynamism across resource types.
-    if parent_resource_id is None:
-        parent_resource_id = get_resource_by_natural_key(
-            ctx, data, parent_resource_name, parent_resource
-        )
+    if with_parent:
+        if parent_resource_id is None:
+            parent_resource_id = get_resource_by_natural_key(
+                ctx, data, parent_resource_name, parent_resource
+            )
 
-    # e.g. /api/sites/1/networks/5/supernets/
-    my_resource = getattr(parent_resource(parent_resource_id), my_name)
+        # e.g. /api/sites/1/networks/5/supernets/
+        my_resource = getattr(parent_resource(parent_resource_id), my_name)
+
+    # Otherwise, just treat this as a list endpoint with no parent lookup.
+    else:
+        my_resource = getattr(parent_resource, my_name)
 
     app.resource_name = my_name
+    app.grep_name = grep_name or my_name
+
+    # If return_results, just pass data to my_resource.get() and return
+    # whatever comes back.
+    if return_results:
+        return app.detail(data, resource=my_resource)
+
     app.list(data, display_fields=display_fields, resource=my_resource)

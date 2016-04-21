@@ -1,8 +1,12 @@
-from __future__ import unicode_literals
+# -*- coding: utf-8 -*-
 
 """
 Utilities and stuff.
 """
+
+from __future__ import unicode_literals
+
+from .vendor import netaddr
 
 
 def get_result(response):
@@ -21,3 +25,18 @@ def get_result(response):
 
     # Or just return the payload... (next-gen)
     return payload
+
+
+def validate_cidr(cidr):
+    """
+    Return whether ``cidr`` is valid.
+
+    :param cidr:
+        IPv4/IPv6 address
+    """
+    try:
+        netaddr.IPNetwork(cidr)
+    except (TypeError, netaddr.AddrFormatError):
+        return False
+    else:
+        return True
