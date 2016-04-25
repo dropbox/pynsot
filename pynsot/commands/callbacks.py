@@ -53,13 +53,22 @@ def process_constraints(data, constraint_fields):
     # Always use a list so that we can handle bulk operations
     objects = data if isinstance(data, list) else [data]
 
+    # Enforce that pattern is a string.
+    if data['pattern'] is None:
+        data['pattern'] = ''
+
     for obj in objects:
         constraints = {}
         for c_field in constraint_fields:
             try:
-                constraints[c_field] = obj.pop(c_field)
+                c_value = obj.pop(c_field)
             except KeyError:
                 continue
+            else:
+                # If the value is not set, translate it to False
+                if c_value is None:
+                    c_value = False
+                constraints[c_field] = c_value
         obj['constraints'] = constraints
     return data
 

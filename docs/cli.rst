@@ -565,6 +565,21 @@ Updating an Attribute:
     | 3    owner   Device     False       False      False    Owner of a device. |
     +----------------------------------------------------------------------------+
 
+Attributes may also be uniquely identifed by ``name`` and ``resource_name`` in
+lieu of using ``id``:
+
+.. code-block:: bash
+
+    $ nsot attributes update --site-id 1 --name owner --resource-name device --multi
+    [SUCCESS] Updated attribute!
+
+    $ nsot attributes list --site-id 1 --name owner --resource-name device
+    +----------------------------------------------------------------------------+
+    | ID   Name    Resource   Required?   Display?   Multi?   Description        |
+    +----------------------------------------------------------------------------+
+    | 3    owner   Device     False       False      True     Owner of a device. |
+    +----------------------------------------------------------------------------+
+
 Removing an Attribute:
 
 .. code-block:: bash
