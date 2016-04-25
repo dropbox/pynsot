@@ -682,10 +682,206 @@ Removing a Network:
     $ nsot networks remove --site-id 1 --id 2
     [SUCCESS] Removed network with args: id=2!
 
+Ancestors
+~~~~~~~~~
+
+Recursively get all parents of a network:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.20.30.1/32 ancestors
+    +----------------------------------------------------------------------------------+
+    | ID   Network      Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
+    +----------------------------------------------------------------------------------+
+    | 1    10.0.0.0     8        False    4         None        allocated              |
+    | 20   10.20.0.0    16       False    4         1           allocated              |
+    | 15   10.20.30.0   24       False    4         1           allocated              |
+    +----------------------------------------------------------------------------------+
+
+Assignments
+~~~~~~~~~~~
+
+Get interface assignments for a network:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.20.30.1/32 assignments
+    +---------------------------+
+    | ID   Hostname   Interface |
+    +---------------------------+
+    | 2    foo-bar1   eth0      |
+    +---------------------------+
+
+Children
+~~~~~~~~
+
+Get immediate children of a network:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.20.30.0/24 children
+    +------------------------------------------------------------------------------------+
+    | ID   Network        Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
+    +------------------------------------------------------------------------------------+
+    | 16   10.20.30.1     32       True     4         15          assigned               |
+    | 17   10.20.30.3     32       True     4         15          allocated              |
+    | 18   10.20.30.16    28       False    4         15          allocated              |
+    | 19   10.20.30.104   32       True     4         15          allocated              |
+    +------------------------------------------------------------------------------------+
+
+Closest Parent
+~~~~~~~~~~~~~~
+
+Get the closest matching parent of a network, even if the network isn't found in the database:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.101.103.100/30
+    No network found matching args: include_ips=True, root_only=False, network_address=None, state=None, include_networks=True, limit=None, prefix_length=None, offset=None, ip_version=None, attributes=(), cidr=10.101.103.100/30, query=None, id=None!
+
+    $ nsot networks list -c 10.101.103.100/30 closest_parent
+    +--------------------------------------------------------------------------------+
+    | ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
+    +--------------------------------------------------------------------------------+
+    | 1    10.0.0.0   8        False    4         None        allocated              |
+    +--------------------------------------------------------------------------------+
+
+Descendents
+~~~~~~~~~~~
+
+Recursively get all children of a network:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.20.0.0/16 descendents
+    +------------------------------------------------------------------------------------+
+    | ID   Network        Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
+    +------------------------------------------------------------------------------------+
+    | 15   10.20.30.0     24       False    4         20          allocated              |
+    | 16   10.20.30.1     32       True     4         15          assigned               |
+    | 17   10.20.30.3     32       True     4         15          allocated              |
+    | 18   10.20.30.16    28       False    4         15          allocated              |
+    | 19   10.20.30.104   32       True     4         15          allocated              |
+    +------------------------------------------------------------------------------------+
+
+Next Address
+~~~~~~~~~~~~
+
+Get next available addresses for a network:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.20.30.0/24 next_address -n 3
+    10.20.30.2/32
+    10.20.30.4/32
+    10.20.30.5/32
+
+Next Network
+~~~~~~~~~~~~
+
+Get next available networks for a network:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.20.30.0/24 next_network -p 28 -n 3
+    10.20.30.0/28
+    10.20.30.32/28
+    10.20.30.48/28
+
+Parent
+~~~~~~
+
+Get parent network of a network:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.20.30.0/24 parent
+    +---------------------------------------------------------------------------------+
+    | ID   Network     Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
+    +---------------------------------------------------------------------------------+
+    | 20   10.20.0.0   16       False    4         1           allocated              |
+    +---------------------------------------------------------------------------------+
+
+Reserved
+~~~~~~~~
+
+Get all reserved networks:
+
+.. code-block:: bash
+
+    $ nsot networks list reserved
+    +-------------------------------------------------------------------------------------+
+    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   State      Attributes    |
+    +-------------------------------------------------------------------------------------+
+    | 10   10.10.12.0    24       False    4         5           reserved   type=loopback |
+    |                                                                       metro=iad     |
+    | 12   10.10.10.15   32       True     4         6           reserved   type=internal |
+    +-------------------------------------------------------------------------------------+
+
+Root
+~~~~
+
+Get parent of all ancestors of a network:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.20.30.3/32 root
+    +--------------------------------------------------------------------------------+
+    | ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
+    +--------------------------------------------------------------------------------+
+    | 1    10.0.0.0   8        False    4         None        allocated              |
+    +--------------------------------------------------------------------------------+
+
+Siblings
+~~~~~~~~
+
+Get networks with same parent as a network:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.20.30.3/32 siblings
+    +------------------------------------------------------------------------------------+
+    | ID   Network        Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
+    +------------------------------------------------------------------------------------+
+    | 16   10.20.30.1     32       True     4         15          assigned               |
+    | 18   10.20.30.16    28       False    4         15          allocated              |
+    | 19   10.20.30.104   32       True     4         15          allocated              |
+    +------------------------------------------------------------------------------------+
+
+You may also include the network itself:
+
+.. code-block:: bash
+
+    $ nsot networks list -c 10.20.30.3/32 siblings --include-self
+    +------------------------------------------------------------------------------------+
+    | ID   Network        Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
+    +------------------------------------------------------------------------------------+
+    | 16   10.20.30.1     32       True     4         15          assigned               |
+    | 17   10.20.30.3     32       True     4         15          allocated              |
+    | 18   10.20.30.16    28       False    4         15          allocated              |
+    | 19   10.20.30.104   32       True     4         15          allocated              |
+    +------------------------------------------------------------------------------------+
+Subnets
+~~~~~~~
+
+Given Network ``192.168.0.0/16``, you may the view Networks it contains (aka
+subnets):
+
+.. code-block:: bash
+
+    $ nsot networks list --site-id 1 --id 1 subnets
+    +-----------------------------------------------------------------------+
+    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
+    +-----------------------------------------------------------------------+
+    | 6    192.168.0.0   24       False    4         1                      |
+    | 7    192.168.0.0   25       False    4         6                      |
+    +-----------------------------------------------------------------------+
+
 Supernets
 ~~~~~~~~~
 
-Given a Network ``192.168.0.0/24``:
+Given a Network ``192.168.0.0/24``, you may view the Networks containing it
+(aka supernets):
 
 .. code-block:: bash
 
@@ -708,22 +904,6 @@ You may view the networks that contain that Network (aka supernets):
     |                                                            cluster=     |
     |                                                            foo=baz      |
     +-------------------------------------------------------------------------+
-
-Subnets
-~~~~~~~
-
-Given the parent Network from the above example (``192.168.0.0/16``), you may
-the view Networks it contains (aka subnets):
-
-.. code-block:: bash
-
-    $ nsot networks list --site-id 1 --id 1 subnets
-    +-----------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
-    +-----------------------------------------------------------------------+
-    | 6    192.168.0.0   24       False    4         1                      |
-    | 7    192.168.0.0   25       False    4         6                      |
-    +-----------------------------------------------------------------------+
 
 .. _working_with_devices:
 

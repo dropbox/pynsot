@@ -6,11 +6,12 @@ Test the CLI app.
 
 from __future__ import unicode_literals
 import logging
+
 import pytest
 
 from .fixtures import (attribute, client, config, device, network, interface,
                        site, site_client)
-from .util import CliRunner
+from .util import CliRunner, assert_output
 
 
 log = logging.getLogger(__name__)
@@ -425,7 +426,8 @@ def test_attribute_modify_multi(site_client):
         ########
         # Pop bob
         result = runner.run(
-            'devices update -H foo-bar1 -a multi=bob --multi --delete-attributes'
+            'devices update -H foo-bar1 -a multi=bob --multi '
+            '--delete-attributes'
         )
         assert result.exit_code == 0
 
@@ -623,7 +625,7 @@ def test_networks_list(site_client):
 
 
 def test_networks_subcommands(site_client):
-    """Test supernets/subnets sub-commands."""
+    """Test ``nsot networks list ... <subcommand>``."""
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
         # Create the owner attribute
@@ -635,18 +637,96 @@ def test_networks_subcommands(site_client):
 
         # Test subnets: Assert that 10.0.0.0/24 shows in output
         result = runner.run('networks list -c 10.0.0.0/8 subnets')
-        expected = ('10.0.0.0', '24')
-        assert result.exit_code == 0
-
-        for e in expected:
-            assert e in result.output
+        assert_output(result, ['10.0.0.0', '24'])
 
         # Test supernets: Assert that 10.0.0.0/8 shows in output
         result = runner.run('networks list -c 10.0.0.0/24 supernets')
-        expected = ('10.0.0.0', '8')
-        assert result.exit_code == 0
-        for e in expected:
-            assert e in result.output
+        assert_output(result, ['10.0.0.0', '8'])
+
+        # Let's add some more networks for fun.
+        runner.run('networks add -c 10.10.10.0/24')
+        runner.run('networks add -c 10.10.10.1/32')
+        runner.run('networks add -c 10.10.10.2/32')
+        runner.run('networks add -c 10.10.10.3/32')
+
+        # Test parent
+        result = runner.run('networks list -c 10.10.10.1/32 parent')
+        assert_output(result, ['10.10.10.0', '24'])
+
+        # Test ancestors
+        result = runner.run('networks list -c 10.10.10.1/32 ancestors')
+        assert_output(result, ['10.10.10.0', '24'])
+        assert_output(result, ['10.0.0.0', '8'])
+
+        # Test children
+        result = runner.run('networks list -c 10.10.10.0/24 children')
+        assert_output(result, ['10.10.10.1', '32'])
+        assert_output(result, ['10.10.10.2', '32'])
+        assert_output(result, ['10.10.10.3', '32'])
+
+        # Test descendents
+        result = runner.run('networks list -c 10.0.0.0/8 descendents')
+        assert_output(result, ['10.0.0.0', '24'])
+        assert_output(result, ['10.10.10.0', '24'])
+        assert_output(result, ['10.10.10.1', '32'])
+        assert_output(result, ['10.10.10.2', '32'])
+        assert_output(result, ['10.10.10.3', '32'])
+
+        # Test root
+        result = runner.run('networks list -c 10.10.10.1/32 root')
+        assert_output(result, ['10.0.0.0', '8'])
+
+        # Test siblings
+        result = runner.run('networks list -c 10.10.10.2/32 siblings')
+        assert_output(result, ['10.10.10.1', '32'])
+        assert_output(result, ['10.10.10.3', '32'])
+
+        # Test siblings w/ --include-self
+        result = runner.run(
+            'networks list -c 10.10.10.2/32 siblings --include-self'
+        )
+        assert_output(result, ['10.10.10.1', '32'])
+        assert_output(result, ['10.10.10.2', '32'])
+        assert_output(result, ['10.10.10.3', '32'])
+
+        # Test closest_parent PASS w/ non-existent network
+        result = runner.run('networks list -c 10.10.10.104/32 closest_parent')
+        assert_output(result, ['10.0.0.0', '24'])
+
+        # Test closest_parent FAIL w/ non-existent parent
+        result = runner.run('networks list -c 1.2.3.4/32 closest_parent')
+        assert_output(result, ['No such Network found'], exit_code=1)
+
+
+def test_networks_allocation(site_client, device, network, interface):
+    """Test network allocation-related subcommands."""
+    runner = CliRunner(site_client.config)
+    with runner.isolated_filesystem():
+        # network = 10.20.30.0/24
+        # leaf = 10.20.30.1/32
+
+        # Test assignments
+        result = runner.run('networks list -c 10.20.30.1/32 assignments')
+        assert_output(result, ['foo-bar1', 'eth0'])
+
+        # Test reserved
+        runner.run('networks add -c 10.20.30.104/32 --state reserved')
+        result = runner.run('networks list reserved')
+        assert_output(result, ['10.20.30.104', '32'])
+
+        # Test next_network
+        result = runner.run(
+            'networks list -c 10.20.30.0/24 next_network -n 2 -p 28'
+        )
+        assert_output(result, ['10.20.30.0', '28'])
+        assert_output(result, ['10.20.30.16', '28'])
+
+        # Test next_address
+        runner.run('networks add -c 10.20.30.3/32')
+        result = runner.run('networks list -c 10.20.30.0/24 next_address -n 3')
+        assert_output(result, ['10.20.30.2', '32'])
+        assert_output(result, ['10.20.30.4', '32'])
+        assert_output(result, ['10.20.30.5', '32'])
 
 
 def test_networks_update(site_client):
@@ -683,10 +763,15 @@ def test_networks_remove(site_client, network):
     """Test ``nsot networks remove``."""
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
-        # Just delete the network we have.
+        # Just delete the network we have by id.
         result = runner.run('networks remove -i %s' % network['id'])
         assert result.exit_code == 0
         assert 'Removed network!' in result.output
+
+        # Create a new network and then delete it by CIDR.
+        runner.run('networks add -c 10.20.30.0/24')
+        result = runner.run('networks remove -i 10.20.30.0/24')
+        assert_output(result, ['Removed network!'])
 
 
 ##############

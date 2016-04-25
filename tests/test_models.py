@@ -120,10 +120,10 @@ def test_payload_not_none_raw_and_not(client, site):
     assert n.ensure()
 
     n2 = Network(
-            raw=get_result(
-                client.sites(site['id']).networks('8.8.8.0/24').get()
-            )
+        raw=get_result(
+            client.sites(site['id']).networks('8.8.8.0/24').get()
         )
+    )
 
     assert n2.payload
 
