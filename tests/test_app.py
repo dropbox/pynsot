@@ -120,7 +120,7 @@ def test_attributes_add(site_client):
         result = runner.run(
             'attributes add -n device_multi -r device --multi'
         )
-        assert result.exit_code == 0
+        assert_output(result, ['Added attribute!'])
 
 
 def test_attributes_list(site_client):
@@ -161,22 +161,33 @@ def test_attributes_update(site_client):
     """Test ``nsot attributes update``."""
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
-        # Create and retrieve the multi attribute
-        runner.run('attributes add -r device -n multi --multi')
-        attr = site_client.attributes.get(name='multi')[0]
+        # Create and retrieve the 'tags' attribute as a list type
+        runner.run('attributes add -r device -n tags --multi')
+        attr = site_client.attributes.get(name='tags')[0]
 
         # Display the attribute before update.
         before_result = runner.run('attributes list -i %s' % attr['id'])
-        assert before_result.exit_code == 0
+        assert_output(before_result, ['tags', 'Device'])
 
-        # Update the multi attribute to disable multi
+        # Update the tags attribute to disable multi
         result = runner.run('attributes update --no-multi -i %s' % attr['id'])
-        assert result.exit_code == 0
+        assert_output(result, ['Updated attribute!'])
 
         # List it to show the proof that the results are not the same.
         after_result = runner.run('attributes list -i %s' % attr['id'])
         assert after_result.exit_code == 0
         assert before_result != after_result
+
+        # Update attribute by natural_key (name, resource_name)
+        runner.run(
+            'attributes update -r device -n tags --allow-empty'
+        )
+        result = runner.run('attributes list -r device -n tags')
+        assert_output(result, ['allow_empty=True'])
+
+        # Run update without optional args
+        result = runner.run('attributes update -r device -n tags')
+        assert_output(result, ['Error:'], exit_code=2)
 
 
 def test_attributes_remove(site_client, attribute):

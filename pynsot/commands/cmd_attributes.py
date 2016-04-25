@@ -14,16 +14,13 @@ fundamentally simplified to this::
 """
 
 from __future__ import unicode_literals
+import logging
 
 from ..vendor import click
 from . import callbacks
 
 
-__author__ = 'Jathan McCollum'
-__maintainer__ = 'Jathan McCollum'
-__email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
-
+log = logging.getLogger(__name__)
 
 # Ordered list of 2-tuples of (field, display_name) used to translate object
 # field names oto their human-readable form when calling .print_list().
@@ -70,7 +67,7 @@ def cli(ctx):
 @cli.command()
 @click.option(
     '--allow-empty',
-    help='Whether to allow this Attribute to have an empty value.',
+    help='Constrain whether to allow this Attribute to have an empty value.',
     is_flag=True,
 )
 @click.option(
@@ -108,7 +105,7 @@ def cli(ctx):
     '-p',
     '--pattern',
     help='Constrain attribute values to this regex pattern.',
-    default='',
+    default=None,
 )
 @click.option(
     '--required',
@@ -134,7 +131,10 @@ def cli(ctx):
     '-V',
     '--valid-values',
     metavar='VALUE',
-    help='Valid values for this Attribute. May be specified multiple times.',
+    help=(
+        'Constrain valid values for this Attribute. May be specified '
+        'multiple times.'
+    ),
     multiple=True,
 )
 @click.pass_context
@@ -296,7 +296,8 @@ def remove(ctx, id, site_id):
 @cli.command()
 @click.option(
     '--allow-empty/--no-allow-empty',
-    help='Whether to allow this Attribute to have an empty value.',
+    help='Constrain whether to allow this Attribute to have an empty value.',
+    default=None,
 )
 @click.option(
     '-d',
@@ -315,7 +316,6 @@ def remove(ctx, id, site_id):
     metavar='ID',
     type=int,
     help='Unique ID of the Attribute being updated.',
-    required=True,
 )
 @click.option(
     '--multi/--no-multi',
@@ -323,15 +323,28 @@ def remove(ctx, id, site_id):
     default=None,
 )
 @click.option(
+    '-n',
+    '--name',
+    metavar='NAME',
+    help='The name of the Attribute.',
+)
+@click.option(
     '-p',
     '--pattern',
     help='Constrain attribute values to this regex pattern.',
-    default='',
+    default=None,
 )
 @click.option(
     '--required/--no-required',
     help='Whether this Attribute should be required.',
     default=None,
+)
+@click.option(
+    '-r',
+    '--resource-name',
+    metavar='RESOURCE',
+    help='The resource type this Attribute is for (e.g. Device).',
+    callback=callbacks.transform_resource_name,
 )
 @click.option(
     '-s',
@@ -345,35 +358,77 @@ def remove(ctx, id, site_id):
     '-V',
     '--valid-values',
     metavar='VALUE',
-    help='Valid values for this Attribute. May be specified multiple times.',
+    help=(
+        'Constrain valid values for this Attribute. May be specified '
+        'multiple times.'
+    ),
     multiple=True,
 )
 @click.pass_context
-def update(ctx, allow_empty, description, display, id, multi, pattern,
-           required, site_id, valid_values):
+def update(ctx, allow_empty, description, display, id, multi, name, pattern,
+           required, resource_name, site_id, valid_values):
     """
     Update an Attribute.
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When updating an Attribute you must provide the unique ID (-i/--id) and at
-    least one of the optional arguments.
+    When updating an Attribute you may either provide the unique ID (-i/--id)
+    OR you may provide the name (-n/--name) and resource_name
+    (-r/--resource-name) together in lieu of ID to uniquely identify the
+    attribute. You must also provide at least one of the optional arguments.
+
+    The values for name (-n/--name) and resource_name (-r/--resource-name)
+    cannot be updated and are used for object lookup only.
+
+    If any of the constraints are supplied (--allow-empty/--no-allow-empty,
+    -p/--pattern, -v/--valid-values) ALL constraint values will be initialized
+    unless explicitly provided. (This is currently a limitation in the server
+    API that will be addressed in a future release.)
     """
-    optional = (allow_empty, description, display, multi, pattern, required,
-                valid_values)
+    # If name or resource_name are provided, both must be provided
+    if (name and not resource_name) or (resource_name and not name):
+        raise click.UsageError(
+            '-n/--name and -r/--resource-name must be provided together.'
+        )
+
+    # Otherwise ID must be provided.
+    elif (not name and not resource_name) and not id:
+        raise click.UsageError('Missing option "-i" / "--id".')
+
+    # One of the optional arguments must be provided (non-False) to proceed.
+    optional_args = ('allow_empty', 'description', 'display', 'multi',
+                     'pattern', 'required', 'valid_values')
     provided = []
-    for opt in optional:
-        if opt in (True, False) or isinstance(opt, basestring):
+    for opt in optional_args:
+        val = ctx.params[opt]
+
+        # If a flag is provided or a param is a string (e.g. pattern), or if
+        # it's a tuple with 1 or more item, it's been provided.
+        if any([
+            val in (True, False),
+            isinstance(val, basestring),
+            (isinstance(val, tuple) and len(val) > 0)
+        ]):
             provided.append(opt)
 
     # If none of them were provided, complain.
     if not provided:
-        msg = 'You must supply at least one the optional arguments.'
-        raise click.UsageError(msg)
+        raise click.UsageError(
+            'You must supply at least one the optional arguments.'
+        )
 
-    # Handle the constraint fields
-    data = callbacks.process_constraints(
-        ctx.params, constraint_fields=CONSTRAINT_FIELDS
-    )
+    # Only update the constraints if any of them are updated. Otherwise leave
+    # them alone.
+    if any([
+        allow_empty is not None,
+        isinstance(pattern, basestring),
+        valid_values
+    ]):
+        log.debug('Constraint field provided; updating constraints...')
+        data = callbacks.process_constraints(
+            ctx.params, constraint_fields=CONSTRAINT_FIELDS
+        )
+    else:
+        data = ctx.params
 
     ctx.obj.update(data)
