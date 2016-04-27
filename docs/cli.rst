@@ -695,7 +695,14 @@ Removing a Network:
 .. code-block:: bash
 
     $ nsot networks remove --site-id 1 --id 2
-    [SUCCESS] Removed network with args: id=2!
+    [SUCCESS] Removed network!
+
+You may also remove a Network by its CIDR:
+
+.. code-block:: bash
+
+    $ nsot networks remove --site-id 1 --cidr 10.20.30.0/24
+    [SUCCESS] Removed network!
 
 Ancestors
 ~~~~~~~~~
@@ -999,6 +1006,13 @@ Removing a Device:
 .. code-block:: bash
 
     $ nsot devices remove --site-id 1 --id 1
+    [SUCCESS] Removed device!
+
+You may also remove a Device by its hostname:
+
+.. code-block:: bash
+
+    $ nsot devices remove --site-id 1 --hostname delete-me
     [SUCCESS] Removed device!
 
 Interfaces
