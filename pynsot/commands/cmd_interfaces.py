@@ -534,8 +534,7 @@ def update(ctx, attributes, addresses, description, id, mac_address, name,
     once for each IP address.
 
     The -a/--attributes option may be provided multiple times, once for each
-    key-value pair. You may also specify the -a a single time and separate
-    key-value pairs by a single comma.
+    key-value pair.
 
     When modifying attributes you have three actions to choose from:
 

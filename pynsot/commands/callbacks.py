@@ -7,7 +7,6 @@ Callbacks used in handling command plugins.
 from __future__ import unicode_literals
 import ast
 import csv
-from itertools import chain
 import logging
 
 from ..vendor import click
@@ -82,9 +81,8 @@ def transform_attributes(ctx, param, value):
     if isinstance(value, basestring):
         value = [value]
 
-    # Flatten the attributes in case any of them are comma-separated.
-    values = [v.split(',') for v in value]
-    items = set(chain.from_iterable(values))
+    # Flatten the attributes using a set to eliminate any duplicates.
+    items = set(value)
 
     # Prepare the context object for storing attribute actions
     parent = ctx.find_root()
@@ -143,35 +141,39 @@ def process_bulk_add(ctx, param, value):
 
     # Value is already an open file handle
     reader = csv.DictReader(value, delimiter=b':')
-    for r in reader:
+    for row in reader:
         lineno = reader.line_num
 
         # Make sure the file is correctly formatted.
-        if len(r) != len(reader.fieldnames):
+        if len(row) != len(reader.fieldnames):
             msg = 'File has wrong number of fields on line %d' % (lineno,)
             raise click.BadParameter(msg)
 
         # Transform attributes for eligible resource types
         if parent_resource_name not in NO_ATTRIBUTES:
-            attributes = transform_attributes(
-                ctx, param, r['attributes']
+            # FIXME(jathan): This IS going to break at some point. We need to
+            # considered how to take in complex a/v pairs in this context.
+            # Naively split on ',' for now.
+            incoming_attributes = row['attributes'].split(',')
+            outgoing_attributes = transform_attributes(
+                ctx, param, incoming_attributes
             )
-            r['attributes'] = attributes
+            row['attributes'] = outgoing_attributes
 
         # Transform True, False into booleans
-        log.debug('FILE ROW: %r', r)
-        for k, v in r.iteritems():
+        log.debug('FILE ROW: %r', row)
+        for key, val in row.iteritems():
             # Don't evaluate dicts
-            if isinstance(v, dict):
+            if isinstance(val, dict):
                 continue
 
             # Evaluate strings and if they are booleans, convert them.
-            if not isinstance(v, basestring):
+            if not isinstance(val, basestring):
                 msg = 'Error parsing file on line %d' % (lineno,)
                 raise click.BadParameter(msg)
-            if v.title() in ('True', 'False'):
-                r[k] = ast.literal_eval(v)
-        objects.append(r)
+            if val.title() in ('True', 'False'):
+                row[key] = ast.literal_eval(val)
+        objects.append(row)
 
     log.debug('PARSED BULK DATA = %r' % (objects,))
 
