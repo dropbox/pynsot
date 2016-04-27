@@ -594,8 +594,7 @@ def update(ctx, attributes, cidr, id, state, site_id, attr_action, multi):
     provided -c/--cidr will be ignored.
 
     The -a/--attributes option may be provided multiple times, once for each
-    key-value pair. You may also specify the -a a single time and separate
-    key-value pairs by a single comma.
+    key-value pair.
 
     When modifying attributes you have three actions to choose from:
 
