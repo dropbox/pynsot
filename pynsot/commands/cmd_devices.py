@@ -213,10 +213,17 @@ def interfaces(ctx, *args, **kwargs):
 # Remove
 @cli.command()
 @click.option(
+    '-H',
+    '--hostname',
+    'id',
+    metavar='HOSTNAME',
+    type=str,
+    help='The hostname of the Device being deleted.',
+)
+@click.option(
     '-i',
     '--id',
     metavar='ID',
-    type=int,
     help='Unique ID of the Device being deleted.',
     required=True,
 )
@@ -235,11 +242,10 @@ def remove(ctx, id, site_id):
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When removing a Device, you must provide the unique ID using -i/--id. You
-    may retrieve the ID for a Device by parsing it from the list of Devices
-    for a given Site:
+    When removing a Device, you must either provide the unique ID using
+    -i/--id, or the hostname of the Device using -H/--hostname.
 
-        nsot devices list --site-id <site_id> | grep <hostname>
+    If both are provided, -H/--hostname will be ignored.
     """
     data = ctx.params
     ctx.obj.remove(**data)

@@ -478,6 +478,13 @@ def next_address(ctx, *args, **kwargs):
 # Remove
 @cli.command()
 @click.option(
+    '-c',
+    '--cidr',
+    'id',
+    metavar='CIDR',
+    help='CIDR if the Network being deleted.',
+)
+@click.option(
     '-i',
     '--id',
     metavar='ID',
@@ -500,8 +507,10 @@ def remove(ctx, id, site_id):
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When removing a Network, you must use -i/--id which can either be a CIDR or
-    unique ID for a Network.
+    When removing a Network, you must either provider the unique ID using
+    -i/--id, or the CIDR of the Network using -c/--cidr.
+
+    If both are provided, -c/--cidr will be ignored.
     """
     data = ctx.params
     ctx.obj.remove(**data)
@@ -616,7 +625,7 @@ def update(ctx, attributes, cidr, id, state, site_id, attr_action, multi):
 
     if not id and not cidr:
         raise click.UsageError(
-            'You most provide -c/--cidr when not providing -i/--id.'
+            'You must provide -c/--cidr when not providing -i/--id.'
         )
 
     data = ctx.params

@@ -500,8 +500,17 @@ def test_devices_remove(site_client, device):
     with runner.isolated_filesystem():
         # Just delete the device we have.
         result = runner.run('devices remove -i %s' % device['id'])
-        assert result.exit_code == 0
-        assert 'Removed device!' in result.output
+        assert_output(result, ['Removed device!'])
+
+        # Create another device and delete it by hostname using -H
+        runner.run('devices add -H delete-me')
+        result = runner.run('devices remove -i delete-me')
+        assert_output(result, ['Removed device!'])
+
+        # Create another device and delete it by hostname using -H
+        runner.run('devices add -H delete-me')
+        result = runner.run('devices remove -H delete-me')
+        assert_output(result, ['Removed device!'])
 
 
 ############
@@ -779,9 +788,14 @@ def test_networks_remove(site_client, network):
         assert result.exit_code == 0
         assert 'Removed network!' in result.output
 
-        # Create a new network and then delete it by CIDR.
+        # Create a new network and then delete it by CIDR using -i.
         runner.run('networks add -c 10.20.30.0/24')
         result = runner.run('networks remove -i 10.20.30.0/24')
+        assert_output(result, ['Removed network!'])
+
+        # Create a another network and then delete it by CIDR using -c.
+        runner.run('networks add -c 10.20.30.0/24')
+        result = runner.run('networks remove -c 10.20.30.0/24')
         assert_output(result, ['Removed network!'])
 
 
