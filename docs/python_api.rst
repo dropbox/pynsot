@@ -31,9 +31,9 @@ document, but for more information on Slumber, see the
 
 It might help to also refer to the `REST docs`_ for NSoT.
 
-.. _official Slumber documentation: http://slumber.readthedocs.org/en/v0.6.0/tutorial.html
+.. _official Slumber documentation: http://slumber.readthedocs.io/en/v0.6.0/tutorial.html
 
-.. _REST docs: http://nsot.readthedocs.org/en/latest/api/rest.html
+.. _REST docs: http://nsot.readthedocs.io/en/latest/api/rest.html
 
 Fetching Resources
 ------------------

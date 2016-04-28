@@ -13,7 +13,7 @@ Data Model
 
 If you aren't already familiarized with the data model for NSoT, it might be
 helpful to refer to the `NSoT Data Model
-<http://nsot.readthedocs.org/en/latest/models.html>`_ guide.
+<http://nsot.readthedocs.io/en/latest/models.html>`_ guide.
 
 Commands
 ========
@@ -27,7 +27,7 @@ Each object type is assigned a positional command argument:
 
       Network Source of Truth (NSoT) command-line utility.
 
-      For detailed documentation, please visit https://nsot.readthedocs.org
+      For detailed documentation, please visit https://nsot.readthedocs.io
 
     Options:
       -v, --verbose  Toggle verbosity.

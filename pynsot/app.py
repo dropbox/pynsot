@@ -804,7 +804,7 @@ def app(ctx, verbose):
     """
     Network Source of Truth (NSoT) command-line utility.
 
-    For detailed documentation, please visit https://nsot.readthedocs.org
+    For detailed documentation, please visit https://nsot.readthedocs.io
     """
     # This is the "app" object attached to all contexts.
     ctx.obj = App(ctx=ctx, verbose=verbose)
