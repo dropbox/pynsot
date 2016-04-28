@@ -8,7 +8,7 @@ pynsot
 
 |Build Status| |Documentation Status| |PyPI Status|
 
-.. _Network Source of Truth (NSoT): https://github.com/dropbox/nsot
+.. _Network Source of Truth (NSoT): https://nsot.readthedocs.io
 
 .. |Build Status| image:: https://img.shields.io/travis/dropbox/pynsot/master.svg?style=flat
    :target: https://travis-ci.org/dropbox/pynsot
@@ -26,4 +26,4 @@ pynsot
 Python client library and command-line utility for the `Network Source of
 Truth <https://github.com/dropbox/nsot>`_ (NSoT) REST API.
 
-Read the docs at http://pynsot.rtfd.org
+Read the docs at http://pynsot.readthedocs.io
