@@ -8,7 +8,7 @@ For more information on the core project, please follow the link above.
 
 |Build Status| |Documentation Status| |PyPI Status|
 
-.. _Network Source of Truth (NSoT): https://github.com/dropbox/nsot
+.. _Network Source of Truth (NSoT): https://nsot.readthedocs.org
 
 .. |Build Status| image:: https://img.shields.io/travis/dropbox/pynsot/master.svg?style=flat
    :target: https://travis-ci.org/dropbox/pynsot
@@ -19,13 +19,6 @@ For more information on the core project, please follow the link above.
 .. |PyPI Status| image:: https://img.shields.io/pypi/v/pynsot.svg?style=flat
    :target: https://pypi.python.org/pypi/pynsot
    :width: 86px
-
-.. warning::
-    This project is still very much in flux and likely to have
-    backwards-incompatible changes as it evolves with the API for the
-    `core project`_.
-
-.. _core project: https://github.com/dropbox/nsot
 
 **Table of Contents**:
 
