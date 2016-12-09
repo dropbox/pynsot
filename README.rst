@@ -1,8 +1,8 @@
 ######
-pynsot
+pyNSoT
 ######
 
-.. image:: docs/_static/logo_128.png
+.. image:: https://raw.githubusercontent.com/dropbox/pynsot/master/docs/_static/logo_128.png
    :alt: Network Source of Truth
    :width: 128px
 
@@ -24,6 +24,7 @@ pynsot
    :height: 20px
 
 Python client library and command-line utility for the `Network Source of
-Truth <https://github.com/dropbox/nsot>`_ (NSoT) REST API.
+Truth <https://github.com/dropbox/nsot>`_ (NSoT) IPAM and source of truth
+database REST API.
 
 Read the docs at http://pynsot.readthedocs.io
