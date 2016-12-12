@@ -16,7 +16,6 @@ fundamentally simplified to this::
 from __future__ import unicode_literals
 
 from ..vendor import click
-from ..util import get_result
 from . import callbacks, types
 
 
@@ -260,14 +259,7 @@ def list(ctx, attributes, cidr, delimited, grep, id, include_ips,
     # fallback to default behavior.
     if ctx.invoked_subcommand is None:
         if query is not None:
-            results = ctx.obj.set_query(data)
-            networks = get_result(results)
-            networks = sorted(
-                (d['network_address'], d['prefix_length']) for d in networks
-            )
-            networks = ['%s/%s' % obj for obj in networks]
-            joiner = ',' if delimited else '\n'
-            click.echo(joiner.join(networks))
+            ctx.obj.set_query(data, delimited)
         else:
             ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
 

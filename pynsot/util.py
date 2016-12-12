@@ -40,3 +40,13 @@ def validate_cidr(cidr):
         return False
     else:
         return True
+
+
+def dict_to_cidr(obj):
+    """
+    Take an dict of a Network object and return a cidr-formatted string.
+
+    :param obj:
+        Dict of an Network object
+    """
+    return '%s/%s' % (obj['network_address'], obj['prefix_length'])

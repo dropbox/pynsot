@@ -17,7 +17,6 @@ from __future__ import unicode_literals
 import logging
 
 from ..vendor import click
-from ..util import get_result
 from . import callbacks
 from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
 
@@ -323,14 +322,7 @@ def list(ctx, attributes, delimited, device, description, grep, id, limit,
     # fallback to default behavior.
     if ctx.invoked_subcommand is None:
         if query is not None:
-            results = ctx.obj.set_query(data)
-            interfaces = get_result(results)
-            interfaces = sorted(
-                (i['device'], i['name']) for i in interfaces
-            )
-            interfaces = ['%s:%s' % obj for obj in interfaces]
-            joiner = ',' if delimited else '\n'
-            click.echo(joiner.join(interfaces))
+            ctx.obj.set_query(data, delimited)
         else:
             ctx.obj.list(
                 data, display_fields=display_fields,

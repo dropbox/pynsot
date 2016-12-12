@@ -16,7 +16,6 @@ fundamentally simplified to this::
 from __future__ import unicode_literals
 
 from ..vendor import click
-from ..util import get_result
 from . import callbacks
 
 
@@ -191,11 +190,7 @@ def list(ctx, attributes, delimited, grep, hostname, id, limit, natural_key,
 
     if ctx.invoked_subcommand is None:
         if query is not None:
-            results = ctx.obj.set_query(data)
-            devices = get_result(results)
-            devices = sorted(d['hostname'] for d in devices)
-            joiner = ',' if delimited else '\n'
-            click.echo(joiner.join(devices))
+            ctx.obj.set_query(data, delimited)
         else:
             ctx.obj.list(data, display_fields=DISPLAY_FIELDS)
 
