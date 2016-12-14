@@ -18,15 +18,8 @@ import pynsot
 from . import client
 from .util import get_result
 
-from .vendor import click
-from .vendor import prettytable
+from .vendor import click, netaddr, prettytable
 from .vendor.slumber.exceptions import (HttpClientError, HttpServerError)
-
-
-__author__ = 'Jathan McCollum'
-__maintainer__ = 'Jathan McCollum'
-__email__ = 'jathan@dropbox.com'
-__copyright__ = 'Copyright (c) 2015-2016 Dropbox, Inc.'
 
 
 # Constants/Globals
@@ -119,6 +112,7 @@ class App(object):
         self.ctx = ctx
         self.verbose = verbose
         self.resource_name = self.ctx.invoked_subcommand
+        self.grep_name = self.resource_name
         self.site_id = None  # This is populated later.
         self.rebase_done = False  # So that we only rebase once.
 
@@ -371,23 +365,30 @@ class App(object):
 
         click.echo('\n'.join(output))
 
-    def print_by_natural_key(self, objects):
+    def print_by_natural_key(self, objects, delimiter='\n'):
         """
         Print a list of objects by their natural_key
 
         :param objects:
             List of objects
+
+        :param delimiter:
+            Character used to delimit objects
         """
         output = []
         for obj in objects:
             output.append(self.format_object_for_grep(obj))
 
-        # Networks results are already sorted, so don't re-sort them,
-        # because it gets screwed up.
-        if self.resource_name != 'networks':
+        # Networks results must be specially sorted.
+        if self.grep_name != 'networks':
             output = sorted(output)
+        else:
+            networks = sorted(
+                netaddr.IPNetwork(d) for d in output
+            )
+            output = (str(n) for n in networks)
 
-        click.echo('\n'.join(output))
+        click.echo(delimiter.join(output))
 
     def print_list(self, objects, display_fields):
         """
@@ -566,18 +567,25 @@ class App(object):
         except HTTP_ERRORS as err:
             self.handle_error('detail', data, err)
 
-    def set_query(self, data):
+    def set_query(self, data, delimited=False):
         """
         Run a set query and return the results.
 
         :param data:
             Dict of query parameters
+
+        :param delimited:
+            Whether to display the results as comma or newline delimited
         """
         self.rebase(data)
         try:
-            return self.resource.query.get(**data)
+            results = self.resource.query.get(**data)
         except HTTP_ERRORS as err:
             self.handle_error('list', data, err)
+
+        objects = get_result(results)
+        delimiter = ',' if delimited else '\n'
+        self.print_by_natural_key(objects, delimiter)
 
     def list(self, data, display_fields=None, resource=None,
              verbose_fields=None):
