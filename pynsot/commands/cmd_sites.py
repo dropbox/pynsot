@@ -66,8 +66,14 @@ def cli(ctx):
     help='The name of the Site.',
     required=True,
 )
+@click.option(
+    '-p',
+    '--parent',
+    metavar='PARENT',
+    help='ID of parent site'
+)
 @click.pass_context
-def add(ctx, description, name):
+def add(ctx, description, name, parent):
     """
     Add a new Site.
 
