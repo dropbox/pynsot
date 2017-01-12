@@ -30,6 +30,7 @@ DISPLAY_FIELDS = (
     ('id', 'ID'),
     ('name', 'Name'),
     ('description', 'Description'),
+    ('parent', 'Parent'),
 )
 
 
@@ -190,7 +191,8 @@ def remove(ctx, id):
 @click.option(
     '-p',
     '--parent',
-    type=int
+    metavar='PARENT',
+    help='ID of parent site'
 )
 @click.pass_context
 def update(ctx, description, id, name, parent):
