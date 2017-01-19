@@ -861,6 +861,7 @@ def test_interfaces_add(site_client, device):
 def test_interfaces_list(site_client, device):
     """Test ``nsot interfaces list``."""
     device_id = device['id']
+    hostname = device['hostname']
 
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
@@ -897,7 +898,7 @@ def test_interfaces_list(site_client, device):
 
         # Set query -q/--query
         result = runner.run('interfaces list -q vlan=100')
-        expected_output = '{0}:eth0\n{0}:eth1\n'.format(device_id)
+        expected_output = '{0}:eth0\n{0}:eth1\n'.format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
 
@@ -908,19 +909,19 @@ def test_interfaces_list(site_client, device):
 
         # Set query display comma-delimited (-d/--delimited)
         result = runner.run('interfaces list -q vlan=100 -d')
-        expected_output = '{0}:eth0,{0}:eth1\n'.format(device_id)
+        expected_output = '{0}:eth0,{0}:eth1\n'.format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
 
         # Set query w/ -l/--limit
         result = runner.run('interfaces list -l1 -q vlan=100')
-        expected_output = '{0}:eth0\n'.format(device_id)
+        expected_output = '{0}:eth0\n'.format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
 
         # Set query w/ -l/--limit and -o/--offset
         result = runner.run('interfaces list -l1 -o1 -q vlan=100')
-        expected_output = '{0}:eth1\n'.format(device_id)
+        expected_output = '{0}:eth1\n'.format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
 
@@ -929,14 +930,13 @@ def test_interfaces_list(site_client, device):
         expected_output = (
             '{0}:eth0 vlan=100\n'
             '{0}:eth1 vlan=100\n'
-        ).format(device_id)
+        ).format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
 
         ###########
         # Filtering
         ###########
-        hostname = device['hostname']
 
         # Filter by -D/--device (by id)
         result = runner.run('interfaces list -D %s' % device_id)
