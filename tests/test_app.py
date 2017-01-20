@@ -48,7 +48,7 @@ def test_site_add(client):
 
         # Try to add the same site again and fail.
         result = runner.run("sites add -n Foo -d 'Foo site.'")
-        expected_output = 'Site with this name already exists.\n'
+        expected_output = 'site with this name already exists.\n'
         assert result.exit_code == 1
         assert expected_output in result.output
 
@@ -711,7 +711,7 @@ def test_networks_subcommands(site_client):
 
         # Test closest_parent PASS w/ non-existent network
         result = runner.run('networks list -c 10.10.10.104/32 closest_parent')
-        assert_output(result, ['10.0.0.0', '24'])
+        assert_output(result, ['10.10.10.0', '24'])
 
         # Test closest_parent FAIL w/ non-existent parent
         result = runner.run('networks list -c 1.2.3.4/32 closest_parent')
@@ -738,8 +738,8 @@ def test_networks_allocation(site_client, device, network, interface):
         result = runner.run(
             'networks list -c 10.20.30.0/24 next_network -n 2 -p 28'
         )
-        assert_output(result, ['10.20.30.0', '28'])
         assert_output(result, ['10.20.30.16', '28'])
+        assert_output(result, ['10.20.30.32', '28'])
 
         # Test next_address
         runner.run('networks add -c 10.20.30.3/32')
