@@ -5,6 +5,16 @@ Changelog
 Version History
 ===============
 
+.. _v1.0.2:
+
+1.0.2 (2016-12-12)
+------------------
+
+* Bump NSoT requirement to v1.0.13, fix tests that were broken
+* Fix #125 - Support natural key when working with interface. Interfaces can
+  now be referred to using `device_name:interface_name` in addition to the
+  unique ID given by the database.
+
 .. _v1.0.1:
 
 1.0.1 (2016-12-12)

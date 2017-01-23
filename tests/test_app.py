@@ -861,6 +861,7 @@ def test_interfaces_add(site_client, device):
 def test_interfaces_list(site_client, device):
     """Test ``nsot interfaces list``."""
     device_id = device['id']
+    hostname = device['hostname']
 
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
@@ -897,7 +898,7 @@ def test_interfaces_list(site_client, device):
 
         # Set query -q/--query
         result = runner.run('interfaces list -q vlan=100')
-        expected_output = '{0}:eth0\n{0}:eth1\n'.format(device_id)
+        expected_output = '{0}:eth0\n{0}:eth1\n'.format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
 
@@ -908,19 +909,19 @@ def test_interfaces_list(site_client, device):
 
         # Set query display comma-delimited (-d/--delimited)
         result = runner.run('interfaces list -q vlan=100 -d')
-        expected_output = '{0}:eth0,{0}:eth1\n'.format(device_id)
+        expected_output = '{0}:eth0,{0}:eth1\n'.format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
 
         # Set query w/ -l/--limit
         result = runner.run('interfaces list -l1 -q vlan=100')
-        expected_output = '{0}:eth0\n'.format(device_id)
+        expected_output = '{0}:eth0\n'.format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
 
         # Set query w/ -l/--limit and -o/--offset
         result = runner.run('interfaces list -l1 -o1 -q vlan=100')
-        expected_output = '{0}:eth1\n'.format(device_id)
+        expected_output = '{0}:eth1\n'.format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
 
@@ -929,14 +930,19 @@ def test_interfaces_list(site_client, device):
         expected_output = (
             '{0}:eth0 vlan=100\n'
             '{0}:eth1 vlan=100\n'
-        ).format(device_id)
+        ).format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
+
+        # Query by natural key
+        result = runner.run('interfaces list -i {0}:eth1'.format(hostname))
+        assert 'eth1' in result.output
+        assert str(device_id) in result.output
+        assert result.exit_code == 0
 
         ###########
         # Filtering
         ###########
-        hostname = device['hostname']
 
         # Filter by -D/--device (by id)
         result = runner.run('interfaces list -D %s' % device_id)
@@ -979,6 +985,7 @@ def test_interfaces_list(site_client, device):
 def test_interfaces_subcommands(site_client, device):
     """Test ``nsot interfaces list ... {subcommand}``."""
     device_id = device['id']
+    device_hostname = device['hostname']
 
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
@@ -997,34 +1004,46 @@ def test_interfaces_subcommands(site_client, device):
         assert i1.exit_code == 0
 
         # Test addresses
-        result = runner.run(
-            'interfaces list -D %s -n eth0 -N addresses' % device_id
-        )
-        assert result.exit_code == 0
-        assert result.output == '10.10.10.1/32\n10.10.10.2/32\n'
+        cmds = [
+            'interfaces list -D %s -n eth0 -N addresses' % device_id,
+            'interfaces list -i %s:eth0 -N addresses' % device_hostname
+        ]
+
+        for cmd in cmds:
+            result = runner.run(cmd)
+            assert result.exit_code == 0
+            assert result.output == '10.10.10.1/32\n10.10.10.2/32\n'
 
         # Test networks
-        result = runner.run(
-            'interfaces list -D %s -n eth0 -N networks' % device_id
-        )
-        assert result.exit_code == 0
-        assert result.output == '10.10.10.0/24\n'
+        cmds = [
+            'interfaces list -D %s -n eth0 -N networks' % device_id,
+            'interfaces list -i %s:eth0 -N networks' % device_hostname
+        ]
+
+        for cmd in cmds:
+            result = runner.run(cmd)
+            assert result.exit_code == 0
+            assert result.output == '10.10.10.0/24\n'
 
         # Test assignments
-        result = runner.run(
-            'interfaces list -D %s -n eth0 -N assignments' % device_id
-        )
-        expected_output = (
-            'foo-bar1:eth0:10.10.10.1/32\n'
-            'foo-bar1:eth0:10.10.10.2/32\n'
-        )
-        assert result.exit_code == 0
-        assert result.output == expected_output
+        cmds = [
+            'interfaces list -D %s -n eth0 -N assignments' % device_id,
+            'interfaces list -i %s:eth0 -N assignments' % device_hostname
+        ]
+        for cmd in cmds:
+            result = runner.run(cmd)
+            expected_output = (
+                'foo-bar1:eth0:10.10.10.1/32\n'
+                'foo-bar1:eth0:10.10.10.2/32\n'
+            )
+            assert result.exit_code == 0
+            assert result.output == expected_output
 
 
 def test_interfaces_update(site_client, device):
     """Test ``nsot interfaces update``."""
     device_id = device['id']
+    hostname = device['hostname']
 
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
@@ -1055,15 +1074,23 @@ def test_interfaces_update(site_client, device):
         child_ifc = site_client.interfaces.get(name='eth0:1')[0]
         child_id = child_ifc['id']
 
-        # Test attributes: update vlan=200
-        result = runner.run('interfaces update -i %s -a vlan=200' % parent_id)
-        assert result.exit_code == 0
-        assert 'Updated interface!' in result.output
+        # Test attributes: update vlan=N
+        cases = [
+            [200, parent_id],
+            [300, '%s:%s' % (hostname, parent_ifc['name'])],
+        ]
 
-        # Verify attribute update
-        result = runner.run('interfaces list -i %s' % parent_id)
-        assert result.exit_code == 0
-        assert 'vlan=200' in result.output
+        for vlan, identifier in cases:
+            result = runner.run(
+                'interfaces update -i %s -a vlan=%d' % (identifier, vlan)
+            )
+            assert result.exit_code == 0
+            assert 'Updated interface!' in result.output
+
+            # Verify attribute update
+            result = runner.run('interfaces list -i %s' % identifier)
+            assert result.exit_code == 0
+            assert 'vlan=%d' % (vlan) in result.output
 
         # Test parent: update eth0:1 parent to eth0
         result = runner.run(
@@ -1119,12 +1146,23 @@ def test_interfaces_update(site_client, device):
         assert result.exit_code == 0
 
 
-def test_interfaces_remove(site_client, interface):
+def test_interfaces_remove(site_client, device, interface):
     """Test ``nsot interfaces remove``."""
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
         # Just delete the interface we have.
         result = runner.run('interfaces remove -i %s' % interface['id'])
+        assert result.exit_code == 0
+        assert 'Removed interface!' in result.output
+
+
+def test_interfaces_remove_by_natural_key(site_client, device, interface):
+    """Test ``nsot interfaces remove`` via the natural key."""
+    runner = CliRunner(site_client.config)
+    with runner.isolated_filesystem():
+        # Just delete the interface we have, but by natural key this time.
+        identifier = '%s:%s' % (device['hostname'], interface['name'])
+        result = runner.run('interfaces remove -i %s' % identifier)
         assert result.exit_code == 0
         assert 'Removed interface!' in result.output
 
