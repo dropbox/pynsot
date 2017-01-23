@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
-    ('device', 'Device'),
+    ('device_hostname', 'Device'),
     ('name', 'Name'),
     ('mac_address', 'MAC'),
     ('addresses', 'Addresses'),
@@ -38,7 +38,8 @@ DISPLAY_FIELDS = (
 # Fields to display when viewing a single record.
 VERBOSE_FIELDS = (
     ('id', 'ID'),
-    ('device', 'Device'),
+    ('device', 'Device ID'),
+    ('device_hostname', 'Device'),
     ('name', 'Name'),
     ('mac_address', 'MAC'),
     ('addresses', 'Addresses'),
@@ -216,7 +217,6 @@ def add(ctx, attributes, addresses, device, description, mac_address,
     '-i',
     '--id',
     metavar='ID',
-    type=int,
     help='Unique ID of the Interface being retrieved.',
 )
 @click.option(
@@ -297,6 +297,10 @@ def list(ctx, attributes, delimited, device, description, grep, id, limit,
 
     When listing Interfaces, all objects are displayed by default. You
     optionally may lookup a single Interfaces by ID using the -i/--id option.
+    The ID can either be the numeric ID of the Interface, or the combination of
+    the device's hostname and the Interface name separated by a colon.
+
+    Example: switch-nyc3:Ethernet2
 
     You may limit the number of results using the -l/--limit option.
 
@@ -315,8 +319,8 @@ def list(ctx, attributes, delimited, device, description, grep, id, limit,
     # FIXME(jathan): If it's not a digit, it's a hostname? This is a hack for
     # the mixed use of natural_key vs id. We can do better "somehow".
     if device and not device.isdigit():
-        log.debug('Device is hostname! Converting device => device__hostname')
-        data['device__hostname'] = data.pop('device')
+        log.debug('Device is hostname! Converting device => device_hostname')
+        data['device_hostname'] = data.pop('device')
 
     # If we aren't passing a sub-command, just call list(), otherwise let it
     # fallback to default behavior.
@@ -373,7 +377,6 @@ def networks(ctx, *args, **kwargs):
     '-i',
     '--id',
     metavar='ID',
-    type=int,
     help='Unique ID of the Interface being deleted.',
     required=True,
 )
@@ -392,7 +395,13 @@ def remove(ctx, id, site_id):
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When removing an Interface, you must provide the unique ID using -i/--id.
+    When removing an Interface, you must provide the ID of the Interface using
+    -i/--id. The ID can either be the numeric ID of the Interface or the
+    combination of the device's hostname and Interfaces name separated by a
+    colon.
+
+    Example: switch-nyc3:Ethernet2
+
     You may retrieve the ID for an Interface by parsing it from the list of
     Interfaces for a given Site:
 
@@ -430,7 +439,6 @@ def remove(ctx, id, site_id):
     '-i',
     '--id',
     metavar='ID',
-    type=int,
     help='Unique ID of the Interface being updated.',
     required=True,
 )
@@ -519,8 +527,12 @@ def update(ctx, attributes, addresses, description, id, mac_address, name,
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When updating an Interface you must provide the unique ID (-i/--id) and at
-    least one of the optional arguments.
+    When updating an Interface you must provide the ID (-i/--id) and at least
+    one of the optional arguments. The ID can either be the numeric ID of the
+    Interface of the the combination of the device's hostname and the interface
+    name separated by a colon.
+
+    Example: switch-nyc3:Ethernet2
 
     If you wish to assign addresses, you may specify the -c/--addresses option
     once for each IP address.
