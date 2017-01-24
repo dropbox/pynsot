@@ -7,7 +7,7 @@ Version History
 
 .. _v1.0.2:
 
-1.0.2 (2016-12-12)
+1.0.2 (2017-01-23)
 ------------------
 
 * Bump NSoT requirement to v1.0.13, fix tests that were broken
