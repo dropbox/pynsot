@@ -58,6 +58,7 @@ GREP_FORMATS = {
     'addresses': '%(network_address)s/%(prefix_length)s',  # Same as networks
     'assignments': '%(hostname)s:%(interface_name)s:%(address)s',
     'attributes': '%(resource_name)s:%(name)s',
+    'circuits': '%(name)s',
     'interfaces': '%(device_hostname)s:%(name)s',
     'sites': '%(name)s',
 }
