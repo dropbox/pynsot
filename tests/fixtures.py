@@ -85,7 +85,7 @@ def client(config):
 @pytest.fixture
 def site(client):
     """Returns a Site object."""
-    return client.sites.post({'name': 'Foo', 'description': 'Foo site.'})
+    return client.sites.post({'name': 'Foo', 'description': 'Foo site.', 'parent': ''})
 
 
 @pytest.fixture

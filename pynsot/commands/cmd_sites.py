@@ -30,6 +30,7 @@ DISPLAY_FIELDS = (
     ('id', 'ID'),
     ('name', 'Name'),
     ('description', 'Description'),
+    ('parent', 'Parent'),
 )
 
 
@@ -66,8 +67,14 @@ def cli(ctx):
     help='The name of the Site.',
     required=True,
 )
+@click.option(
+    '-p',
+    '--parent',
+    metavar='PARENT',
+    help='ID of parent site'
+)
 @click.pass_context
-def add(ctx, description, name):
+def add(ctx, description, name, parent):
     """
     Add a new Site.
 
@@ -181,15 +188,21 @@ def remove(ctx, id):
     metavar='NAME',
     help='The name of the Site.',
 )
+@click.option(
+    '-p',
+    '--parent',
+    metavar='PARENT',
+    help='ID of parent site'
+)
 @click.pass_context
-def update(ctx, description, id, name):
+def update(ctx, description, id, name, parent):
     """
     Update a Site.
 
     When updating a Site you must provide the unique ID (-i/--id) and at least
-    one of the -n/--name or -d/--description arguments.
+    one of the -n/--name, -p/--parent or -d/--description arguments.
     """
-    if name is None and description is None:
+    if name is None and description is None and parent is None:
         msg = 'You must supply at least one of -n/--name or -d/--description'
         raise click.UsageError(msg)
 
