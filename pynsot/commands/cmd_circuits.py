@@ -9,6 +9,9 @@ import logging
 
 from ..vendor import click
 from . import callbacks
+from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
+from .cmd_interfaces import DISPLAY_FIELDS as INTERFACE_DISPLAY_FIELDS
+from .cmd_devices import DISPLAY_FIELDS as DEVICE_DISPLAY_FIELDS
 
 
 # Logger
@@ -114,7 +117,7 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
 
 
 # List
-@cli.command()
+@cli.group(invoke_without_command=True)
 @click.option(
     '-a',
     '--attributes',
@@ -175,9 +178,48 @@ def list(ctx, attributes, grep, id, limit, natural_key, offset, query,
     """
     List existing Circuits for a Site.
 
+    You must either have a Site ID configured in your .pysnotrc file or specify
+    one using the -s/--site-id option.
+
+    When listing Circuits, all objects are displayed by default. You optionally
+    may look up a single Circuit by ID or Name using the -i/--id option.
+
+    You may limit the number of results using the -l/--limit option.
     """
 
-    ctx.obj.list(ctx.params, display_fields=DISPLAY_FIELDS)
+    # Don't list interfaces if a subcommand is invoked
+    if ctx.invoked_subcommand is None:
+        ctx.obj.list(ctx.params, display_fields=DISPLAY_FIELDS)
+
+
+@list.command()
+@click.pass_context
+def addresses(ctx, *args, **kwargs):
+    """ Show addresses for the Interfaces on this Circuit. """
+
+    callbacks.list_subcommand(
+        ctx, display_fields=NETWORK_DISPLAY_FIELDS, my_name=ctx.info_name
+    )
+
+
+@list.command()
+@click.pass_context
+def devices(ctx, *args, **kwargs):
+    """ Show Devices connected by this Circuit. """
+
+    callbacks.list_subcommand(
+        ctx, display_fields=DEVICE_DISPLAY_FIELDS, my_name=ctx.info_name
+    )
+
+
+@list.command()
+@click.pass_context
+def interfaces(ctx, *args, **kwargs):
+    """ Show Interfaces connected by this Circuit. """
+
+    callbacks.list_subcommand(
+        ctx, display_fields=INTERFACE_DISPLAY_FIELDS, my_name=ctx.info_name
+    )
 
 
 # Update
@@ -256,7 +298,7 @@ def list(ctx, attributes, grep, id, limit, natural_key, offset, query,
     ),
 )
 @click.pass_context
-def update(ctx, attributes, endpoint_a, id, name, site_id, endpoint_z, 
+def update(ctx, attributes, endpoint_a, id, name, site_id, endpoint_z,
            attr_action):
     """
     Update a Circuit.
@@ -308,4 +350,15 @@ def update(ctx, attributes, endpoint_a, id, name, site_id, endpoint_z,
 )
 @click.pass_context
 def remove(ctx, id, site_id):
+    """
+    Remove a Circuit.
+
+    You must either have a Site ID configured in your .pysnotrc file or specify
+    one using the -s/--site-id option.
+
+    When removing Circuits, all objects are displayed by default. You
+    optionally may look up a single Circuit by ID or Name using the -i/--id
+    option.
+    """
+
     ctx.obj.remove(**ctx.params)
