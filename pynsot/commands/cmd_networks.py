@@ -472,6 +472,13 @@ def reserved(ctx, *args, **kwargs):
     help='Return Networks matching this prefix length.',
     required=True
 )
+@click.option(
+    '-s',
+    '--strict-allocation',
+    metavar='STRICT_ALLOCATION',
+    is_flag=True,
+    help='Return Networks can be strictly allocated'
+)
 @click.pass_context
 def next_network(ctx, *args, **kwargs):
     """
@@ -488,6 +495,13 @@ def next_network(ctx, *args, **kwargs):
     metavar='NUM',
     type=int,
     help='Number of addresses to return.'
+)
+@click.option(
+    '-s',
+    '--strict-allocation',
+    metavar='STRICT_ALLOCATION',
+    is_flag=True,
+    help='Return Networks can be strictly allocated'
 )
 @click.pass_context
 def next_address(ctx, *args, **kwargs):
