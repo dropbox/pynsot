@@ -7,6 +7,8 @@ Sub-command for Circuits
 from __future__ import unicode_literals
 import logging
 
+from nsot.util import slugify
+
 from ..vendor import click
 from . import callbacks
 from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
@@ -187,6 +189,10 @@ def list(ctx, attributes, grep, id, limit, natural_key, offset, query,
     You may limit the number of results using the -l/--limit option.
     """
 
+    # If we get a name as an identifier, slugify it
+    if ctx.params.get('id') and not ctx.params['id'].isdigit():
+        ctx.params['id'] = slugify(ctx.params['id'])
+
     # Don't list interfaces if a subcommand is invoked
     if ctx.invoked_subcommand is None:
         ctx.obj.list(ctx.params, display_fields=DISPLAY_FIELDS)
@@ -324,6 +330,10 @@ def update(ctx, attributes, endpoint_a, id, name, site_id, endpoint_z,
     name are provided, only the last value provided will be used.
     """
 
+    # If we get a name as an identifier, slugify it
+    if ctx.params.get('id') and not ctx.params['id'].isdigit():
+        ctx.params['id'] = slugify(ctx.params['id'])
+
     if not any([attributes, endpoint_a, name, endpoint_z]):
         msg = 'You must supply at least one of the optional arguments.'
         raise click.UsageError(msg)
@@ -360,5 +370,9 @@ def remove(ctx, id, site_id):
     optionally may look up a single Circuit by ID or Name using the -i/--id
     option.
     """
+
+    # If we get a name as an identifier, slugify it
+    if ctx.params.get('id') and not ctx.params['id'].isdigit():
+        ctx.params['id'] = slugify(ctx.params['id'])
 
     ctx.obj.remove(**ctx.params)
