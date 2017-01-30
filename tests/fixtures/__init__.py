@@ -12,6 +12,7 @@ import pytest
 from pytest_django.fixtures import live_server, django_user_model
 
 from pynsot.client import get_api_client
+from tests.util import CliRunner
 
 
 __all__ = ('django_user_model', 'live_server')
@@ -94,6 +95,11 @@ def site_client(client, site):
     client.config['default_site'] = site['id']
     client.default_site = site['id']
     return client
+
+
+@pytest.fixture
+def runner(site_client):
+    return CliRunner(site_client.config)
 
 
 @pytest.fixture
