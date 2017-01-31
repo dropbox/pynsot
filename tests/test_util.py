@@ -6,7 +6,7 @@ Test the utils lib.
 
 import pytest  # noqa
 
-from pynsot.util import validate_cidr
+from pynsot.util import slugify, validate_cidr
 
 
 def test_validate_cidr():
@@ -25,3 +25,18 @@ def test_validate_cidr():
     assert not validate_cidr(object())
     assert not validate_cidr({})
     assert not validate_cidr([])
+
+
+def test_slugify():
+    cases = [
+        ('/', '_'),
+        ('my cool string', 'my cool string'),
+        ('Ethernet1/2', 'Ethernet1_2'),
+        (
+            'foo-bar1:xe-0/0/0.0_foo-bar2:xe-0/0/0.0',
+            'foo-bar1:xe-0_0_0.0_foo-bar2:xe-0_0_0.0'
+        ),
+    ]
+
+    for case, expected in cases:
+        assert slugify(case) == expected

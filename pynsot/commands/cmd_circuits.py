@@ -4,12 +4,11 @@
 Sub-command for Circuits
 """
 
-from __future__ import unicode_literals
+from __future__ import absolute_import, unicode_literals
 import logging
 
-from nsot.util import slugify
-
-from ..vendor import click
+from pynsot.util import slugify
+from pynsot.vendor import click
 from . import callbacks
 from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
 from .cmd_interfaces import DISPLAY_FIELDS as INTERFACE_DISPLAY_FIELDS
@@ -61,6 +60,7 @@ def cli(ctx):
     '-A',
     '--endpoint-a',
     metavar='INTERFACE_ID',
+    required=True,
     type=int,
     help='Unique ID of the interface of the A side of the Circuit',
 )
@@ -106,9 +106,6 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
 
     data = ctx.params
 
-    if endpoint_a is None:
-        raise click.UsageError('Missing option "-A" / "--endpoint-a"')
-
     # Remove empty values to facilitate default assignment
     if name is None:
         data.pop('name')
@@ -126,6 +123,12 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     metavar='ATTRS',
     help='Filter Circuits by matching attributes (format: key=value).',
     multiple=True,
+)
+@click.option(
+    '-A',
+    '--endpoint-a',
+    metavar='INTERFACE_ID',
+    help='Filter to Circuits with endpoint_a interfaces that match this ID'
 )
 @click.option(
     '-g',
@@ -146,6 +149,12 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     '--limit',
     metavar='LIMIT',
     help='Limit result to N resources.',
+)
+@click.option(
+    '-n',
+    '--name',
+    metavar='NAME',
+    help='Filter to Circuits matching this name.',
 )
 @click.option(
     '-N',
@@ -174,9 +183,15 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     help='Unique ID of the Site this Circuit is under.',
     callback=callbacks.process_site_id,
 )
+@click.option(
+    '-Z',
+    '--endpoint-z',
+    metavar='INTERFACE_ID',
+    help='Filter to Circuits with endpoint_z interfaces that match this ID'
+)
 @click.pass_context
-def list(ctx, attributes, grep, id, limit, natural_key, offset, query,
-         site_id):
+def list(ctx, attributes, endpoint_a, endpoint_z, grep, id, limit, name,
+         natural_key, offset, query, site_id):
     """
     List existing Circuits for a Site.
 

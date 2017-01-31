@@ -50,3 +50,20 @@ def dict_to_cidr(obj):
         Dict of an Network object
     """
     return '%s/%s' % (obj['network_address'], obj['prefix_length'])
+
+
+def slugify(s):
+    """
+    Slugify a string for use in URLs. This mirrors ``nsot.util.slugify()``.
+
+    :param s:
+        String to slugify
+    """
+
+    disallowed_chars = ['/']
+    replacement = '_'
+
+    for char in disallowed_chars:
+        s = s.replace(char, replacement)
+
+    return s
