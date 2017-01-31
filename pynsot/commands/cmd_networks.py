@@ -33,6 +33,37 @@ DISPLAY_FIELDS = (
     ('attributes', 'Attributes'),
 )
 
+# Commands that have been deprecated/renamed and which will display a warning
+# to the user if specified. A sub-command must use the DeprecatedAliasGroup
+# class for this to take effect. See below: list()
+DEPRECATED_COMMANDS = {
+    'descendents': 'descendants'
+}
+
+
+# TODO(jathan): Move this somewhere else at such point we have other commands
+# that require deprecated aliases.
+class DeprecatedAliasGroup(click.Group):
+    """
+    Group which will warn a user if a specified command is deprecated.
+    """
+    def get_command(self, ctx, cmd_name):
+        rv = click.Group.get_command(self, ctx, cmd_name)
+        if rv is not None:
+            return rv
+
+        match = DEPRECATED_COMMANDS.get(cmd_name)
+        if not match:
+            return None
+
+        # If there's a match, warn the user that it's deprecated.
+        click.echo(
+            click.style('[WARNING] ', fg='yellow') +
+            '%s has been deprecated. Use %s instead.' %
+            (cmd_name, match)
+        )
+        return click.Group.get_command(self, ctx, match)
+
 
 # Main group
 @click.group()
@@ -115,8 +146,8 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     ctx.obj.add(data)
 
 
-# List
-@cli.group(invoke_without_command=True)
+# List (aliased to notify users of deprecated commands)
+@cli.group(cls=DeprecatedAliasGroup, invoke_without_command=True)
 @click.option(
     '-a',
     '--attributes',
@@ -334,7 +365,7 @@ def children(ctx, *args, **kwargs):
 
 @list.command()
 @click.pass_context
-def descendents(ctx, *args, **kwargs):
+def descendants(ctx, *args, **kwargs):
     """Recursively get all children of a network."""
     callbacks.list_subcommand(
         ctx, display_fields=DISPLAY_FIELDS, grep_name='networks'

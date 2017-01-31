@@ -684,13 +684,18 @@ def test_networks_subcommands(site_client):
         assert_output(result, ['10.10.10.2', '32'])
         assert_output(result, ['10.10.10.3', '32'])
 
-        # Test descendents
-        result = runner.run('networks list -c 10.0.0.0/8 descendents')
+        # Test descendants
+        result = runner.run('networks list -c 10.0.0.0/8 descendants')
         assert_output(result, ['10.0.0.0', '24'])
         assert_output(result, ['10.10.10.0', '24'])
         assert_output(result, ['10.10.10.1', '32'])
         assert_output(result, ['10.10.10.2', '32'])
         assert_output(result, ['10.10.10.3', '32'])
+
+        # Assert descendents (typoed) includes deprecation warning
+        result2 = runner.run('networks list -c 10.0.0.0/8 descendents')
+        assert_output(result2, ['[WARNING]'])
+        assert result.output.splitlines() == result2.output.splitlines()[1:]
 
         # Test root
         result = runner.run('networks list -c 10.10.10.1/32 root')
