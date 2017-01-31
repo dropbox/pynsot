@@ -4,6 +4,12 @@ Changelog
 
 Version History
 ===============
+.. _v1.1.0:
+
+1.1.0 (2017-01-30)
+------------------
+
+* Adds support for Circuit objects (added in NSoT v1.1)
 
 .. _v1.0.2:
 
