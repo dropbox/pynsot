@@ -768,14 +768,14 @@ Get the closest matching parent of a network, even if the network isn't found in
     | 1    10.0.0.0   8        False    4         None        allocated              |
     +--------------------------------------------------------------------------------+
 
-Descendents
+Descendants
 ~~~~~~~~~~~
 
 Recursively get all children of a network:
 
 .. code-block:: bash
 
-    $ nsot networks list -c 10.20.0.0/16 descendents
+    $ nsot networks list -c 10.20.0.0/16 descendants
     +------------------------------------------------------------------------------------+
     | ID   Network        Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
     +------------------------------------------------------------------------------------+
