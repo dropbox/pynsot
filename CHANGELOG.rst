@@ -4,6 +4,15 @@ Changelog
 
 Version History
 ===============
+
+.. _v1.1.1:
+
+1.1.1 (2017-01-31)
+------------------
+
+* Corrected the spelling for the ``descendants`` sub-command on Networks. The
+  old misspelled form of ``descendents`` will display a warning to users.
+
 .. _v1.1.0:
 
 1.1.0 (2017-01-30)
