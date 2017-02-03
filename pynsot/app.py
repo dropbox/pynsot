@@ -550,7 +550,7 @@ class App(object):
         except IndexError:
             return None
 
-    def detail(self, data, resource):
+    def detail(self, data, resource, is_post=False):
         """
         GET a detail endpoint and return the results.
 
@@ -564,7 +564,10 @@ class App(object):
             A prepared API resource object
         """
         try:
-            return resource.get(**data)
+            if is_post:
+                return resource.post(**data)
+            else:
+                return resource.get(**data)
         except HTTP_ERRORS as err:
             self.handle_error('detail', data, err)
 
