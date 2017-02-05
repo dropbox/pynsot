@@ -753,6 +753,19 @@ def test_networks_allocation(site_client, device, network, interface):
         assert_output(result, ['10.20.30.4', '32'])
         assert_output(result, ['10.20.30.5', '32'])
 
+        #Test strict allocations
+        runner.run('networks add -c 10.2.1.0/24')
+        runner.run('networks add -c 10.2.1.0/25')
+        result = runner.run('networks list -c 10.2.1.0/24 next_network -p 28 -n 3 -s')
+        assert_output(result, ['10.2.1.128', '28'])
+        assert_output(result, ['10.2.1.144', '28'])
+        assert_output(result, ['10.2.1.160', '28'])
+
+        #Test strict allocations for next_address
+        result = runner.run('networks list -c 10.2.1.0/24 next_address -n 3 -s')
+        assert_output(result, ['10.2.1.128', '32'])
+        assert_output(result, ['10.2.1.129', '32'])
+        assert_output(result, ['10.2.1.130', '32'])
 
 def test_networks_update(site_client):
     """Test ``nsot networks update``."""
