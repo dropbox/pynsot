@@ -5,6 +5,14 @@ Changelog
 Version History
 ===============
 
+.. _v1.1.2:
+
+1.1.2 (2017-02-06)
+-----------------
+
+* Add support for strict allocations (added in NSoT v1.1.2)
+* Change requirements.txt to use Compatible Release version specifiers
+
 .. _v1.1.1:
 
 1.1.1 (2017-01-31)
