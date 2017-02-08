@@ -9,8 +9,8 @@ import logging
 
 import pytest
 
-from .fixtures import (attribute, client, config, device, network, interface,
-                       site, site_client)
+from .fixtures import (attribute, attributes, client, config, device, network,
+                       interface, site, site_client)
 from .util import CliRunner, assert_output
 
 
@@ -356,6 +356,12 @@ def test_devices_subcommands(site_client, device):
         for e in expected:
             assert e in result.output
 
+        # Lookup by set query
+        result = runner.run('devices list -q foo=test_device interfaces')
+        assert result.exit_code == 0
+        for e in expected:
+            assert e in result.output
+
 
 def test_devices_update(site_client):
     """Test ``nsot devices update``."""
@@ -644,7 +650,7 @@ def test_networks_list(site_client):
         assert 'No closing quotation' in result.output
 
 
-def test_networks_subcommands(site_client):
+def test_networks_subcommands(site_client, network):
     """Test ``nsot networks list ... <subcommand>``."""
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
@@ -722,6 +728,14 @@ def test_networks_subcommands(site_client):
         result = runner.run('networks list -c 1.2.3.4/32 closest_parent')
         assert_output(result, ['No such Network found'], exit_code=1)
 
+        # Test that subcommands work when given a query
+        result = runner.run('networks list -q foo=test_network parent')
+        assert result.exit_code == 0
+
+        # Queries that return >1 Network should cause an error
+        result = runner.run('networks list -q owner=jathan parent')
+        assert result.exit_code == 1
+
 
 def test_networks_allocation(site_client, device, network, interface):
     """Test network allocation-related subcommands."""
@@ -753,19 +767,22 @@ def test_networks_allocation(site_client, device, network, interface):
         assert_output(result, ['10.20.30.4', '32'])
         assert_output(result, ['10.20.30.5', '32'])
 
-        #Test strict allocations
+        # Test strict allocations
         runner.run('networks add -c 10.2.1.0/24')
         runner.run('networks add -c 10.2.1.0/25')
-        result = runner.run('networks list -c 10.2.1.0/24 next_network -p 28 -n 3 -s')
+        result = runner.run(
+            'networks list -c 10.2.1.0/24 next_network -p 28 -n 3 -s')
         assert_output(result, ['10.2.1.128', '28'])
         assert_output(result, ['10.2.1.144', '28'])
         assert_output(result, ['10.2.1.160', '28'])
 
-        #Test strict allocations for next_address
-        result = runner.run('networks list -c 10.2.1.0/24 next_address -n 3 -s')
+        # Test strict allocations for next_address
+        result = runner.run(
+            'networks list -c 10.2.1.0/24 next_address -n 3 -s')
         assert_output(result, ['10.2.1.128', '32'])
         assert_output(result, ['10.2.1.129', '32'])
         assert_output(result, ['10.2.1.130', '32'])
+
 
 def test_networks_update(site_client):
     """Test ``nsot networks update``."""
@@ -1024,7 +1041,8 @@ def test_interfaces_subcommands(site_client, device):
         # Test addresses
         cmds = [
             'interfaces list -D %s -n eth0 -N addresses' % device_id,
-            'interfaces list -i %s:eth0 -N addresses' % device_hostname
+            'interfaces list -i %s:eth0 -N addresses' % device_hostname,
+            'interfaces list -q vlan=100 -N addresses'
         ]
 
         for cmd in cmds:
@@ -1035,7 +1053,8 @@ def test_interfaces_subcommands(site_client, device):
         # Test networks
         cmds = [
             'interfaces list -D %s -n eth0 -N networks' % device_id,
-            'interfaces list -i %s:eth0 -N networks' % device_hostname
+            'interfaces list -i %s:eth0 -N networks' % device_hostname,
+            'interfaces list -q vlan=100 -N networks'
         ]
 
         for cmd in cmds:
@@ -1046,7 +1065,8 @@ def test_interfaces_subcommands(site_client, device):
         # Test assignments
         cmds = [
             'interfaces list -D %s -n eth0 -N assignments' % device_id,
-            'interfaces list -i %s:eth0 -N assignments' % device_hostname
+            'interfaces list -i %s:eth0 -N assignments' % device_hostname,
+            'interfaces list -q vlan=100 -N assignments'
         ]
         for cmd in cmds:
             result = runner.run(cmd)

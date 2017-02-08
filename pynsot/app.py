@@ -568,9 +568,32 @@ class App(object):
         except HTTP_ERRORS as err:
             self.handle_error('detail', data, err)
 
-    def set_query(self, data, delimited=False):
+    def set_query(self, data, resource=None):
         """
-        Run a set query and return the results.
+        Get objects based on a set query for this resource.
+
+        :param data:
+            Dict of query parameters
+
+        :param resource:
+            (Optional) API resource object
+        """
+
+        self.rebase(data)
+
+        if resource is None:
+            resource = self.resource
+
+        try:
+            result = resource.query.get(**data)
+        except HTTP_ERRORS as err:
+            self.handle_error('list', data, err)
+
+        return get_result(result)
+
+    def natural_keys_by_query(self, data, delimited=False):
+        """
+        Run a set query and return the natural keys of the results.
 
         :param data:
             Dict of query parameters
@@ -578,13 +601,7 @@ class App(object):
         :param delimited:
             Whether to display the results as comma or newline delimited
         """
-        self.rebase(data)
-        try:
-            results = self.resource.query.get(**data)
-        except HTTP_ERRORS as err:
-            self.handle_error('list', data, err)
-
-        objects = get_result(results)
+        objects = self.set_query(data)
         delimiter = ',' if delimited else '\n'
         self.print_by_natural_key(objects, delimiter)
 

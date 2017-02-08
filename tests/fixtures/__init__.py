@@ -111,23 +111,55 @@ def attribute(site_client):
 
 
 @pytest.fixture
-def device(site_client):
+def attributes(site_client):
+    """ A bunch of attributes for each resource type """
+
+    results = []
+    resources = (
+        'Circuit',
+        'Device',
+        'Interface',
+        'Network',
+    )
+
+    for r in resources:
+        attr = site_client.sites(site_client.default_site).attributes.post(
+            {'name': 'foo', 'resource_name': r}
+        )
+
+        results.append(attr)
+
+    return results
+
+
+@pytest.fixture
+def device(site_client, attributes):
     """Return a Device object."""
     return site_client.sites(site_client.default_site).devices.post(
-        {'hostname': 'foo-bar1'}
+        {
+            'hostname': 'foo-bar1',
+            'attributes': {
+                'foo': 'test_device'
+            },
+        }
     )
 
 
 @pytest.fixture
-def network(site_client):
+def network(site_client, attributes):
     """Return a Network object."""
     return site_client.sites(site_client.default_site).networks.post(
-        {'cidr': '10.20.30.0/24'}
+        {
+            'cidr': '10.20.30.0/24',
+            'attributes': {
+                'foo': 'test_network'
+            }
+        }
     )
 
 
 @pytest.fixture
-def interface(site_client, device, network):
+def interface(site_client, attributes, device, network):
     """
     Return an Interface object.
 
@@ -135,5 +167,10 @@ def interface(site_client, device, network):
     """
     device_id = device['id']
     return site_client.sites(site_client.default_site).interfaces.post(
-        {'name': 'eth0', 'addresses': ['10.20.30.1/32'], 'device': device_id}
+        {
+            'name': 'eth0',
+            'addresses': ['10.20.30.1/32'],
+            'device': device_id,
+            'attributes': {'foo': 'test_interface'},
+        }
     )

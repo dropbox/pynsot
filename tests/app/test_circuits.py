@@ -7,8 +7,8 @@ Test Circuits in the CLI app.
 from __future__ import absolute_import, unicode_literals
 import logging
 
-from tests.fixtures import (attribute, client, config, device, interface,
-                            network, runner, site, site_client)
+from tests.fixtures import (attribute, attributes, client, config, device,
+                            interface, network, runner, site, site_client)
 from tests.fixtures.circuits import (circuit, circuit_attributes, device_a,
                                      device_z, interface_a, interface_z)
 from tests.util import assert_output, assert_outputs
@@ -178,6 +178,14 @@ def test_circuits_list_interfaces(runner, circuit, interface_a, interface_z):
                 [interface_z['device_hostname'], interface_z['name']]
             ]
         )
+
+
+def test_circuits_subcommand_query(runner, circuit):
+    """ Make sure we can run a subcommand given a unique set query """
+
+    with runner.isolated_filesystem():
+        result = runner.run('circuits list -q owner=alice interfaces')
+        assert result.exit_code == 0
 
 
 def test_circuits_remove(runner, circuit):
