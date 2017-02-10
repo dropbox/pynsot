@@ -287,9 +287,18 @@ def list_subcommand(ctx, display_fields=None, my_name=None, grep_name=None,
     # because we want to maintain dynamism across resource types.
     if with_parent:
         if parent_resource_id is None:
-            parent_resource_id = get_resource_by_natural_key(
-                ctx, data, parent_resource_name, parent_resource
-            )
+            if data.get('query'):
+                # Enforce that we get a single item back from the query, the
+                # server will return a non-2xx response on != 1 items returned,
+                # which we surface as an error to the user
+                data['unique'] = True
+
+                parent_resource_id = ctx.obj.set_query(
+                        data, resource=parent_resource)[0]['id']
+            else:
+                parent_resource_id = get_resource_by_natural_key(
+                    ctx, data, parent_resource_name, parent_resource
+                )
 
         # e.g. /api/sites/1/networks/5/supernets/
         my_resource = getattr(parent_resource(parent_resource_id), my_name)

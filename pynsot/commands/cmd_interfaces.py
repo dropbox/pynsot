@@ -326,7 +326,7 @@ def list(ctx, attributes, delimited, device, description, grep, id, limit,
     # fallback to default behavior.
     if ctx.invoked_subcommand is None:
         if query is not None:
-            ctx.obj.set_query(data, delimited)
+            ctx.obj.natural_keys_by_query(data, delimited)
         else:
             ctx.obj.list(
                 data, display_fields=display_fields,
