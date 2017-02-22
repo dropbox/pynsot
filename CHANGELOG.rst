@@ -5,6 +5,13 @@ Changelog
 Version History
 ===============
 
+.. _v1.1.3:
+
+1.1.3 (2017-02-21)
+-------------------------
+
+* Fix #119 - Add ability to use set queries on `list` subcommands (#133)
+
 .. _v1.1.2:
 
 1.1.2 (2017-02-06)
