@@ -343,6 +343,58 @@ def addresses(ctx, *args, **kwargs):
     )
 
 
+@list.command()
+@click.pass_context
+def parent(ctx, *args, **kwargs):
+    """Get parent of an Interface"""
+    callbacks.list_subcommand(
+        ctx, display_fields=VERBOSE_FIELDS, my_name=ctx.info_name
+    )
+
+
+@list.command()
+@click.pass_context
+def ancestors(ctx, *args, **kwargs):
+    """Get ancestors of an Interface"""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, my_name=ctx.info_name
+    )
+
+
+@list.command()
+@click.pass_context
+def children(ctx, *args, **kwargs):
+    """Get children of an Interface"""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, my_name=ctx.info_name
+    )
+
+
+@list.command()
+@click.pass_context
+def descendants(ctx, *args, **kwargs):
+    """Get descendants of an Interface"""
+    callbacks.list_subcommand(
+        ctx, display_fields=DISPLAY_FIELDS, my_name=ctx.info_name
+    )
+
+
+@list.command()
+@click.pass_context
+def root(ctx, *args, **kwargs):
+    """Get root of an Interface tree"""
+    callbacks.list_subcommand(
+        ctx, display_fields=VERBOSE_FIELDS, my_name=ctx.info_name
+    )
+
+@list.command()
+@click.pass_context
+def siblings(ctx, *args, **kwargs):
+    """Get siblings of an Interface"""
+    callbacks.list_subcommand(
+        ctx, display_fields=VERBOSE_FIELDS, my_name=ctx.info_name
+    )
+
 ASSIGNMENT_FIELDS = (
     ('id', 'ID'),
     ('hostname', 'Device'),
