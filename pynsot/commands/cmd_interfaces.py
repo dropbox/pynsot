@@ -346,7 +346,7 @@ def addresses(ctx, *args, **kwargs):
 @list.command()
 @click.pass_context
 def parent(ctx, *args, **kwargs):
-    """Get parent of an Interface"""
+    """Get the parent Interface of an Interface."""
     callbacks.list_subcommand(
         ctx, display_fields=VERBOSE_FIELDS, my_name=ctx.info_name
     )
@@ -355,7 +355,7 @@ def parent(ctx, *args, **kwargs):
 @list.command()
 @click.pass_context
 def ancestors(ctx, *args, **kwargs):
-    """Get ancestors of an Interface"""
+    """Recursively get all parents of an Interface."""
     callbacks.list_subcommand(
         ctx, display_fields=DISPLAY_FIELDS, my_name=ctx.info_name
     )
@@ -364,7 +364,7 @@ def ancestors(ctx, *args, **kwargs):
 @list.command()
 @click.pass_context
 def children(ctx, *args, **kwargs):
-    """Get children of an Interface"""
+    """Get immediate children of an Interface."""
     callbacks.list_subcommand(
         ctx, display_fields=DISPLAY_FIELDS, my_name=ctx.info_name
     )
@@ -373,7 +373,7 @@ def children(ctx, *args, **kwargs):
 @list.command()
 @click.pass_context
 def descendants(ctx, *args, **kwargs):
-    """Get descendants of an Interface"""
+    """Recursively get all children of an Interface."""
     callbacks.list_subcommand(
         ctx, display_fields=DISPLAY_FIELDS, my_name=ctx.info_name
     )
@@ -382,7 +382,7 @@ def descendants(ctx, *args, **kwargs):
 @list.command()
 @click.pass_context
 def root(ctx, *args, **kwargs):
-    """Get root of an Interface tree"""
+    """Get parent of all ancestors of an Interface."""
     callbacks.list_subcommand(
         ctx, display_fields=VERBOSE_FIELDS, my_name=ctx.info_name
     )
@@ -390,7 +390,7 @@ def root(ctx, *args, **kwargs):
 @list.command()
 @click.pass_context
 def siblings(ctx, *args, **kwargs):
-    """Get siblings of an Interface"""
+    """Get Interfaces with the same parent and device id as an Interface."""
     callbacks.list_subcommand(
         ctx, display_fields=VERBOSE_FIELDS, my_name=ctx.info_name
     )
