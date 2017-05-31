@@ -5,6 +5,13 @@ Changelog
 Version History
 ===============
 
+.. _v1.1.4:
+
+1.1.4 (2017-05-31)
+-------------------------
+
+* Add commands for Interface tree traversal (added in NSoT 1.1.4)
+
 .. _v1.1.3:
 
 1.1.3 (2017-02-21)
