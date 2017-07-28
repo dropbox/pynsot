@@ -334,9 +334,9 @@ def update(ctx, attributes, endpoint_a, id, name, site_id, endpoint_z,
     You must either have a Site ID configured in your .pysnotrc file or specify
     one using the -s/--site-id option.
 
-	When updating a Circuit you must provide the ID (-i/--id) and at least
-	one of the optional arguments. The ID can either be the numeric ID of the
-	Circuit or the natural key. (Example: lax-r1:ae0_jfk-r2:ae0)
+    When updating a Circuit you must provide the ID (-i/--id) and at least
+    one of the optional arguments. The ID can either be the numeric ID of the
+    Circuit or the natural key. (Example: lax-r1:ae0_jfk-r2:ae0)
 
     For the -A/--endpoint-a and -Z/--endpoint-z options, you may provide either
     the Interface ID or its natural key.
