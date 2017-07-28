@@ -23,7 +23,7 @@ from . import callbacks
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
-    ('hostname', 'Hostname'),
+    ('hostname', 'Hostname (Key)'),
     # ('site_id': 'Site ID'),
     ('attributes', 'Attributes'),
 )

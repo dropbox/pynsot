@@ -9,7 +9,7 @@ import logging
 
 from pynsot.util import slugify
 from pynsot.vendor import click
-from . import callbacks
+from . import callbacks, types
 from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
 from .cmd_interfaces import DISPLAY_FIELDS as INTERFACE_DISPLAY_FIELDS
 from .cmd_devices import DISPLAY_FIELDS as DEVICE_DISPLAY_FIELDS
@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
-    ('name', 'Name'),
+    ('name', 'Name (Key)'),
     ('endpoint_a', 'Endpoint A'),
     ('endpoint_z', 'Endpoint Z'),
     ('attributes', 'Attributes'),
@@ -61,8 +61,8 @@ def cli(ctx):
     '--endpoint-a',
     metavar='INTERFACE_ID',
     required=True,
-    type=int,
-    help='Unique ID of the interface of the A side of the Circuit',
+    type=types.NATURAL_KEY,
+    help='Unique ID or key of the interface of the A side of the Circuit',
 )
 @click.option(
     '-n',
@@ -83,8 +83,8 @@ def cli(ctx):
     '-Z',
     '--endpoint-z',
     metavar='INTERFACE_ID',
-    type=int,
-    help='Unique ID of the interface on the Z side of the Circuit',
+    type=types.NATURAL_KEY,
+    help='Unique ID or key of the interface on the Z side of the Circuit',
 )
 @click.pass_context
 def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
@@ -95,6 +95,9 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     option. The Z side is recommended but may be left blank, such as in cases
     where it is not an Interface that is tracked by NSoT (like a provider's
     interface).
+
+    For the -A/--endpoint-a and -Z/--endpoint-z options, you may provide either
+    the Interface ID or its natural key.
 
     The name (-n/--name) is optional. If it is not specified, it will be
     generated for you in the form of:
@@ -128,6 +131,7 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     '-A',
     '--endpoint-a',
     metavar='INTERFACE_ID',
+    type=types.NATURAL_KEY,
     help='Filter to Circuits with endpoint_a interfaces that match this ID'
 )
 @click.option(
@@ -142,7 +146,8 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     '-i',
     '--id',
     metavar='ID',
-    help='Unique ID of the Circuit being retrieved.',
+    type=types.NATURAL_KEY,
+    help='Unique ID or natural key of the Circuit being retrieved.',
 )
 @click.option(
     '-l',
@@ -187,6 +192,7 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     '-Z',
     '--endpoint-z',
     metavar='INTERFACE_ID',
+    type=types.NATURAL_KEY,
     help='Filter to Circuits with endpoint_z interfaces that match this ID'
 )
 @click.pass_context
@@ -257,14 +263,15 @@ def interfaces(ctx, *args, **kwargs):
     '-A',
     '--endpoint-a',
     metavar='INTERFACE_ID',
-    type=int,
-    help='Unique ID of the interface of the A side of the Circuit',
+    type=types.NATURAL_KEY,
+    help='Unique ID or key of the interface of the A side of the Circuit',
 )
 @click.option(
     '-i',
     '--id',
     metavar='ID',
-    help='Unique ID of the Circuit being retrieved.',
+    type=types.NATURAL_KEY,
+    help='Unique ID or natural key of the Circuit being retrieved.',
     required=True,
 )
 @click.option(
@@ -286,8 +293,8 @@ def interfaces(ctx, *args, **kwargs):
     '-Z',
     '--endpoint-z',
     metavar='INTERFACE_ID',
-    type=int,
-    help='Unique ID of the interface on the Z side of the Circuit',
+    type=types.NATURAL_KEY,
+    help='Unique ID or key of the interface on the Z side of the Circuit',
 )
 @click.option(
     '--add-attributes',
@@ -327,6 +334,13 @@ def update(ctx, attributes, endpoint_a, id, name, site_id, endpoint_z,
     You must either have a Site ID configured in your .pysnotrc file or specify
     one using the -s/--site-id option.
 
+    When updating a Circuit you must provide the ID (-i/--id) and at least
+    one of the optional arguments. The ID can either be the numeric ID of the
+    Circuit or the natural key. (Example: lax-r1:ae0_jfk-r2:ae0)
+
+    For the -A/--endpoint-a and -Z/--endpoint-z options, you may provide either
+    the Interface ID or its natural key.
+
     The -a/--attributes option may be provided multiple times, once for each
     key-value pair.
 
@@ -362,7 +376,8 @@ def update(ctx, attributes, endpoint_a, id, name, site_id, endpoint_z,
     '-i',
     '--id',
     metavar='ID',
-    help='Unique ID of the Circuit being deleted.',
+    help='Unique ID or natural key of the Circuit being deleted.',
+    type=types.NATURAL_KEY,
     required=True,
 )
 @click.option(
