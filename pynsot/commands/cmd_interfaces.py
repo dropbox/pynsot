@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
-    ('name_slug', 'Name'),
+    ('name_slug', 'Name (Key)'),
     ('parent', 'Parent'),
     ('mac_address', 'MAC'),
     ('addresses', 'Addresses'),
@@ -146,7 +146,7 @@ def add(ctx, attributes, addresses, device, description, mac_address,
     """
     Add a new Interface.
 
-    You must provide a Device ID using the -D/--device option.
+    You must provide a Device hostname or ID using the -D/--device option.
 
     When adding a new Interface, you must provide a value for the -n/--name
     option.

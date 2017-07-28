@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
-    ('name', 'Name'),
+    ('name', 'Name (Key)'),
     ('endpoint_a', 'Endpoint A'),
     ('endpoint_z', 'Endpoint Z'),
     ('attributes', 'Attributes'),
@@ -95,6 +95,9 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     option. The Z side is recommended but may be left blank, such as in cases
     where it is not an Interface that is tracked by NSoT (like a provider's
     interface).
+
+    For the -A/--endpoint-a and -Z/--endpoint-z options, you may provide either
+    the Interface ID or its natural key.
 
     The name (-n/--name) is optional. If it is not specified, it will be
     generated for you in the form of:
@@ -330,6 +333,13 @@ def update(ctx, attributes, endpoint_a, id, name, site_id, endpoint_z,
 
     You must either have a Site ID configured in your .pysnotrc file or specify
     one using the -s/--site-id option.
+
+	When updating a Circuit you must provide the ID (-i/--id) and at least
+	one of the optional arguments. The ID can either be the numeric ID of the
+	Circuit or the natural key. (Example: lax-r1:ae0_jfk-r2:ae0)
+
+    For the -A/--endpoint-a and -Z/--endpoint-z options, you may provide either
+    the Interface ID or its natural key.
 
     The -a/--attributes option may be provided multiple times, once for each
     key-value pair.

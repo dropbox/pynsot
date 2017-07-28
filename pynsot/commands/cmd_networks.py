@@ -23,7 +23,7 @@ from . import callbacks, types
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
-    ('cidr', 'CIDR'),
+    ('cidr', 'CIDR (Key)'),
     ('is_ip', 'Is IP?'),
     ('ip_version', 'IP Ver.'),
     ('parent', 'Parent'),
