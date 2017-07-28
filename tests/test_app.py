@@ -586,7 +586,7 @@ def test_networks_list(site_client):
         # Make sure 10.0.0.0 shows twice in the output. Lazy man's output
         # checking.
         result = runner.run('networks list')
-        assert result.output.count('10.0.0.0') == 2
+        assert result.output.count('10.0.0.0') == 3
         assert result.exit_code == 0
 
         # Set query display newline-delimited (default)
@@ -970,9 +970,9 @@ def test_interfaces_list(site_client, device):
         assert result.output == expected_output
 
         # Query by natural key
-        result = runner.run('interfaces list -i {0}:eth1'.format(hostname))
-        assert 'eth1' in result.output
-        assert str(device_id) in result.output
+        natural_key = '{0}:eth1'.format(hostname)
+        result = runner.run('interfaces list -i {}'.format(natural_key))
+        assert natural_key in result.output
         assert result.exit_code == 0
 
         ###########

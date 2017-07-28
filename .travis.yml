@@ -1,4 +1,5 @@
 language: python
+cache: pip
 python:
     - "2.7"
 
@@ -6,6 +7,8 @@ install:
     - pip install -r requirements-dev.txt
     - pip install .
 
-script: py.test -v tests/
+script:
+    - flake8
+    - py.test -v tests/
 
 after_success: curl -X POST https://readthedocs.org/build/pynsot

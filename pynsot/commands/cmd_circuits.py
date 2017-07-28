@@ -9,7 +9,7 @@ import logging
 
 from pynsot.util import slugify
 from pynsot.vendor import click
-from . import callbacks
+from . import callbacks, types
 from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
 from .cmd_interfaces import DISPLAY_FIELDS as INTERFACE_DISPLAY_FIELDS
 from .cmd_devices import DISPLAY_FIELDS as DEVICE_DISPLAY_FIELDS
@@ -61,8 +61,8 @@ def cli(ctx):
     '--endpoint-a',
     metavar='INTERFACE_ID',
     required=True,
-    type=int,
-    help='Unique ID of the interface of the A side of the Circuit',
+    type=types.NATURAL_KEY,
+    help='Unique ID or key of the interface of the A side of the Circuit',
 )
 @click.option(
     '-n',
@@ -83,8 +83,8 @@ def cli(ctx):
     '-Z',
     '--endpoint-z',
     metavar='INTERFACE_ID',
-    type=int,
-    help='Unique ID of the interface on the Z side of the Circuit',
+    type=types.NATURAL_KEY,
+    help='Unique ID or key of the interface on the Z side of the Circuit',
 )
 @click.pass_context
 def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
@@ -128,6 +128,7 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     '-A',
     '--endpoint-a',
     metavar='INTERFACE_ID',
+    type=types.NATURAL_KEY,
     help='Filter to Circuits with endpoint_a interfaces that match this ID'
 )
 @click.option(
@@ -142,7 +143,8 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     '-i',
     '--id',
     metavar='ID',
-    help='Unique ID of the Circuit being retrieved.',
+    type=types.NATURAL_KEY,
+    help='Unique ID or natural key of the Circuit being retrieved.',
 )
 @click.option(
     '-l',
@@ -187,6 +189,7 @@ def add(ctx, attributes, endpoint_a, name, site_id, endpoint_z):
     '-Z',
     '--endpoint-z',
     metavar='INTERFACE_ID',
+    type=types.NATURAL_KEY,
     help='Filter to Circuits with endpoint_z interfaces that match this ID'
 )
 @click.pass_context
@@ -257,14 +260,15 @@ def interfaces(ctx, *args, **kwargs):
     '-A',
     '--endpoint-a',
     metavar='INTERFACE_ID',
-    type=int,
-    help='Unique ID of the interface of the A side of the Circuit',
+    type=types.NATURAL_KEY,
+    help='Unique ID or key of the interface of the A side of the Circuit',
 )
 @click.option(
     '-i',
     '--id',
     metavar='ID',
-    help='Unique ID of the Circuit being retrieved.',
+    type=types.NATURAL_KEY,
+    help='Unique ID or natural key of the Circuit being retrieved.',
     required=True,
 )
 @click.option(
@@ -286,8 +290,8 @@ def interfaces(ctx, *args, **kwargs):
     '-Z',
     '--endpoint-z',
     metavar='INTERFACE_ID',
-    type=int,
-    help='Unique ID of the interface on the Z side of the Circuit',
+    type=types.NATURAL_KEY,
+    help='Unique ID or key of the interface on the Z side of the Circuit',
 )
 @click.option(
     '--add-attributes',
@@ -362,7 +366,8 @@ def update(ctx, attributes, endpoint_a, id, name, site_id, endpoint_z,
     '-i',
     '--id',
     metavar='ID',
-    help='Unique ID of the Circuit being deleted.',
+    help='Unique ID or natural key of the Circuit being deleted.',
+    type=types.NATURAL_KEY,
     required=True,
 )
 @click.option(
