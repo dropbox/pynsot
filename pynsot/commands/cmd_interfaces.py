@@ -17,7 +17,7 @@ from __future__ import unicode_literals
 import logging
 
 from ..vendor import click
-from . import callbacks
+from . import callbacks, types
 from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
 
 
@@ -28,8 +28,8 @@ log = logging.getLogger(__name__)
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
-    ('device_hostname', 'Device'),
-    ('name', 'Name'),
+    ('name_slug', 'Name (Key)'),
+    ('parent', 'Parent'),
     ('mac_address', 'MAC'),
     ('addresses', 'Addresses'),
     ('attributes', 'Attributes'),
@@ -38,14 +38,12 @@ DISPLAY_FIELDS = (
 # Fields to display when viewing a single record.
 VERBOSE_FIELDS = (
     ('id', 'ID'),
-    ('device', 'Device ID'),
-    ('device_hostname', 'Device'),
-    ('name', 'Name'),
+    ('name_slug', 'Name (Key)'),
+    ('parent', 'Parent'),
     ('mac_address', 'MAC'),
     ('addresses', 'Addresses'),
     ('speed', 'Speed'),
     ('type', 'Type'),
-    ('parent_id', 'Parent'),
     ('attributes', 'Attributes'),
 )
 
@@ -86,6 +84,7 @@ def cli(ctx):
     '-D',
     '--device',
     metavar='DEVICE',
+    type=types.NATURAL_KEY,
     help=(
         'Unique ID of the Device to which this Interface is '
         'attached.  [required]'
@@ -116,7 +115,7 @@ def cli(ctx):
     '-p',
     '--parent-id',
     metavar='PARENT_ID',
-    type=int,
+    type=types.NATURAL_KEY,
     help='Unique ID of the parent interface.'
 )
 @click.option(
@@ -147,7 +146,7 @@ def add(ctx, attributes, addresses, device, description, mac_address,
     """
     Add a new Interface.
 
-    You must provide a Device ID using the -D/--device option.
+    You must provide a Device hostname or ID using the -D/--device option.
 
     When adding a new Interface, you must provide a value for the -n/--name
     option.
@@ -196,6 +195,7 @@ def add(ctx, attributes, addresses, device, description, mac_address,
     '-D',
     '--device',
     metavar='DEVICE',
+    type=types.NATURAL_KEY,
     help='Unique ID or hostname of the Device being retrieved.',
 )
 @click.option(
@@ -256,7 +256,7 @@ def add(ctx, attributes, addresses, device, description, mac_address,
     '-p',
     '--parent-id',
     metavar='PARENT_ID',
-    type=int,
+    type=types.NATURAL_KEY,
     help='Filter by integer of the ID of the parent Interface.',
 )
 @click.option(
@@ -387,6 +387,7 @@ def root(ctx, *args, **kwargs):
         ctx, display_fields=VERBOSE_FIELDS, my_name=ctx.info_name
     )
 
+
 @list.command()
 @click.pass_context
 def siblings(ctx, *args, **kwargs):
@@ -394,6 +395,7 @@ def siblings(ctx, *args, **kwargs):
     callbacks.list_subcommand(
         ctx, display_fields=VERBOSE_FIELDS, my_name=ctx.info_name
     )
+
 
 ASSIGNMENT_FIELDS = (
     ('id', 'ID'),
@@ -491,6 +493,7 @@ def remove(ctx, id, site_id):
     '-i',
     '--id',
     metavar='ID',
+    type=types.NATURAL_KEY,
     help='Unique ID of the Interface being updated.',
     required=True,
 )
@@ -512,7 +515,7 @@ def remove(ctx, id, site_id):
     '-p',
     '--parent-id',
     metavar='PARENT_ID',
-    type=int,
+    type=types.NATURAL_KEY,
     help='Unique ID of the parent interface.',
 )
 @click.option(

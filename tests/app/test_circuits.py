@@ -7,6 +7,8 @@ Test Circuits in the CLI app.
 from __future__ import absolute_import, unicode_literals
 import logging
 
+import pytest
+
 from tests.fixtures import (attribute, attributes, client, config, device,
                             interface, network, runner, site, site_client)
 from tests.fixtures.circuits import (circuit, circuit_attributes, device_a,
@@ -62,7 +64,7 @@ def test_circuits_add_intf_reuse(runner, interface_a):
 
         result = runner.run(cmd.format(interface_a['id'], 'bad_circuit'))
         assert result.exit_code != 0
-        assert 'endpoint_a:  This field must be unique' in result.output
+        assert 'A-side endpoint Interface already exists' in result.output
 
 
 def test_circuits_add_dupe_name(runner, interface_a, interface_z):
