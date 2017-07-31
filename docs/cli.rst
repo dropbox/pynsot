@@ -159,7 +159,8 @@ fields as follows:
 * Attributes: ``{resource_name:name}``
 * Devices: ``{hostname}``
 * Networks: ``{cidr}``
-* Interfaces: ``{device_id:name}``
+* Interfaces: ``{device_hostname:name}``
+* Circuits: ``{interface_a}_{interface_z}``
 
 Updating or Removing Objects
 ============================
@@ -173,8 +174,10 @@ obtained using the ``list`` action.
 Currently the only :ref:`resource_types` to currently support update or removal
 by natural key are:
 
-* Devices (hostname)
-* Networks (CIDR)
+* Devices: ``hostname``
+* Networks: ``cidr``
+* Interfaces: ``slug_name``
+* Circuits: ``slug_name``
 
 For example, this illustrates updating a Network object by natural key (cidr)
 or by ID:
@@ -182,16 +185,17 @@ or by ID:
 .. code-block:: bash
 
    $ nsot networks list
-   +-----------------------------------------------------------------------+
-   | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
-   +-----------------------------------------------------------------------+
-   | 1    10.0.0.1      32       False    4         None        desc=test  |
-   +-----------------------------------------------------------------------+
+   +--------------------------------------------------------------------------------+
+   | ID   CIDR (Key)      Is IP?   IP Ver.   Parent          State       Attributes |
+   +--------------------------------------------------------------------------------+
+   | 1    10.10.10.0/24   False    4         None            allocated              |
+   | 5    10.10.10.1/32   True     4         10.10.10.0/24   assigned               |
+   +--------------------------------------------------------------------------------+
 
-   $ nsot networks update --cidr 10.0.0.1/32 -a desc="Changing this"
+   $ nsot networks update --cidr 10.10.10.1/32 -a desc="Changing this"
    [SUCCESS] updated network
 
-   $ nsot networks update -i 1 -a desc="Changing this"
+   $ nsot networks update -i 5 -a desc="Changing this"
    [SUCCESS] updated network
 
 Updating Attributes
@@ -608,43 +612,42 @@ Listing Networks:
 .. code-block:: bash:
 
     $ nsot networks list --site-id 1
-    +-------------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
-    +-------------------------------------------------------------------------+
-    | 1    192.168.0.0   16       False    4         None        owner=jathan |
-    | 2    10.0.0.0      16       False    4         None        owner=jathan |
-    | 3    172.16.0.0    12       False    4         None                     |
-    | 4    10.0.0.0      24       False    4         2                        |
-    | 5    10.1.0.0      24       False    4         2                        |
-    +-------------------------------------------------------------------------+
+    +------------------------------------------------------------------------------------+
+    | ID   CIDR (Key)       Is IP?   IP Ver.   Parent ID        State       Attributes   |
+    +------------------------------------------------------------------------------------+
+    | 1    192.168.0.0/16   False    4         None             allocated   owner=jathan |
+    | 2    10.0.0.0/16      False    4         None             allocated   owner=jathan |
+    | 3    172.16.0.0/12    False    4         None             allocated                |
+    | 4    10.0.0.0/24      False    4         10.0.0.0/16      allocated                |
+    | 5    10.1.0.0/24      False    4         10.0.0.0/16      allocated                |
+    | 6    192.168.0.1/32   True     4         192.168.0.0/16   allocated                |
+    +------------------------------------------------------------------------------------+
 
-You may also optionally include IP addresses with ``--include-ips``:
-
-.. code-block:: bash
-
-    $ nsot networks list --side-id 1 --include-ips
-    +-------------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
-    +-------------------------------------------------------------------------+
-    | 1    192.168.0.0   16       False    4         None        owner=jathan |
-    | 2    10.0.0.0      16       False    4         None        owner=jathan |
-    | 3    172.16.0.0    12       False    4         None                     |
-    | 4    10.0.0.0      24       False    4         2                        |
-    | 5    10.1.0.0      24       False    4         2                        |
-    | 6    192.168.0.1   32       True     4         1                        |
-    +-------------------------------------------------------------------------+
-
-Or, you may show only IP adddresses by using ``--include-ips`` with
-``--no-include-networks``:
+You may also optionally exclude IP addresses with ``--no-include-ips``:
 
 .. code-block:: bash
 
-    $ nsot networks list --site-id 1 --include-ips --no-include-networks
-    +-----------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
-    +-----------------------------------------------------------------------+
-    | 6    192.168.0.1   32       True     4         1                      |
-    +-----------------------------------------------------------------------+
+    $ nsot networks list --side-id 1 --no-include-ips
+    +---------------------------------------------------------------------------------+
+    | ID   CIDR (Key)       Is IP?   IP Ver.   Parent ID     State       Attributes   |
+    +---------------------------------------------------------------------------------+
+    | 1    192.168.0.0/16   False    4         None          allocated   owner=jathan |
+    | 2    10.0.0.0/16      False    4         None          allocated   owner=jathan |
+    | 3    172.16.0.0/12    False    4         None          allocated                |
+    | 4    10.0.0.0/24      False    4         10.0.0.0/16   allocated                |
+    | 5    10.1.0.0/24      False    4         10.0.0.0/16   allocated                |
+    +---------------------------------------------------------------------------------+
+
+Or, you may show only IP adddresses by using ``--no-include-networks``:
+
+.. code-block:: bash
+
+    $ nsot networks list --site-id 1 --no-include-networks
+    +------------------------------------------------------------------------------------+
+    | ID   CIDR (Key)       Is IP?   IP Ver.   Parent ID        State       Attributes   |
+    +------------------------------------------------------------------------------------+
+    | 6    192.168.0.1/32   True     4         192.168.0.0/16   allocated                |
+    +------------------------------------------------------------------------------------+
 
 Performing a set query on Networks by attribute/value:
 
@@ -665,30 +668,31 @@ Updating a Network (``-a/--attributes`` can be provide once for each Attribute):
 
 .. code-block:: bash
 
-    $ nsot networks update --site-id 1 --id 1 -a owner=jathan -a foo=bar
+    $ nsot networks update --site-id 1 --cidr 192.168.0.0/16 -a owner=jathan -a foo=bar
     [SUCCESS] Updated network!
 
-    $ nsot networks list --site-id 1 --id 1
-    +-------------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
-    +-------------------------------------------------------------------------+
-    | 1    192.168.0.0   16       False    4         None        owner=nobody |
-    |                                                            foo=bar      |
-    +-------------------------------------------------------------------------+
+    $ nsot networks list --site-id 1 --cidr 192.168.0.0/16
+    +---------------------------------------------------------------------------+
+    | ID   CIDR (Key)      Is IP?   IP Ver.   Parent   State       Attributes   |
+    +---------------------------------------------------------------------------+
+    | 1    192.168.0.0/16  False    4         None     allocated   owner=nobody |
+    |                                                              foo=bar      |
+    +---------------------------------------------------------------------------+
 
 To delete attributes, reference each attribute by name and include the
-``--delete-attributes`` flag:
+``--delete-attributes`` flag (here we're deleting the ``foo`` attribute):
 
 .. code-block:: bash
 
-    $ nsot networks update --site-id 1 --id 1 -a owner --delete-attributes
+    $ nsot networks update --site-id 1 --cidr 192.168.0.0/16 -a foo --delete-attributes
+    [SUCCESS] Updated network!
 
-    $ nsot networks list --site-id 1 --id 1
-    +-------------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
-    +-------------------------------------------------------------------------+
-    | 1    192.168.0.0   16       False    4         None        owner=nobody |
-    +-------------------------------------------------------------------------+
+    $ nsot networks list --site-id 1 --cidr 192.168.0.0/16
+    +---------------------------------------------------------------------------+
+    | ID   CIDR (Key)      Is IP?   IP Ver.   Parent   State       Attributes   |
+    +---------------------------------------------------------------------------+
+    | 1    192.168.0.0/16  False    4         None     allocated   owner=nobody |
+    +---------------------------------------------------------------------------+
 
 Removing a Network:
 
@@ -712,13 +716,13 @@ Recursively get all parents of a network:
 .. code-block:: bash
 
     $ nsot networks list -c 10.20.30.1/32 ancestors
-    +----------------------------------------------------------------------------------+
-    | ID   Network      Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
-    +----------------------------------------------------------------------------------+
-    | 1    10.0.0.0     8        False    4         None        allocated              |
-    | 20   10.20.0.0    16       False    4         1           allocated              |
-    | 15   10.20.30.0   24       False    4         1           allocated              |
-    +----------------------------------------------------------------------------------+
+    +----------------------------------------------------------------------------+
+    | ID   CIDR (Key)     Is IP?   IP Ver.   Parent       State       Attributes |
+    +----------------------------------------------------------------------------+
+    | 1    10.0.0.0/8     False    4         None         allocated              |
+    | 20   10.20.0.0/16   False    4         10.0.0.0/8   allocated              |
+    | 15   10.20.30.0/24  False    4         10.0.0.0/8   allocated              |
+    +----------------------------------------------------------------------------+
 
 Assignments
 ~~~~~~~~~~~
@@ -742,14 +746,14 @@ Get immediate children of a network:
 .. code-block:: bash
 
     $ nsot networks list -c 10.20.30.0/24 children
-    +------------------------------------------------------------------------------------+
-    | ID   Network        Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
-    +------------------------------------------------------------------------------------+
-    | 16   10.20.30.1     32       True     4         15          assigned               |
-    | 17   10.20.30.3     32       True     4         15          allocated              |
-    | 18   10.20.30.16    28       False    4         15          allocated              |
-    | 19   10.20.30.104   32       True     4         15          allocated              |
-    +------------------------------------------------------------------------------------+
+    +-------------------------------------------------------------------------------+
+    | ID   CIDR (Key)       Is IP?   IP Ver.   Parent         State      Attributes |
+    +-------------------------------------------------------------------------------+
+    | 16   10.20.30.1/32    True     4         10.20.30.0/24  assigned              |
+    | 17   10.20.30.3/32    True     4         10.20.30.0/24  allocated             |
+    | 18   10.20.30.16/28   False    4         10.20.30.0/24  allocated             |
+    | 19   10.20.30.104/32  True     4         10.20.30.0/24  allocated             |
+    +-------------------------------------------------------------------------------+
 
 Closest Parent
 ~~~~~~~~~~~~~~
@@ -762,11 +766,11 @@ Get the closest matching parent of a network, even if the network isn't found in
     No network found matching args: include_ips=True, root_only=False, network_address=None, state=None, include_networks=True, limit=None, prefix_length=None, offset=None, ip_version=None, attributes=(), cidr=10.101.103.100/30, query=None, id=None!
 
     $ nsot networks list -c 10.101.103.100/30 closest_parent
-    +--------------------------------------------------------------------------------+
-    | ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
-    +--------------------------------------------------------------------------------+
-    | 1    10.0.0.0   8        False    4         None        allocated              |
-    +--------------------------------------------------------------------------------+
+    +----------------------------------------------------------------------------+
+    | ID   CIDR (Key)     Is IP?   IP Ver.   Parent       State       Attributes |
+    +----------------------------------------------------------------------------+
+    | 1    10.0.0.0/8     False    4         None         allocated              |
+    +----------------------------------------------------------------------------+
 
 Descendants
 ~~~~~~~~~~~
@@ -777,13 +781,13 @@ Recursively get all children of a network:
 
     $ nsot networks list -c 10.20.0.0/16 descendants
     +------------------------------------------------------------------------------------+
-    | ID   Network        Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
+    | ID   CIDR (Key)       Is IP?   IP Ver.   Parent         State      Attributes      |
     +------------------------------------------------------------------------------------+
-    | 15   10.20.30.0     24       False    4         20          allocated              |
-    | 16   10.20.30.1     32       True     4         15          assigned               |
-    | 17   10.20.30.3     32       True     4         15          allocated              |
-    | 18   10.20.30.16    28       False    4         15          allocated              |
-    | 19   10.20.30.104   32       True     4         15          allocated              |
+    | 15   10.20.30.0/24    True     4         10.20.0.0/16   allocated                  |
+    | 16   10.20.30.1/32    True     4         10.20.30.0/24  assigned                   |
+    | 17   10.20.30.3/32    True     4         10.20.30.0/24  allocated                  |
+    | 18   10.20.30.16/28   False    4         10.20.30.0/24  allocated                  |
+    | 19   10.20.30.104/32  True     4         10.20.30.0/24  allocated                  |
     +------------------------------------------------------------------------------------+
 
 Next Address
@@ -818,11 +822,11 @@ Get parent network of a network:
 .. code-block:: bash
 
     $ nsot networks list -c 10.20.30.0/24 parent
-    +---------------------------------------------------------------------------------+
-    | ID   Network     Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
-    +---------------------------------------------------------------------------------+
-    | 20   10.20.0.0   16       False    4         1           allocated              |
-    +---------------------------------------------------------------------------------+
+    +----------------------------------------------------------------------------+
+    | ID   CIDR (Key)     Is IP?   IP Ver.   Parent       State       Attributes |
+    +----------------------------------------------------------------------------+
+    | 20   10.20.0.0/16   False    4         10.0.0.0/8   allocated              |
+    +----------------------------------------------------------------------------+
 
 Reserved
 ~~~~~~~~
@@ -832,13 +836,12 @@ Get all reserved networks:
 .. code-block:: bash
 
     $ nsot networks list reserved
-    +-------------------------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   State      Attributes    |
-    +-------------------------------------------------------------------------------------+
-    | 10   10.10.12.0    24       False    4         5           reserved   type=loopback |
-    |                                                                       metro=iad     |
-    | 12   10.10.10.15   32       True     4         6           reserved   type=internal |
-    +-------------------------------------------------------------------------------------+
+    +-------------------------------------------------------------------------------+
+    | ID   CIDR (Key)       Is IP?   IP Ver.   Parent         State      Attributes |
+    +-------------------------------------------------------------------------------+
+    | 10   10.10.12.0/24    False    4         10.10.0.0/16   reserved              |
+    | 12   10.10.10.15/32   True     4         10.10.10.0/24  reserved              |
+    +-------------------------------------------------------------------------------+
 
 Root
 ~~~~
@@ -848,11 +851,11 @@ Get parent of all ancestors of a network:
 .. code-block:: bash
 
     $ nsot networks list -c 10.20.30.3/32 root
-    +--------------------------------------------------------------------------------+
-    | ID   Network    Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
-    +--------------------------------------------------------------------------------+
-    | 1    10.0.0.0   8        False    4         None        allocated              |
-    +--------------------------------------------------------------------------------+
+    +----------------------------------------------------------------------------+
+    | ID   CIDR (Key)     Is IP?   IP Ver.   Parent       State       Attributes |
+    +----------------------------------------------------------------------------+
+    | 1    10.0.0.0/8     False    4         None         allocated              |
+    +----------------------------------------------------------------------------+
 
 Siblings
 ~~~~~~~~
@@ -863,11 +866,11 @@ Get networks with same parent as a network:
 
     $ nsot networks list -c 10.20.30.3/32 siblings
     +------------------------------------------------------------------------------------+
-    | ID   Network        Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
+    | ID   CIDR (Key)       Is IP?   IP Ver.   Parent         State      Attributes      |
     +------------------------------------------------------------------------------------+
-    | 16   10.20.30.1     32       True     4         15          assigned               |
-    | 18   10.20.30.16    28       False    4         15          allocated              |
-    | 19   10.20.30.104   32       True     4         15          allocated              |
+    | 16   10.20.30.1/32    True     4         10.20.30.0/24  assigned                   |
+    | 18   10.20.30.16/28   False    4         10.20.30.0/24  allocated                  |
+    | 19   10.20.30.104/32  True     4         10.20.30.0/24  allocated                  |
     +------------------------------------------------------------------------------------+
 
 You may also include the network itself:
@@ -875,14 +878,15 @@ You may also include the network itself:
 .. code-block:: bash
 
     $ nsot networks list -c 10.20.30.3/32 siblings --include-self
-    +------------------------------------------------------------------------------------+
-    | ID   Network        Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes |
-    +------------------------------------------------------------------------------------+
-    | 16   10.20.30.1     32       True     4         15          assigned               |
-    | 17   10.20.30.3     32       True     4         15          allocated              |
-    | 18   10.20.30.16    28       False    4         15          allocated              |
-    | 19   10.20.30.104   32       True     4         15          allocated              |
-    +------------------------------------------------------------------------------------+
+    +---------------------------------------------------------------------------------+
+    | ID   CIDR (Key)       Is IP?   IP Ver.   Parent          State       Attributes |
+    +---------------------------------------------------------------------------------+
+    | 16   10.20.30.1/32    True     4         10.20.30.0/24   assigned               |
+    | 17   10.20.30.3/32    True     4         10.20.30.0/24   allocated              |
+    | 18   10.20.30.16/28   False    4         10.20.30.0/24   allocated              |
+    | 19   10.20.30.104/32  True     4         10.20.30.0/24   allocated              |
+    +---------------------------------------------------------------------------------+
+
 Subnets
 ~~~~~~~
 
@@ -891,13 +895,13 @@ subnets):
 
 .. code-block:: bash
 
-    $ nsot networks list --site-id 1 --id 1 subnets
-    +-----------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
-    +-----------------------------------------------------------------------+
-    | 6    192.168.0.0   24       False    4         1                      |
-    | 7    192.168.0.0   25       False    4         6                      |
-    +-----------------------------------------------------------------------+
+    $ nsot networks list --site-id 1 --cidr 192.168.0.0/16 subnets
+    +---------------------------------------------------------------------------------+
+    | ID   CIDR (Key)      Is IP?   IP Ver.   Parent           State       Attributes |
+    +---------------------------------------------------------------------------------+
+    | 6    192.168.0.0/24  False    4         192.168.0.0/16   allocated              |
+    | 7    192.168.0.0/25  False    4         192.168.0.0/24   allocated              |
+    +---------------------------------------------------------------------------------+
 
 Supernets
 ~~~~~~~~~
@@ -907,25 +911,23 @@ Given a Network ``192.168.0.0/24``, you may view the Networks containing it
 
 .. code-block:: bash
 
-    $ nsot networks list --site-id 1 --id 6
-    +-----------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes |
-    +-----------------------------------------------------------------------+
-    | 6    192.168.0.0   24       False    4         1                      |
-    +-----------------------------------------------------------------------+
+    $ nsot networks list --site-id 1 --cidr 192.168.0.0/16
+    +---------------------------------------------------------------------------------+
+    | ID   CIDR (Key)      Is IP?   IP Ver.   Parent           State       Attributes |
+    +---------------------------------------------------------------------------------+
+    | 6    192.168.0.0/24  False    4         192.168.0.0/16   allocated              |
+    +---------------------------------------------------------------------------------+
 
 You may view the networks that contain that Network (aka supernets):
 
 .. code-block:: bash
 
-    $ nsot networks list --site-id 1 --id 5 supernets
-    +-------------------------------------------------------------------------+
-    | ID   Network       Prefix   Is IP?   IP Ver.   Parent ID   Attributes   |
-    +-------------------------------------------------------------------------+
-    | 1    192.168.0.0   16       False    4         None        owner=jathan |
-    |                                                            cluster=     |
-    |                                                            foo=baz      |
-    +-------------------------------------------------------------------------+
+    $ nsot networks list --site-id 1 --id 192.168.0.0/24 supernets
+    +------------------------------------------------------------------------+
+    | ID   CIDR (Key)      Is IP?   IP Ver.   Parent   State      Attributes |
+    +------------------------------------------------------------------------+
+    | 6    192.168.0.0/16  False    4         None     allocated             |
+    +------------------------------------------------------------------------+
 
 .. _working_with_devices:
 
@@ -1028,12 +1030,12 @@ Device objects also allow you to display their interfaces using the
 .. code-block:: bash
 
     $ nsot devices list --hostname foo-bar1 interfaces
-    +----------------------------------------------------+
-    | ID   Device   Name   MAC    Addresses   Attributes |
-    +----------------------------------------------------+
-    | 1    1        eth0   None                          |
-    | 1    1        eth0   None                          |
-    +----------------------------------------------------+
+    +-------------------------------------------------------------+
+    | ID   Name (Key)      Parent   MAC    Addresses   Attributes |
+    +-------------------------------------------------------------+
+    | 1    foo-bar1:eth0   None     None                          |
+    | 2    foo-bar1:eth1   None     None                          |
+    +-------------------------------------------------------------+
 
 .. _working_with_interfaces:
 
@@ -1053,14 +1055,14 @@ Adding an Interface:
 
 .. code-block:: bash
 
-    $ nsot interfaces add --device 1 --name eth0 
+    $ nsot interfaces add --device foo-bar1 --name eth0 
     [SUCCESS] Added interface!
 
 Let's add another Interface:
 
 .. code-block:: bash
 
-    $ nsot interfaces add --device 1 --name eth1
+    $ nsot interfaces add --device foo-bar1 --name eth1
     [SUCCESS] Added interface!
 
 Listing all Interfaces:
@@ -1068,12 +1070,12 @@ Listing all Interfaces:
 .. code-block:: bash
 
     $ nsot interfaces list
-    +----------------------------------------------------+
-    | ID   Device   Name   MAC    Addresses   Attributes |
-    +----------------------------------------------------+
-    | 1    1        eth0   None                          |
-    | 1    1        eth0   None                          |
-    +----------------------------------------------------+
+    +-------------------------------------------------------------+
+    | ID   Name (Key)      Parent   MAC    Addresses   Attributes |
+    +-------------------------------------------------------------+
+    | 1    foo-bar1:eth0   None     None                          |
+    | 2    foo-bar1:eth1   None     None                          |
+    +-------------------------------------------------------------+
 
 Listing a single Interface shows more detail:
 
@@ -1081,9 +1083,9 @@ Listing a single Interface shows more detail:
 
     $ nsot interfaces list --name eth0
     +----------------------------------------------------------------------------+
-    | ID   Device   Name   MAC    Addresses   Speed   Type   Parent   Attributes |
+    | ID   Name (Key)      Parent   MAC    Addresses   Speed   Type   Attributes |
     +----------------------------------------------------------------------------+
-    | 1    1        eth0   None               1000    6      None                |
+    | 1    foo-bar1:eth0   None     None               1000    6                 |
     +----------------------------------------------------------------------------+
 
 But what if you've got more than one interface named ``eth0``? You can filter
@@ -1094,10 +1096,24 @@ of the device:
 
     $ nsot interfaces list --device foo-bar1 -n eth0
     +----------------------------------------------------------------------------+
-    | ID   Device   Name   MAC    Addresses   Speed   Type   Parent   Attributes |
+    | ID   Name (Key)      Parent   MAC    Addresses   Speed   Type   Attributes |
     +----------------------------------------------------------------------------+
-    | 1    1        eth0   None               1000    6      None                |
+    | 1    foo-bar1:eth0   None     None               1000    6                 |
     +----------------------------------------------------------------------------+
+
+You may also specify a parent Interface on the same device:
+
+.. code-block:: bash
+
+    $ nsot interfaces add --device foo-bar1 --name eth0.0 --parent-id foo-bar1:eth0
+    [SUCCESS] Added interface!
+
+    $ nsot interfaces list --id foo-bar1:eth0.0 
+    +-------------------------------------------------------------------------------------+
+    | ID   Name (Key)        Parent          MAC    Addresses   Speed   Type   Attributes |
+    +-------------------------------------------------------------------------------------+
+    | 26   foo-bar1:eth0.0   foo-bar1:eth0   None               1000    6                 |
+    +-------------------------------------------------------------------------------------+
 
 Interfaces also support attributes:
 
@@ -1106,48 +1122,48 @@ Interfaces also support attributes:
     $ nsot attributes add --resource-name interface --name vlan
     [SUCCESS] Added attribute!
 
-    $ nsot interfaces update --id 1 -a vlan=100
+    $ nsot interfaces update --id foo-bar1:eth0 -a vlan=100
     [SUCCESS] Updated interface!
 
-    $ nsot interfaces update --id 2 -a vlan=100
+    $ nsot interfaces update --id foo-bar1:eth1 -a vlan=100
     [SUCCESS] Updated interface!
 
-    $ nsot interfaces list --id 1
+    $ nsot interfaces list --id foo-bar1:eth0
     +----------------------------------------------------------------------------+
-    | ID   Device   Name   MAC    Addresses   Speed   Type   Parent   Attributes |
+    | ID   Name (Key)      Parent   MAC    Addresses   Speed   Type   Attributes |
     +----------------------------------------------------------------------------+
-    | 1    1        eth0   None               1000    6      None     vlan=100   |
+    | 1    foo-bar1:eth0   None     None               1000    6      vlan=100   |
     +----------------------------------------------------------------------------+
 
-Performing a set query on Interfaces by attribute/value (it displays by
-``device_id:name`` for now. To be improved later.):
+Performing a set query on Interfaces by attribute/value displays by natural key
+``device_hostname:name``):
 
 .. code-block:: bash
 
     $ nsot interfaces list --query vlan=100
-    1:eth0
-    1:eth1
+    foo-bar1:eth0
+    foo-bar1:eth1
 
 You may also display the results comma-delimted:
 
 .. code-block:: bash
 
     $ nsot interfaces list --query vlan=100 --delimited
-    1:eth0,1:eth1
+    foo-bar1:eth0,foo-bar1:eth1
 
 You may also specify the ``type`` (ethernet, etc... more on this later),
 ``speed`` (in Mbps), and ``mac_address``:
 
 .. code-block:: bash
 
-    $ nsot interfaces update --id 2 --speed 10000 --type 161 --mac-address 
+    $ nsot interfaces update --id foo-bar1:eth1 --speed 10000 --type 161 --mac-address 6C:40:08:A5:96:86
     [SUCCESS] Updated interface!
 
-    $ nsot interfaces list --id 2
+    $ nsot interfaces list --id foo-bar1:eth1
     +-----------------------------------------------------------------------------------------+
-    | ID   Device   Name   MAC                 Addresses   Speed   Type   Parent   Attributes |
+    | ID   Name (Key)      Parent   MAC                 Addresses   Speed   Type   Attributes |
     +-----------------------------------------------------------------------------------------+
-    | 2    1        eth1   6C:40:08:A5:96:86               10000   161    None     vlan=100   |
+    | 2    foo-bar1:eth1   None     6C:40:08:A5:96:86               10000   161    vlan=100   |
     +-----------------------------------------------------------------------------------------+
 
 You may also assign IP addresses to Interfaces. These are represented by an
@@ -1158,21 +1174,22 @@ Interface, if a record does not already exist, one is created with
 
 .. code-block:: bash
 
-    $ nsot interfaces update --id 1 --addresses 10.10.10.1/32
+    $ nsot interfaces update --id foo-bar1:eth0 --addresses 10.10.10.1/32
     [SUCCESS] Updated interface!
 
-    $ nsot interfaces list --id 1
+    $ nsot interfaces list --id foo-bar1:eth0
     +--------------------------------------------------------------------------------+
-    | ID   Device   Name   MAC    Addresses       Speed   Type   Parent   Attributes |
+    | ID   Name (Key)      Parent   MAC    Addresses       Speed   Type   Attributes |
     +--------------------------------------------------------------------------------+
-    | 1    1        eth0   None   10.10.10.1/32   1000    6      None     vlan=100   |
+    | 1    foo-bar1:eth0   None     None   10.10.10.1/32   1000    6      vlan=100   |
     +--------------------------------------------------------------------------------+
 
-Just like in real life, it is an error to assign an IP address to already assigned to another interface on the same Device:
+Just like in real life, it is an error to assign an IP address to already
+assigned to another interface on the same Device:
 
 .. code-block:: bash
 
-    $ nsot interfaces update --id 2 --addresses 10.10.10.1/32
+    $ nsot interfaces update --id foo-bar1:eth1 --addresses 10.10.10.1/32
     [FAILURE] address: Address already assigned to this Device.
 
 Removing an Interface:
@@ -1182,6 +1199,13 @@ Removing an Interface:
     $ nsot interfaces remove --id 2
     [SUCCESS] Removed interface!
 
+Interfaces can also be removed by natural key
+
+.. code-block:: bash
+
+    $ nsot interfaces remove --id foo-bar1:eth1
+    [SUCCESS] Removed interface!
+
 Addresseses
 ~~~~~~~~~~~
 
@@ -1189,29 +1213,27 @@ Given an Interface, you may display the associated Network addresses:
 
 .. code-block:: bash
 
-    $ nsot interfaces list --id 1 addresses
-    +------------------------------------------------------------------------------------------+
-    | ID   Network      Prefix   Is IP?   IP Ver.   Parent ID   State      Attributes          |
-    +------------------------------------------------------------------------------------------+
-    | 7    10.10.10.1   32       True     4         6           assigned   type=loopback       |
-    |                                                                      metro=lax           |
-    |                                                                      dns_hostname=lax-r1 |
-    +------------------------------------------------------------------------------------------+
+    $ nsot interfaces list --id foo-bar1:eth0 addresses
+    +-------------------------------------------------------------------------------+
+    | ID   CIDR (Key)      Is IP?   IP Ver.   Parent          State      Attributes |
+    +-------------------------------------------------------------------------------+
+    | 5    10.10.10.1/32   True     4         10.10.10.0/24   assigned              |
+    +-------------------------------------------------------------------------------+
 
-Networks
-~~~~~~~~
+Ancestors
+~~~~~~~~~
 
-Given an Interface, you may display the containing networks for any addresses assigned to the interface:
+Recursively get all parents of an Interface.
 
 .. code-block:: bash
 
-    $ nsot interfaces list --id 1 networks
-    +-------------------------------------------------------------------------------------+
-    | ID   Network      Prefix   Is IP?   IP Ver.   Parent ID   State       Attributes    |
-    +-------------------------------------------------------------------------------------+
-    | 6    10.10.10.0   24       False    4         5           allocated   type=loopback |
-    |                                                                       metro=lax     |
-    +-------------------------------------------------------------------------------------+
+    $ nsot interfaces list -i foo-bar1:vlan100 ancestors
+    +--------------------------------------------------------------------------+
+    | ID   Name (Key)        Parent          MAC    Addresses       Attributes |
+    +--------------------------------------------------------------------------+
+    | 24   foo-bar1:eth0     None            None   10.10.10.1/32   vlan=100   |
+    | 26   foo-bar1:eth0.0   foo-bar1:eth0   None                              |
+    +--------------------------------------------------------------------------+
 
 Assignments
 ~~~~~~~~~~~
@@ -1227,6 +1249,270 @@ represent the relationship between ``Interface <=> Network``:
     +----------------------------------------------------------------------+
     | 1    foo-bar1   1           10.10.10.1/32   eth0        1            |
     +----------------------------------------------------------------------+
+
+Children
+~~~~~~~~
+
+Get immediate children of an Interface.
+
+.. code-block:: bash
+
+    $ nsot interfaces list -i foo-bar1:eth0 children
+    +----------------------------------------------------------------------+
+    | ID   Name (Key)        Parent          MAC    Addresses   Attributes |
+    +----------------------------------------------------------------------+
+    | 26   foo-bar1:eth0.0   foo-bar1:eth0   None                          |
+    +----------------------------------------------------------------------+
+
+Descendants
+~~~~~~~~~~~
+
+Recursively get all children of an Interface.
+
+.. code-block:: bash
+
+    $ nsot interfaces list -i foo-bar1:eth0 descendants
+    +-------------------------------------------------------------------------+
+    | ID   Name (Key)         Parent            MAC    Addresses   Attributes |
+    +-------------------------------------------------------------------------+
+    | 26   foo-bar1:eth0.0    foo-bar1:eth0     None                          |
+    | 28   foo-bar1:vlan100   foo-bar1:eth0.0   None                          |
+    +-------------------------------------------------------------------------+
+
+Networks
+~~~~~~~~
+
+Given an Interface, you may display the containing networks for any addresses
+assigned to the interface:
+
+.. code-block:: bash
+
+    $ nsot interfaces list --id foo-bar1:eth0 networks
+    +-------------------------------------------------------------------------+
+    | ID   CIDR (Key)      Is IP?   IP Ver.   Parent   State       Attributes |
+    +-------------------------------------------------------------------------+
+    | 4    10.10.10.0/24   False    4         None     allocated              |
+    +-------------------------------------------------------------------------+
+
+Parent
+~~~~~~
+
+Get the parent Interface of an Interface.
+
+.. code-block:: bash
+
+    $ nsot interfaces list -i foo-bar1:eth0.0 parent
+    +--------------------------------------------------------------------------------+
+    | ID   Name (Key)      Parent   MAC    Addresses       Speed   Type   Attributes |
+    +--------------------------------------------------------------------------------+
+    | 24   foo-bar1:eth0   None     None   10.10.10.1/32   1000    6      vlan=100   |
+    +--------------------------------------------------------------------------------+
+
+Root
+~~~~
+
+Get parent of all ancestors of an Interface.
+
+.. code-block:: bash
+
+    $ nsot interfaces list -i foo-bar1:vlan100 root
+    +--------------------------------------------------------------------------------+
+    | ID   Name (Key)      Parent   MAC    Addresses       Speed   Type   Attributes |
+    +--------------------------------------------------------------------------------+
+    | 24   foo-bar1:eth0   None     None   10.10.10.1/32   1000    6      vlan=100   |
+    +--------------------------------------------------------------------------------+
+
+
+Siblings
+~~~~~~~~
+
+Get Interfaces with the same parent and Device as an Interface.
+
+To illustrate we'll add another Interface, setting its parent to
+``foo-bar1:eth0.0`` (the same as parent as ``fooo-bar1:vlan100`` in the
+previous examples):
+
+.. code-block:: bash
+
+    $ nsot interfaces add -D foo-bar1 -n vlan200 -p foo-bar1:eth0.0
+    [SUCCESS] Added interface!
+
+    $ nsot interfaces list -i foo-bar1:vlan200 siblings
+    +----------------------------------------------------------------------------------------+
+    | ID   Name (Key)         Parent            MAC    Addresses   Speed   Type   Attributes |
+    +----------------------------------------------------------------------------------------+
+    | 28   foo-bar1:vlan100   foo-bar1:eth0.0   None               1000    6                 |
+    +----------------------------------------------------------------------------------------+
+
+And ``foo-bar:vlan100`` shows ``foo-bar1:vlan200`` as its sibling:
+
+.. code-block:: bash
+
+    $ nsot interfaces list -i foo-bar1:vlan100 siblings
+    +----------------------------------------------------------------------------------------+
+    | ID   Name (Key)         Parent            MAC    Addresses   Speed   Type   Attributes |
+    +----------------------------------------------------------------------------------------+
+    | 29   foo-bar1:vlan200   foo-bar1:eth0.0   None               1000    6                 |
+    +----------------------------------------------------------------------------------------+
+
+Circuits
+--------
+
+A Circuit represents a physical or logical circuit between two network
+interfaces, such as a backbone interconnect or external peering.
+
+Circuits are created by binding local (A-side) and remote (Z-side) Interface
+objects. Interfaces may only be bound to a single Circuit at a time. The Z-side
+Interface is optional, such as if you want to model a circuit for which you do
+not own the remote side.
+
+Circuits, like all other :ref:`resource_types`, support arbitrary attributes.
+
+For these examples we'll start with two Devices each with Interfaces with addresses assigned to them. 
+
+* The local (A-side) Interface will be ``lax-r1:ae0``
+* The remote (Z-side) Interface will be ``nyc-r1:ae0``
+
+Adding a Circuit is done by specifying the A- and Z-side Interfaces:
+
+.. code-block:: bash
+
+    $ nsot circuits add -A lax-r1:ae0 -Z nyc-r1:ae0
+    [SUCCESS] Added circuit!
+
+Listing all Circuits, observing that the circuit name was automatically generated from the natural key of the Interfaces bound to the circuit:
+
+.. code-block:: bash
+
+    $ nsot circuits list
+    +-------------------------------------------------------------------+
+    | ID   Name (Key)              Endpoint A   Endpoint Z   Attributes |
+    +-------------------------------------------------------------------+
+    | 4    lax-r1:ae0_nyc-r1:ae0   lax-r1:ae0   nyc-r1:ae0              |
+    +-------------------------------------------------------------------+
+
+Listing a single Circuit by name:
+
+.. code-block:: bash
+
+    $ nsot circuits list -n lax-r1:ae0_nyc-r1:ae0
+    +-------------------------------------------------------------------+
+    | ID   Name (Key)              Endpoint A   Endpoint Z   Attributes |
+    +-------------------------------------------------------------------+
+    | 4    lax-r1:ae0_nyc-r1:ae0   lax-r1:ae0   nyc-r1:ae0              |
+    +-------------------------------------------------------------------+
+
+Circuits also support attributes:
+
+.. code-block:: bash
+
+    $ nsot attributes add --resource-name circuit --name scope
+    [SUCCESS] Added attribute!
+
+    $ nsot circuits update -i lax-r1:ae0_nyc-r1:ae0 -a scope=metro
+    [SUCCESS] Updated circuit!
+
+    $ nsot circuits list -n lax-r1:ae0_nyc-r1:ae0
+    +--------------------------------------------------------------------+
+    | ID   Name (Key)              Endpoint A   Endpoint Z   Attributes  |
+    +--------------------------------------------------------------------+
+    | 4    lax-r1:ae0_nyc-r1:ae0   lax-r1:ae0   nyc-r1:ae0   scope=metro |
+    +--------------------------------------------------------------------+
+
+Performing a set query on Circuits by atrribute/value displays by natural key:
+
+.. code-block:: bash
+
+    $ nsot circuits list -q scope=metro
+    lax-r1:ae0_nyc-r1:ae0
+
+Circuits can be updated by ID:
+
+.. code-block:: bash
+
+    $ nsot circuits update -i 4 -a scope=region
+    [SUCCESS] Updated circuit!
+
+    $ nsot circuits list -i 4
+    +---------------------------------------------------------------------+
+    | ID   Name (Key)              Endpoint A   Endpoint Z   Attributes   |
+    +---------------------------------------------------------------------+
+    | 4    lax-r1:ae0_nyc-r1:ae0   lax-r1:ae0   nyc-r1:ae0   scope=region |
+    +---------------------------------------------------------------------+
+
+Circuits can also be updated by natural key:
+
+.. code-block:: bash
+
+    $ nsot circuits update -i lax-r1:ae0_nyc-r1:ae0 --delete-attributes -a scope
+    [SUCCESS] Updated circuit!
+
+    $ nsot circuits list -i lax-r1:ae0_nyc-r1:ae0
+    +-------------------------------------------------------------------+
+    | ID   Name (Key)              Endpoint A   Endpoint Z   Attributes |
+    +-------------------------------------------------------------------+
+    | 4    lax-r1:ae0_nyc-r1:ae0   lax-r1:ae0   nyc-r1:ae0              |
+    +-------------------------------------------------------------------+
+
+Removing a Circuit can be done by ID:
+
+.. code-block:: bash
+
+    $ nsot circuits remove -i 4
+    [SUCCESS] Removed circuit!
+
+Circuits can also be removed by natural key:
+
+.. code-block:: bash
+
+    $ nsot circuits remove -i lax-r1:ae0_nyc-r1:ae0
+    [SUCCESS] Removed circuit!
+
+Addresses
+~~~~~~~~~
+
+Returns the addresses assigned to the member Interfaces of the Circuit, if any.
+
+.. code-block:: bash
+
+    $ nsot circuits list -i lax-r1:ae0_nyc-r1:ae0 addresses
+    +---------------------------------------------------------------------------------+
+    | ID   CIDR (Key)       Is IP?   IP Ver.   Parent           State      Attributes |
+    +---------------------------------------------------------------------------------+
+    | 7    192.168.0.1/32   True     4         192.168.0.0/16   assigned              |
+    | 8    192.168.0.2/32   True     4         192.168.0.0/16   assigned              |
+    +---------------------------------------------------------------------------------+
+
+Devices
+~~~~~~~
+
+Returns the Devices to which the member Interfaces are attached.
+
+.. code-block:: bash
+
+    $ nsot circuits list -i lax-r1:ae0_nyc-r1:ae0 devices
+    +----------------------------------+
+    | ID   Hostname (Key)   Attributes |
+    +----------------------------------+
+    | 6    lax-r1                      |
+    | 7    nyc-r1                      |
+    +----------------------------------+
+
+Interfaces
+~~~~~~~~~~
+
+Returns the Interface objects bound to the circuit ordered from A to Z (local
+to remote).
+
+.. code-block:: bash
+
+    $ nsot circuits list -i lax-r1:ae0_nyc-r1:ae0 interfaces
+    +---------------------------------------------------------------+
+    | ID   Name (Key)   Parent   MAC    Addresses        Attributes |
+    +---------------------------------------------------------------+
+    | 30   lax-r1:ae0   None     None   192.168.0.1/32              |
+    | 31   nyc-r1:ae0   None     None   192.168.0.2/32              |
+    +---------------------------------------------------------------+
 
 .. _working_with_values:
 

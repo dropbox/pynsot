@@ -38,7 +38,7 @@ DISPLAY_FIELDS = (
 # Fields to display when viewing a single record.
 VERBOSE_FIELDS = (
     ('id', 'ID'),
-    ('name_slug', 'Name'),
+    ('name_slug', 'Name (Key)'),
     ('parent', 'Parent'),
     ('mac_address', 'MAC'),
     ('addresses', 'Addresses'),
