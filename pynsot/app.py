@@ -158,7 +158,7 @@ class App(object):
         """
         log.debug('PRETTY DICT INCOMING DATA = %r', data)
         pretty = ''
-        for key, val in data.iteritems():
+        for key, val in sorted(data.iteritems()):
             if isinstance(val, list):
                 # Sort, add a newline and indent so that nested value items
                 # look better.
