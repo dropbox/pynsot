@@ -5,7 +5,14 @@ Changelog
 Version History
 ===============
 
-.. _v1.2.0:
+.. _v1.2.1:
+
+1.2.1 (2017-09-07)
+------------------
+
+* Implements #142: Sorts the `Attributes` column in the output of the
+  `list` subcommand, similar to the output of the `list` subcommand
+  with the `-g` flag.
 
 1.2.0 (2017-07-28)
 ------------------
