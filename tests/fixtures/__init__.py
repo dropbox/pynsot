@@ -14,7 +14,6 @@ from pytest_django.fixtures import live_server, django_user_model
 from pynsot.client import get_api_client
 from tests.util import CliRunner
 
-
 __all__ = ('django_user_model', 'live_server')
 
 
@@ -120,6 +119,7 @@ def attributes(site_client):
         'Device',
         'Interface',
         'Network',
+        'Protocol',
     )
 
     for r in resources:
@@ -172,5 +172,17 @@ def interface(site_client, attributes, device, network):
             'addresses': ['10.20.30.1/32'],
             'device': device_id,
             'attributes': {'foo': 'test_interface'},
+        }
+    )
+
+
+@pytest.fixture
+def protocol_type(site_client):
+    """
+    Return a Protocol Type Object.
+    """
+    return site_client.sites(site_client.default_site).protocol_types.post(
+        {
+            'name': 'bgp',
         }
     )

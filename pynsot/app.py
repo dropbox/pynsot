@@ -60,6 +60,7 @@ GREP_FORMATS = {
     'attributes': '%(resource_name)s:%(name)s',
     'circuits': '%(name)s',
     'interfaces': '%(device_hostname)s:%(name)s',
+    'protocols': '%(device)s:%(type)s:%(id)s',
     'sites': '%(name)s',
 }
 
@@ -359,10 +360,13 @@ class App(object):
         output = []
         for obj in objects:
             prefix = self.format_object_for_grep(obj)
-            attrs = obj.get('attributes', {})
-            keys = sorted(attrs)
-            for k in keys:
+            attrs = obj.pop('attributes', {})
+            for k in sorted(attrs):
                 output.append('%s %s=%s' % (prefix, k, attrs[k]))
+
+            for field in sorted(obj):
+                field_value = obj[field]
+                output.append('%s %s=%s' % (prefix, field, field_value))
 
         click.echo('\n'.join(output))
 
