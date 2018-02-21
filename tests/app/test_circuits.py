@@ -11,8 +11,9 @@ import pytest
 
 from tests.fixtures import (attribute, attributes, client, config, device,
                             interface, network, runner, site, site_client)
-from tests.fixtures.circuits import (circuit, circuit_attributes, device_a,
-                                     device_z, interface_a, interface_z)
+from tests.fixtures.circuits import (circuit, circuit_attributes,
+                                     attributeless_circuit, device_a, device_z,
+                                     interface_a, interface_z)
 from tests.util import assert_output, assert_outputs
 
 
@@ -96,6 +97,21 @@ def test_circuits_list(runner, circuit):
         assert_output(result, [circuit_name])
 
 
+def test_circuits_list_query(runner, circuit, attributeless_circuit):
+    with runner.isolated_filesystem():
+        # Should result in an error
+        result = runner.run('circuits list -q "doesnt=exist"')
+        assert result.exit_code != 0
+        assert 'Attribute matching query does not exist' in result.output
+
+        # Test some basic set queries with the two circuits
+        result = runner.run('circuits list -q "owner=alice"')
+        assert result.output == "test_circuit\n"
+
+        result = runner.run('circuits list -q "-owner=alice"')
+        assert result.output == "attributeless_circuit\n"
+
+
 def test_circuits_list_nonexistant(runner):
     """ Listing a non-existant circuit should fail """
 
@@ -122,6 +138,11 @@ def test_circuits_list_grep_output(runner, circuit):
     expected_output = (
         "test_circuit owner=alice\n"
         "test_circuit vendor=lasers go pew pew\n"
+        "test_circuit endpoint_a=foo-bar01:eth0\n"
+        "test_circuit endpoint_z=foo-bar02:eth0\n"
+        "test_circuit id=9\n"
+        "test_circuit name=test_circuit\n"
+        "test_circuit name_slug=test_circuit\n"
     )
 
     with runner.isolated_filesystem():
@@ -218,7 +239,7 @@ def test_circuits_update_name(runner, circuit):
         assert_output(result, [new_name])
 
         # Make sure the old name doesn't exist
-        result = runner.run('circuits list -i {}')
+        result = runner.run('circuits list -i {}'.format(old_name))
         assert result.exit_code != 0
         assert 'No such Circuit found' in result.output
 
