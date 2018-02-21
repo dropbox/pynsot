@@ -11,8 +11,9 @@ import pytest
 
 from tests.fixtures import (attribute, attributes, client, config, device,
                             interface, network, runner, site, site_client)
-from tests.fixtures.circuits import (circuit, circuit_attributes, device_a,
-                                     device_z, interface_a, interface_z)
+from tests.fixtures.circuits import (circuit, circuit_attributes,
+                                     attributeless_circuit, device_a, device_z,
+                                     interface_a, interface_z)
 from tests.util import assert_output, assert_outputs
 
 
@@ -94,6 +95,21 @@ def test_circuits_list(runner, circuit):
 
         result = runner.run('circuits list -i {}'.format(circuit_name))
         assert_output(result, [circuit_name])
+
+
+def test_circuits_list_query(runner, circuit, attributeless_circuit):
+    with runner.isolated_filesystem():
+        # Should result in an error
+        result = runner.run('circuits list -q "doesnt=exist"')
+        assert result.exit_code != 0
+        assert 'Attribute matching query does not exist' in result.output
+
+        # Test some basic set queries with the two circuits
+        result = runner.run('circuits list -q "owner=alice"')
+        assert result.output == "test_circuit\n"
+
+        result = runner.run('circuits list -q "-owner=alice"')
+        assert result.output == "attributeless_circuit\n"
 
 
 def test_circuits_list_nonexistant(runner):

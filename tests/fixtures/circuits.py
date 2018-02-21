@@ -84,3 +84,14 @@ def dangling_circuit(site_client, interface):
         'name': 'remote_vendor_circuit',
         'endpoint_a': interface['id'],
     })
+
+
+@pytest.fixture
+def attributeless_circuit(site_client, interface):
+    """ Circuit with no attributes set """
+
+    return site_client.sites(site_client.default_site).circuits.post({
+        'name': 'attributeless_circuit',
+        'endpoint_a': interface['id'],
+        'attributes': {},
+    })
