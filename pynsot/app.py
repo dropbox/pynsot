@@ -359,10 +359,13 @@ class App(object):
         output = []
         for obj in objects:
             prefix = self.format_object_for_grep(obj)
-            attrs = obj.get('attributes', {})
-            keys = sorted(attrs)
-            for k in keys:
+            attrs = obj.pop('attributes', {})
+            for k in sorted(attrs):
                 output.append('%s %s=%s' % (prefix, k, attrs[k]))
+
+            for field in sorted(obj):
+                field_value = obj[field]
+                output.append('%s %s=%s' % (prefix, field, field_value))
 
         click.echo('\n'.join(output))
 
