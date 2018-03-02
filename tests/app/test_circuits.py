@@ -138,6 +138,11 @@ def test_circuits_list_grep_output(runner, circuit):
     expected_output = (
         "test_circuit owner=alice\n"
         "test_circuit vendor=lasers go pew pew\n"
+        "test_circuit endpoint_a=foo-bar01:eth0\n"
+        "test_circuit endpoint_z=foo-bar02:eth0\n"
+        "test_circuit id=9\n"
+        "test_circuit name=test_circuit\n"
+        "test_circuit name_slug=test_circuit\n"
     )
 
     with runner.isolated_filesystem():
