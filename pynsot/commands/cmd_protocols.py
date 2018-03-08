@@ -66,6 +66,7 @@ def cli(ctx):
     '-u',
     '--auth_string',
     metavar='AUTH_STRING',
+    default='',
     help='The authentication string (such as MD5 sum).',
 )
 @click.option(
@@ -127,6 +128,7 @@ def cli(ctx):
     metavar='TYPE',
     type=str,
     help='The type of the protocol.',
+    required=True,
 )
 @click.pass_context
 def add(ctx, auth_string, attributes, circuit, device, description, interface, site_id, type):
@@ -134,6 +136,8 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     Add a new Protocol.
 
     You must provide a Device hostname or ID using the -D/--device option.
+
+    You must provide the type of the protocol (e.g. OSPF, BGP, etc.)
 
     If you wish to add attributes, you may specify the -a/--attributes
     option once for each key/value pair.
@@ -170,6 +174,7 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     '-u',
     '--auth_string',
     metavar='AUTH_STRING',
+    default='',
     help='The authentication string (such as MD5 sum).',
 )
 @click.option(
@@ -247,6 +252,7 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     metavar='TYPE',
     type=int,
     help='Filter by integer of the interface type (e.g. 6 for ethernet)',
+    required=True,
 )
 @click.pass_context
 def list(ctx, attributes, auth_string, circuit, delimited, description, device, grep, id,
@@ -255,6 +261,8 @@ def list(ctx, attributes, auth_string, circuit, delimited, description, device, 
     List existing Protocols for a Site.
 
     You must provide a Site ID using the -s/--site-id option.
+
+    You must provide the type of the protocol (e.g. OSPF, BGP, etc.)
 
     When listing Protocols, all objects are displayed by default. You
     optionally may lookup a single Protocols by ID using the -i/--id option.
@@ -339,6 +347,7 @@ def remove(ctx, id, site_id):
     '-u',
     '--auth_string',
     metavar='AUTH_STRING',
+    default='',
     help='The authentication string (such as MD5 sum).',
 )
 @click.option(
@@ -398,6 +407,7 @@ def remove(ctx, id, site_id):
     metavar='TYPE',
     type=int,
     help='The Protocol type ID.',
+    required=True,
 )
 @click.option(
     '--add-attributes',
@@ -440,6 +450,8 @@ def update(ctx, attributes, auth_string, circuit, description, device, id, inter
     Update a Protocol.
 
     You must provide a Site ID using the -s/--site-id option.
+
+    You must provide the type of the protocol (e.g. OSPF, BGP, etc.)
 
     When updating an Protocol you must provide the ID (-i/--id) and at least
     one of the optional arguments.
