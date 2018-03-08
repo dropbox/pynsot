@@ -1259,6 +1259,60 @@ def test_interfaces_remove_by_natural_key(site_client, device, interface):
         assert result.exit_code == 0
         assert 'Removed interface!' in result.output
 
+##################
+# Protocol Types #
+##################
+def test_protocol_types_add(site_client, device):
+    """Test ``nsot protocol_types add``."""
+    device_id = device['id']
+
+    runner = CliRunner(site_client.config)
+    # with runner.isolated_filesystem():
+
+
+def test_protocol_types_list(site_client, device):
+    pass
+
+
+def test_protocol_types_subcommands(site_client, device):
+    pass
+
+
+def test_protocol_types_update(site_client, device):
+    pass
+
+
+def test_protocol_types_remove(site_client, device, protocol):
+    pass
+
+
+#############
+# Protocols #
+#############
+def test_protocols_add(site_client, device):
+    """Test ``nsot protocol_types add``."""
+    device_id = device['id']
+
+    runner = CliRunner(site_client.config)
+    # with runner.isolated_filesystem():
+
+
+def test_protocols_list(site_client, device):
+    pass
+
+
+def test_protocols_subcommands(site_client, device):
+    pass
+
+
+def test_protocols_update(site_client, device):
+    pass
+
+
+def test_protocols_remove(site_client, device, protocol):
+    pass
+
+
 
 ##########
 # Values #
