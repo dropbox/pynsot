@@ -18,7 +18,7 @@ import logging
 
 from ..vendor import click
 from . import callbacks, types
-from .cmd_prototypes import DISPLAY_FIELDS as PROTOTYPE_DISPLAY_FIELDS
+from .cmd_protocols import DISPLAY_FIELDS as PROTOTYPE_DISPLAY_FIELDS
 
 
 # Logger
@@ -28,15 +28,16 @@ log = logging.getLogger(__name__)
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
+    ('name', 'Name'),
     ('attributes', 'Attributes'),
 )
 
 # Fields to display when viewing a single record.
 VERBOSE_FIELDS = (
     ('id', 'ID'),
+    ('name', 'Name'),
     ('attributes', 'Attributes'),
     ('site', 'Site ID'),
-    ('description', 'Description'),
 )
 
 
@@ -59,9 +60,10 @@ def cli(ctx):
     '-a',
     '--attributes',
     metavar='ATTRS',
-    help='A key/value pair attached to this Protocol Type (format: key=value).  [required]',
+    help='A key/value pair attached to this Protocol Type (format: key=value).',
     multiple=True,
     callback=callbacks.transform_attributes,
+    required=True,
 )
 @click.option(
     '-e',
@@ -75,10 +77,11 @@ def cli(ctx):
     '--name',
     metavar='NAME',
     type=str,
-    help='The name of the Protocol Type.  [required]',
+    help='The name of the Protocol Type.',
+    required=True,
 )
 @click.option(
-    '-i',
+    '-I',
     '--id',
     metavar='ID',
     help='Unique ID of the Protocol Type being retrieved.',
@@ -88,8 +91,9 @@ def cli(ctx):
     '--site-id',
     metavar='SITE_ID',
     type=int,
-    help='Unique ID of the Site this Protocol Type is under.  [required]',
+    help='Unique ID of the Site this Protocol Type is under.',
     callback=callbacks.process_site_id,
+    required=True,
 )
 @click.pass_context
 def add(ctx, attributes, description, id, name, site_id):
@@ -127,8 +131,10 @@ def add(ctx, attributes, description, id, name, site_id):
     '-a',
     '--attributes',
     metavar='ATTRS',
-    help='A key/value pair attached to this Protocol Type (format: key=value).  [required]',
+    help='A key/value pair attached to this Protocol Type (format: key=value).',
     multiple=True,
+    callback=callbacks.transform_attributes,
+    required=True,
 )
 @click.option(
     '-e',
@@ -146,7 +152,7 @@ def add(ctx, attributes, description, id, name, site_id):
     show_default=True,
 )
 @click.option(
-    '-i',
+    '-I',
     '--id',
     metavar='ID',
     help='Unique ID of the Protocol Type being retrieved.',
@@ -161,13 +167,14 @@ def add(ctx, attributes, description, id, name, site_id):
     '-s',
     '--site-id',
     metavar='SITE_ID',
-    help='Unique ID of the Site this Protocol Type is under.  [required]',
+    help='Unique ID of the Site this Protocol Type is under.',
     callback=callbacks.process_site_id,
+    required=True,
 )
 @click.pass_context
 def list(ctx, attributes, description, grep, id, name, site_id):
     """
-    List existing Protocol Typs for a Site.
+    List existing Protocol Types for a Site.
 
     You must provide a Site ID using the -s/--site-id option.
 
@@ -204,7 +211,7 @@ def protocols(ctx, *args, **kwargs):
 # Remove
 @cli.command()
 @click.option(
-    '-i',
+    '-I',
     '--id',
     metavar='ID',
     help='Unique ID of the Protocol Type being deleted.',
@@ -215,8 +222,9 @@ def protocols(ctx, *args, **kwargs):
     '--site-id',
     metavar='SITE_ID',
     type=int,
-    help='Unique ID of the Site this Protocol Type is under.  [required]',
+    help='Unique ID of the Site this Protocol Type is under.',
     callback=callbacks.process_site_id,
+    required=True,
 )
 @click.pass_context
 def remove(ctx, id, site_id):
@@ -255,7 +263,7 @@ def remove(ctx, id, site_id):
     help='The description for this Protocol Type.',
 )
 @click.option(
-    '-i',
+    '-I',
     '--id',
     metavar='ID',
     type=types.NATURAL_KEY,
@@ -274,8 +282,9 @@ def remove(ctx, id, site_id):
     '--site-id',
     metavar='SITE_ID',
     type=int,
-    help='Unique ID of the Site this Protocol Type is under.  [required]',
+    help='Unique ID of the Site this Protocol Type is under.',
     callback=callbacks.process_site_id,
+    required=True,
 )
 @click.option(
     '--add-attributes',
