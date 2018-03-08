@@ -174,3 +174,33 @@ def interface(site_client, attributes, device, network):
             'attributes': {'foo': 'test_interface'},
         }
     )
+
+
+@pytest.fixture
+def protocol(site_client, attributes, device, type):
+    """
+    Return a Protocol Object.
+    """
+    device_id = device['id']
+    return site_client.sites(site_client.default_site).protocols.post(
+        {
+            'type': 'bgp',
+            'device': device_id,
+            'attributes': {'foo': 'test_protocol'},
+        }
+    )
+
+
+@pytest.fixture
+def protocol_type(site_client, attributes, device):
+    """
+    Return a Protocol Type Object.
+    """
+    device_id = device['id']
+    return site_client.sites(site_client.default_site).protocol_types.post(
+        {
+            'name': 'bgp1',
+            'device': device_id,
+            'attributes': {'foo': 'test_protocol_type'}
+        }
+    )

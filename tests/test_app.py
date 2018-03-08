@@ -1282,7 +1282,7 @@ def test_protocol_types_update(site_client, device):
     pass
 
 
-def test_protocol_types_remove(site_client, device, protocol):
+def test_protocol_types_remove(site_client, device):
     pass
 
 
@@ -1294,7 +1294,19 @@ def test_protocols_add(site_client, device):
     device_id = device['id']
 
     runner = CliRunner(site_client.config)
-    # with runner.isolated_filesystem():
+    with runner.isolated_filesystem():
+        # Add a protocol by id
+        result = runner.run(
+            "protocols add -D %s -t bgp -i test_interface" % device_id
+        )
+        import pdb; pdb.set_trace()
+        assert result.exit_code == 0
+        assert 'Added protocol!' in result.output
+
+        # Verify addition.
+        result = runner.run('protocols list -D %s device_id')
+        assert result.exit_code == 0
+        assert 'bgp' in result.output
 
 
 def test_protocols_list(site_client, device):
@@ -1309,7 +1321,7 @@ def test_protocols_update(site_client, device):
     pass
 
 
-def test_protocols_remove(site_client, device, protocol):
+def test_protocols_remove(site_client, device):
     pass
 
 
