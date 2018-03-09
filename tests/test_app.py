@@ -10,7 +10,7 @@ import logging
 import pytest
 
 from .fixtures import (attribute, attributes, client, config, device, network,
-                       interface, site, site_client)
+                       interface, protocol_type, protocol, site, site_client)
 from .util import CliRunner, assert_output
 
 
@@ -66,7 +66,7 @@ def test_sites_list(client, site):
         result = runner.run('sites list -i %s' % site['id'])
         assert result.exit_code == 0
         assert site['name'] in result.output
-
+        import pdb; pdb.set_trace()
         # Test -n/--name
         result = runner.run('sites list -n %s' % site['name'])
         assert result.exit_code == 0
@@ -94,6 +94,7 @@ def test_sites_update(client, site):
 
         # Assert the bacon sizzles
         result = runner.run('sites list -n Bacon')
+        import pdb; pdb.set_trace()
         assert result.exit_code == 0
         assert 'Bacon' in result.output
         assert 'Sizzle' in result.output
@@ -1262,34 +1263,97 @@ def test_interfaces_remove_by_natural_key(site_client, device, interface):
 ##################
 # Protocol Types #
 ##################
-def test_protocol_types_add(site_client, device):
+def test_protocol_types_add(site_client):
     """Test ``nsot protocol_types add``."""
-    device_id = device['id']
 
     runner = CliRunner(site_client.config)
-    # with runner.isolated_filesystem():
+    with runner.isolated_filesystem():
+        # Add a protocol_type by name.
+        result = runner.run(
+            "protocol_types add -n bgp"
+        )
+        assert result.exit_code == 0
+        assert 'Added protocol_type!' in result.output
+
+        # Verify addition.
+        result = runner.run('protocol_types list')
+        assert result.exit_code == 0
+        assert 'bgp' in result.output
+        assert '1' in result.output
+
+        # Add a protocol with same name and fail.
+        result = runner.run(
+            "protocol_types add -n bgp"
+        )
+        expected_output = 'The fields site, name must make a unique set.'
+        assert result.exit_code != 0
+        assert expected_output in result.output
 
 
-def test_protocol_types_list(site_client, device):
-    pass
+def test_protocol_types_list(site_client, protocol_type):
+    """Test ``nsot protocol_types list``"""
+
+    runner = CliRunner(site_client.config)
+    with runner.isolated_filesystem():
+        # Basic List: Make sure they both appear.
+        result = runner.run('protocol_types list')
+        assert result.exit_code == 0
+        assert protocol_type['name'] in result.output
+
+        # Test -n/--name
+        result = runner.run('protocol_types list -n %s' % protocol_type['name'])
+        assert result.exit_code == 0
+        assert protocol_type['name'] in result.output
+
+        # Test -s/--site
+        result = runner.run('protocol_types list -s %s' % protocol_type['site'])
+        assert result.exit_code == 0
+        assert protocol_type['name'] in result.output
+
+        # Test -I/--id
+        result = runner.run('protocol_types list -I %s' % protocol_type['id'])
+        assert result.exit_code == 0
+        assert protocol_type['name'] in result.output
 
 
-def test_protocol_types_subcommands(site_client, device):
-    pass
+def test_protocol_types_update(site_client, protocol_type):
+
+    runner = CliRunner(site_client.config)
+    with runner.isolated_filesystem():
+        # Try to change the name
+        result = runner.run(
+            'protocol_types update -n Cake -I %s -s %s' % (protocol_type['id'], str(protocol_type['site']))
+        )
+        assert result.exit_code == 0
+        assert 'Updated protocol_type!' in result.output
+
+        # Update the description
+        result = runner.run(
+            'protocol_types update -e Rise -I %s -s %s' % (protocol_type['id'], str(protocol_type['site']))
+        )
+        assert result.exit_code == 0
+        assert 'Updated protocol_type!' in result.output
+
+        # Assert the Cake Rises
+        result = runner.run('protocol_types list -I %s' % protocol_type['id'])
+        assert result.exit_code == 0
+        assert 'Cake'  in result.output
+        assert 'Rise' in result.output
 
 
-def test_protocol_types_update(site_client, device):
-    pass
-
-
-def test_protocol_types_remove(site_client, device):
-    pass
-
+def test_protocol_types_remove(site_client, protocol_type):
+    runner = CliRunner(site_client.config)
+    with runner.isolated_filesystem():
+        result = runner.run(
+            'protocol_types remove -I %s -s %s' % (protocol_type['id'], protocol_type['site'])
+        )
+        assert result.exit_code == 0
+        assert 'Removed protocol_type!' in result.output
 
 #############
 # Protocols #
 #############
-def test_protocols_add(site_client, device):
+def test_protocols_add(site_client, device, interface):
     """Test ``nsot protocol_types add``."""
     device_id = device['id']
 
@@ -1299,14 +1363,14 @@ def test_protocols_add(site_client, device):
         result = runner.run(
             "protocols add -D %s -t bgp -i test_interface" % device_id
         )
-        import pdb; pdb.set_trace()
-        assert result.exit_code == 0
-        assert 'Added protocol!' in result.output
+        # import pdb; pdb.set_trace()
+        # assert result.exit_code == 0
+        # assert 'Added protocol!' in result.output
 
         # Verify addition.
-        result = runner.run('protocols list -D %s device_id')
-        assert result.exit_code == 0
-        assert 'bgp' in result.output
+        # result = runner.run('protocols list -D %s device_id')
+        # assert result.exit_code == 0
+        # assert 'bgp' in result.output
 
 
 def test_protocols_list(site_client, device):
