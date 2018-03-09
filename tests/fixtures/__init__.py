@@ -120,6 +120,7 @@ def attributes(site_client):
         'Device',
         'Interface',
         'Network',
+        'Protocol',
     )
 
     for r in resources:
@@ -177,7 +178,19 @@ def interface(site_client, attributes, device, network):
 
 
 @pytest.fixture
-def protocol(site_client, attributes, device, type):
+def protocol_type(site_client):
+    """
+    Return a Protocol Type Object.
+    """
+    return site_client.sites(site_client.default_site).protocol_types.post(
+        {
+            'name': 'bgp',
+        }
+    )
+
+
+@pytest.fixture
+def protocol(site_client, attributes, device, protocol_type):
     """
     Return a Protocol Object.
     """
@@ -185,22 +198,5 @@ def protocol(site_client, attributes, device, type):
     return site_client.sites(site_client.default_site).protocols.post(
         {
             'type': 'bgp',
-            'device': device_id,
-            'attributes': {'foo': 'test_protocol'},
-        }
-    )
-
-
-@pytest.fixture
-def protocol_type(site_client, attributes, device):
-    """
-    Return a Protocol Type Object.
-    """
-    device_id = device['id']
-    return site_client.sites(site_client.default_site).protocol_types.post(
-        {
-            'name': 'bgp1',
-            'device': device_id,
-            'attributes': {'foo': 'test_protocol_type'}
         }
     )

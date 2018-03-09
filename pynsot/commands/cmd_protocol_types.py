@@ -29,14 +29,16 @@ log = logging.getLogger(__name__)
 DISPLAY_FIELDS = (
     ('id', 'ID'),
     ('name', 'Name'),
-    ('attributes', 'Attributes'),
+    ('description', 'Description'),
+    ('required_attributes', 'Required Attributes'),
 )
 
 # Fields to display when viewing a single record.
 VERBOSE_FIELDS = (
     ('id', 'ID'),
     ('name', 'Name'),
-    ('attributes', 'Attributes'),
+    ('description', 'Description'),
+    ('required_attributes', 'Required Attributes'),
     ('site', 'Site ID'),
 )
 
@@ -57,13 +59,13 @@ def cli(ctx):
 # Add
 @cli.command()
 @click.option(
-    '-a',
-    '--attributes',
-    metavar='ATTRS',
+    '-r',
+    '--required_attributes',
+    metavar='REQUIRED ATTRIBUTES',
     help='A key/value pair attached to this Protocol Type (format: key=value).',
     multiple=True,
     callback=callbacks.transform_attributes,
-    required=True,
+    # required=True,
 )
 @click.option(
     '-e',
@@ -91,12 +93,11 @@ def cli(ctx):
     '--site-id',
     metavar='SITE_ID',
     type=int,
-    help='Unique ID of the Site this Protocol Type is under.',
+    help='Unique ID of the Site this Protocol Type is under.  [required]',
     callback=callbacks.process_site_id,
-    required=True,
 )
 @click.pass_context
-def add(ctx, attributes, description, id, name, site_id):
+def add(ctx, required_attributes, description, id, name, site_id):
     """
     Add a new Protocol Type.
 
@@ -114,10 +115,6 @@ def add(ctx, attributes, description, id, name, site_id):
     """
     data = ctx.params
 
-    # Required option
-    if name is None:
-        raise click.UsageError('Missing option "-n" / "--name"')
-
     # Remove if empty; allow default assignment
     if description is None:
         data.pop('description')
@@ -128,13 +125,12 @@ def add(ctx, attributes, description, id, name, site_id):
 # List
 @cli.group(invoke_without_command=True)
 @click.option(
-    '-a',
-    '--attributes',
-    metavar='ATTRS',
+    '-r',
+    '--required_attributes',
+    metavar='REQUIRED ATTRIBUTES',
     help='A key/value pair attached to this Protocol Type (format: key=value).',
     multiple=True,
     callback=callbacks.transform_attributes,
-    required=True,
 )
 @click.option(
     '-e',
@@ -169,10 +165,9 @@ def add(ctx, attributes, description, id, name, site_id):
     metavar='SITE_ID',
     help='Unique ID of the Site this Protocol Type is under.',
     callback=callbacks.process_site_id,
-    required=True,
 )
 @click.pass_context
-def list(ctx, attributes, description, grep, id, name, site_id):
+def list(ctx, required_attributes, description, grep, id, name, site_id):
     """
     List existing Protocol Types for a Site.
 
@@ -183,10 +178,9 @@ def list(ctx, attributes, description, grep, id, name, site_id):
     The ID can either be the numeric ID of the Protocol Type.
     """
     data = ctx.params
-    data.pop('delimited')  # We don't want this going to the server.
 
     # If we provide ID, show more fields
-    if id is not None or all([device, name]):
+    if id is not None or name:
         display_fields = VERBOSE_FIELDS
     else:
         display_fields = DISPLAY_FIELDS
@@ -248,9 +242,9 @@ def remove(ctx, id, site_id):
 # Update
 @cli.command()
 @click.option(
-    '-a',
-    '--attributes',
-    metavar='ATTRS',
+    '-r',
+    '--required_attributes',
+    metavar='REQUIRED ATTRIBUTES',
     help='A key/value pair attached to this Protocol Type (format: key=value).',
     multiple=True,
     callback=callbacks.transform_attributes,
@@ -316,14 +310,14 @@ def remove(ctx, id, site_id):
     ),
 )
 @click.pass_context
-def update(ctx, attributes, description, id, name, site_id, attr_action):
+def update(ctx, required_attributes, description, id, name, site_id, attr_action):
     """
     Update an Protocol Type.
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When updating an Protocol Type you must provide the ID (-i/--id) and at least
-    one of the optional arguments.
+    When updating an Protocol Type you must provide the ID (-i/--id). The ID can either be
+    the numeric ID of the Protocol Type or the name.
 
     The -a/--attributes option may be provided multiple times, once for each
     key-value pair.
@@ -342,9 +336,5 @@ def update(ctx, attributes, description, id, name, site_id, attr_action):
     replaced. If combined with --multi and multiple attributes of the same
     name are provided, only the last value provided will be used.
     """
-    if not any([name, attributes, description]):
-        msg = 'You must supply at least one of the optional arguments.'
-        raise click.UsageError(msg)
-
     data = ctx.params
     ctx.obj.update(data)

@@ -145,10 +145,6 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     """
     data = ctx.params
 
-    # Required options
-    if device is None:
-        raise click.UsageError('Missing option "-d" / "--device"')
-
     if interface is None and circuit is None:
         raise click.UsageError('Must have interface "-i" / "--interface" or circuit "-c" / "--circuit" populated')
 
