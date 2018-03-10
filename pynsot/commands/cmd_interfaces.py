@@ -584,7 +584,7 @@ def update(ctx, attributes, addresses, description, id, mac_address, name,
 
     When updating an Interface you must provide the ID (-i/--id) and at least
     one of the optional arguments. The ID can either be the numeric ID of the
-    Interface of the the combination of the device's hostname and the interface
+    Interface or the combination of the device's hostname and the interface
     name separated by a colon.
 
     Example: switch-nyc3:Ethernet2

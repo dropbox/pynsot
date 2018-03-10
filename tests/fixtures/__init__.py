@@ -190,13 +190,19 @@ def protocol_type(site_client):
 
 
 @pytest.fixture
-def protocol(site_client, attributes, device, protocol_type):
+def protocol(site_client, device, interface, protocol_type):
     """
     Return a Protocol Object.
     """
     device_id = device['id']
-    return site_client.sites(site_client.default_site).protocols.post(
-        {
-            'type': 'bgp',
-        }
-    )
+    interface_slug = '{device_hostname}:{name}'.format(**interface)
+    try:
+        site_client.sites(site_client.default_site).protocols.post(
+            {
+                'device': device_id,
+                'type': 'bgp',
+                'interface': interface_slug,
+            }
+        )
+    except Exception as err:
+        import pdb; pdb.set_trace()

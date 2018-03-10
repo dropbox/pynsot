@@ -29,10 +29,12 @@ log = logging.getLogger(__name__)
 DISPLAY_FIELDS = (
     ('id', 'ID'),
     ('attributes', 'Attributes'),
-    ('circuit', 'CIRCUIT'),
-    ('device', 'DEVICE'),
-    ('interface', 'INTERFACE'),
-    ('site', 'SITE'),
+    ('circuit', 'Circuit'),
+    ('description', 'Description'),
+    ('device', 'Device'),
+    ('interface', 'Interface'),
+    ('site', 'Site'),
+    ('type', 'Type'),
 )
 
 # Fields to display when viewing a single record.
@@ -40,11 +42,12 @@ VERBOSE_FIELDS = (
     ('id', 'ID'),
     ('type', 'Type'),
     ('attributes', 'Attributes'),
-    ('auth_string', 'AUTH_STRING'),
-    ('circuit', 'CIRCUIT'),
-    ('device', 'DEVICE'),
-    ('interface', 'INTERFACE'),
-    ('site', 'SITE'),
+    ('auth_string', 'Auth_String'),
+    ('circuit', 'Circuit'),
+    ('device', 'Device'),
+    ('description', 'Description'),
+    ('interface', 'Interface'),
+    ('site', 'Site'),
 )
 
 
@@ -126,7 +129,7 @@ def cli(ctx):
     '-t',
     '--type',
     metavar='TYPE',
-    type=str,
+    type=types.NATURAL_KEY,
     help='The type of the protocol.',
     required=True,
 )
@@ -148,9 +151,6 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     if interface is None and circuit is None:
         raise click.UsageError('Must have interface "-i" / "--interface" or circuit "-c" / "--circuit" populated')
 
-    # Remove if empty; allow default assignment
-    if type is None:
-        data.pop('type')
     if description is None:
         data.pop('description')
 
@@ -203,7 +203,6 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
         'Unique ID of the Device to which this Protocol is '
         'running on.'
     ),
-    required=True,
 )
 @click.option(
     '-g',
@@ -223,7 +222,7 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     '-i',
     'interface',
     metavar='INTERFACE',
-    type=str,
+    type=types.NATURAL_KEY,
     help=(
         'The Interface this Protocol is running on. Either interface'
         'or circuit must be populated.'
@@ -246,8 +245,8 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     '-t',
     '--type',
     metavar='TYPE',
-    type=int,
-    help='Filter by integer of the interface type (e.g. 6 for ethernet)',
+    type=types.NATURAL_KEY,
+    help='The protocol type',
     required=True,
 )
 @click.pass_context
@@ -258,7 +257,7 @@ def list(ctx, attributes, auth_string, circuit, delimited, description, device, 
 
     You must provide a Site ID using the -s/--site-id option.
 
-    You must provide the type of the protocol (e.g. OSPF, BGP, etc.)
+    You must provide the protocol type.
 
     When listing Protocols, all objects are displayed by default. You
     optionally may lookup a single Protocols by ID using the -i/--id option.
@@ -270,7 +269,7 @@ def list(ctx, attributes, auth_string, circuit, delimited, description, device, 
     data.pop('delimited')  # We don't want this going to the server.
 
     # If we provide ID, show more fields
-    if id is not None or all([device, name]):
+    if id is not None:
         display_fields = VERBOSE_FIELDS
     else:
         display_fields = DISPLAY_FIELDS
@@ -375,14 +374,14 @@ def remove(ctx, id, site_id):
     '--id',
     metavar='ID',
     type=types.NATURAL_KEY,
-    help='Unique ID of the Protocol being updated.',
+    help='Unique ID or natural key of the Protocol being updated.',
     required=True,
 )
 @click.option(
 	'-i',
 	'--interface',
 	metavar='INTERFACE',
-	type=str,
+	type=types.NATURAL_KEY,
 	help=(
 		'The Interface this Protocol is running on. Either interface'
         'or circuit must be populated.'
