@@ -10,7 +10,7 @@ import logging
 import pytest
 
 from .fixtures import (attribute, attributes, client, config, device, network,
-                       interface, protocol_type, protocol, site, site_client)
+                       interface, site, site_client)
 from .util import CliRunner, assert_output
 
 
