@@ -66,7 +66,6 @@ def test_sites_list(client, site):
         result = runner.run('sites list -i %s' % site['id'])
         assert result.exit_code == 0
         assert site['name'] in result.output
-        import pdb; pdb.set_trace()
         # Test -n/--name
         result = runner.run('sites list -n %s' % site['name'])
         assert result.exit_code == 0
@@ -94,7 +93,6 @@ def test_sites_update(client, site):
 
         # Assert the bacon sizzles
         result = runner.run('sites list -n Bacon')
-        import pdb; pdb.set_trace()
         assert result.exit_code == 0
         assert 'Bacon' in result.output
         assert 'Sizzle' in result.output
