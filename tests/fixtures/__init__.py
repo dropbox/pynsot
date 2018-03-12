@@ -186,23 +186,3 @@ def protocol_type(site_client):
             'name': 'bgp',
         }
     )
-
-
-@pytest.fixture
-def protocol(site_client, device, interface, protocol_type, circuit):
-    """
-    Return a Protocol Object.
-    """
-    device_id = device['id']
-    interface_slug = '{device_hostname}:{name}'.format(**interface)
-    try:
-        site_client.sites(site_client.default_site).protocols.post(
-            {
-                'device': device_id,
-                'type': 'bgp',
-                'interface': interface_slug,
-                'attributes': {'foo': 'test_protocol'},
-            }
-        )
-    except Exception as err:
-        import pdb; pdb.set_trace()
