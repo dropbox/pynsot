@@ -14,7 +14,6 @@ from pytest_django.fixtures import live_server, django_user_model
 from pynsot.client import get_api_client
 from tests.util import CliRunner
 
-
 __all__ = ('django_user_model', 'live_server')
 
 
@@ -190,7 +189,7 @@ def protocol_type(site_client):
 
 
 @pytest.fixture
-def protocol(site_client, device, interface, protocol_type):
+def protocol(site_client, device, interface, protocol_type, circuit):
     """
     Return a Protocol Object.
     """
@@ -202,6 +201,7 @@ def protocol(site_client, device, interface, protocol_type):
                 'device': device_id,
                 'type': 'bgp',
                 'interface': interface_slug,
+                'attributes': {'foo': 'test_protocol'},
             }
         )
     except Exception as err:

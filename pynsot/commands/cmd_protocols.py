@@ -106,7 +106,7 @@ def cli(ctx):
 )
 @click.option(
     '-i',
-    'interface',
+    '--interface',
     metavar='INTERFACE',
     type=str,
     help=(
@@ -220,7 +220,7 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
 )
 @click.option(
     '-i',
-    'interface',
+    '--interface',
     metavar='INTERFACE',
     type=types.NATURAL_KEY,
     help=(
@@ -400,7 +400,7 @@ def remove(ctx, id, site_id):
     '-t',
     '--type',
     metavar='TYPE',
-    type=int,
+    type=types.NATURAL_KEY,
     help='The Protocol type ID.',
     required=True,
 )
@@ -468,7 +468,7 @@ def update(ctx, attributes, auth_string, circuit, description, device, id, inter
     replaced. If combined with --multi and multiple attributes of the same
     name are provided, only the last value provided will be used.
     """
-    if not any([name, attributes, description, type]):
+    if not any([attributes, description, type]):
         msg = 'You must supply at least one of the optional arguments.'
         raise click.UsageError(msg)
 
