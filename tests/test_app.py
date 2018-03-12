@@ -66,6 +66,7 @@ def test_sites_list(client, site):
         result = runner.run('sites list -i %s' % site['id'])
         assert result.exit_code == 0
         assert site['name'] in result.output
+
         # Test -n/--name
         result = runner.run('sites list -n %s' % site['name'])
         assert result.exit_code == 0
