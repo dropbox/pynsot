@@ -15,7 +15,7 @@ def protocol(site_client, device_a, interface_a, circuit, protocol_type):
     """
     device_id = device_a['id']
     interface_slug = '{device_hostname}:{name}'.format(**interface_a)
-    site_client.sites(site_client.default_site).protocols.post(
+    return site_client.sites(site_client.default_site).protocols.post(
         {
             'device': device_id,
             'type': 'bgp',

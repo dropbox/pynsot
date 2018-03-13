@@ -239,7 +239,7 @@ def test_circuits_update_name(runner, circuit):
         assert_output(result, [new_name])
 
         # Make sure the old name doesn't exist
-        result = runner.run('circuits list -i {}')
+        result = runner.run('circuits list -i {}'.format(old_name))
         assert result.exit_code != 0
         assert 'No such Circuit found' in result.output
 
