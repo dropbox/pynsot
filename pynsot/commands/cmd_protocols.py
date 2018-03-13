@@ -294,7 +294,7 @@ def list(ctx, attributes, auth_string, circuit, delimited, description, device, 
 # Remove
 @cli.command()
 @click.option(
-    '-i',
+    '-I',
     '--id',
     metavar='ID',
     help='Unique ID of the Protocol being deleted.',
@@ -375,7 +375,6 @@ def remove(ctx, id, site_id):
     metavar='ID',
     type=types.NATURAL_KEY,
     help='Unique ID or natural key of the Protocol being updated.',
-    required=True,
 )
 @click.option(
 	'-i',
@@ -394,7 +393,6 @@ def remove(ctx, id, site_id):
     type=int,
     help='Unique ID of the Site this Protocol is under.',
     callback=callbacks.process_site_id,
-	required=True,
 )
 @click.option(
     '-t',
@@ -471,4 +469,4 @@ def update(ctx, attributes, auth_string, circuit, description, device, id, inter
     if not any([attributes, description, type]):
         msg = 'You must supply at least one of the optional arguments.'
         raise click.UsageError(msg)
-
+    ctx.obj.update(ctx.params)

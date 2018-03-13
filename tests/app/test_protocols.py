@@ -43,7 +43,7 @@ def test_protocols_add(site_client, device, interface, site, protocol_type):
         assert 'my new proto' in result.output
 
 
-def test_protocols_list(site_client, protocol, device_a, interface_a, site, protocol_type, circuit):
+def test_protocols_list(site_client, device_a, interface_a, site, circuit, protocol):
     """Test ``nsot protocols list``"""
 
     device_id = str(device_a['id'])
@@ -59,7 +59,7 @@ def test_protocols_list(site_client, protocol, device_a, interface_a, site, prot
         # Test -D/--device
         result = runner.run('protocols list -t bgp -D %s' % device_id)
         assert result.exit_code == 0
-        assert device_id in result.output
+        assert device_a['hostname'] in result.output
 
         # Test -i/--interface
         result = runner.run('protocols list -t bgp -i %s' % interface_id)
@@ -69,7 +69,7 @@ def test_protocols_list(site_client, protocol, device_a, interface_a, site, prot
         # Test -a/--attributes
         result = runner.run('protocols list -t bgp -a foo=test_protocol')
         assert result.exit_code == 0
-        assert 'test_protocol' in result.output
+        assert protocol['attributes']['foo'] in result.output
 
         # Test -c/--circuit
         result = runner.run('protocols list -t bgp -c %s' % circuit['name'])
@@ -77,27 +77,79 @@ def test_protocols_list(site_client, protocol, device_a, interface_a, site, prot
         assert circuit['name'] in result.output
 
         # Test -e/--description
-        result = runner.run('protocols list -t bgp -e "protocols are the bizness"')
+        result = runner.run('protocols list -t bgp -e %s' % protocol['description'])
         assert result.exit_code == 0
-        # assert protocol['description'] in result.output THIS IS BROKEN.
-        # assert "protocols are the bizness" in result.output THIS TOO, protocol not found.
+        assert protocol['description'] in result.output
 
         # Test -I/--id
         result = runner.run('protocols list -t bgp -I 1')
-        # assert result.exit_code == 0
-        # assert protocol['id'] in result.output AGAIN, protocol not available.
+        assert result.exit_code == 0
+        assert protocol['id'] in result.output
 
-def test_protocols_update(site_client, device_a, protocol):
-    device_id = str(device_a['id'])
-    site_id = str(device_a['site_id'])
-    protocol_id = str(protocol['id'])
+
+def test_protocols_update(site_client, interface_a, device_a, site, circuit, protocol):
+    site_id = str(protocol['site'])
+
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
-        result = runner.run('protocols update -t bgp -I %s -s %s -D %s -e "switchin it up"' % (protocol_id, site_id, device_id))
-        import pdb; pdb.set_trace()
+        # Update description
+        result = runner.run('protocols update -t bgp -D %s -e "bees buzz"' % (device_a['hostname']))
         assert result.exit_code == 0
-        assert 'switching' in result.output
+        assert 'Updated protocol!' in result.output
+
+        # Ensure that buzz is not the bizness
+        result = runner.run('protocols list -t bgp')
+        assert result.exit_code == 0
+        assert 'buzz' in result.output
+        assert 'bizness' not in result.output
+
+        # Add an attribute
+        result = runner.run('protocols update -t bgp -D %s --add-attributes -a boo=test_attribute' % device_a['hostname'])
+        # assert result.exit_code == 0
+        # assert 'Updated protocol!' in result.output
+
+        result = runner.run('protocols list -t bgp')
+        assert result.exit_code == 0
+        # assert 'test_attribute' in result.output
+
+        # Edit an attribute
+        result = runner.run('protocols update -t bgp -D %s -a foo=test_attribute' % device_a['hostname'])
+        assert result.exit_code == 0
+        assert 'Updated protocol!' in result.output
+
+        result = runner.run('protocols list -t bgp')
+        assert result.exit_code == 0
+        assert 'test_attribute' in result.output
+
+        # Delete an attribute
+        result = runner.run('protocols update -t bgp -D %s --delete-attributes -a foo=test_protocol' % device_a['hostname'])
+        assert result.exit_code == 0
+        assert 'Updated protocol!' in result.output
+
+        result = runner.run('protocols list -t bgp')
+        assert result.exit_code == 0
+        assert 'test_protocol' not in result.output
+
+        # Replace an attribute
+        result = runner.run('protocols update -t bgp -D %s --replace-attributes -a foo=test_replace' % device_a['hostname'])
+        assert result.exit_code == 0
+        assert 'Updated protocol!' in result.output
+
+        result = runner.run('protocols list -t bgp')
+        assert result.exit_code == 0
+        assert 'test_protocol' not in result.output
+        assert 'test_replace' in result.output
 
 
-def test_protocols_remove(site_client, device):
-    pass
+
+def test_protocols_remove(site_client, protocol):
+    site_id = protocol['site']
+    runner = CliRunner(site_client.config)
+
+    with runner.isolated_filesystem():
+        result = runner.run('protocols remove -I %s -s %s' % (site_id, protocol['site']))
+        assert result.exit_code == 0
+
+        result = runner.run('protocols list -t bgp')
+        assert result.exit_code == 0
+        assert 'No protocol found' in result.output
