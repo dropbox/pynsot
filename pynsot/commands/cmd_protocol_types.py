@@ -50,7 +50,7 @@ def cli(ctx):
     """
     Protocol Type objects.
 
-    An Protocol Type resource can represent a network protocol type (e.g. bgp, is-is, ospf, etc.)
+    A Protocol Type resource can represent a network protocol type (e.g. bgp, is-is, ospf, etc.)
 
     Protocol Types can have any number of required attributes as defined below.
     """
@@ -61,14 +61,13 @@ def cli(ctx):
 @click.option(
     '-r',
     '--required_attributes',
-    metavar='REQUIRED ATTRIBUTES',
-    help='A key/value pair attached to this Protocol Type (format: key=value).',
+    metavar='ATTRIBUTE',
+    type=str,
+    help='The name of a Protocol attribute. This option can be provided multiple times, once per attribute.',
     multiple=True,
-    callback=callbacks.transform_attributes,
-    # required=True,
 )
 @click.option(
-    '-e',
+    '-d',
     '--description',
     metavar='DESCRIPTION',
     type=str,
@@ -83,12 +82,6 @@ def cli(ctx):
     required=True,
 )
 @click.option(
-    '-I',
-    '--id',
-    metavar='ID',
-    help='Unique ID of the Protocol Type being retrieved.',
-)
-@click.option(
     '-s',
     '--site-id',
     metavar='SITE_ID',
@@ -97,7 +90,7 @@ def cli(ctx):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def add(ctx, required_attributes, description, id, name, site_id):
+def add(ctx, required_attributes, description, name, site_id):
     """
     Add a new Protocol Type.
 
@@ -108,8 +101,9 @@ def add(ctx, required_attributes, description, id, name, site_id):
 
     Examples: OSPF, BGP, etc.
 
-    You must also provide attributes, you may specify the -a/--attributes
-    option once for each key/value pair.
+    You may also provide required Protocol attributes, you may specify the -r/--required_attributes
+    option once for each attribute. The Protocol attributes must exist before adding them to a
+    protocol type.
 
     You must provide a Site ID using the -s/--site-id option.
     """
@@ -127,30 +121,23 @@ def add(ctx, required_attributes, description, id, name, site_id):
 @click.option(
     '-r',
     '--required_attributes',
-    metavar='REQUIRED ATTRIBUTES',
-    help='A key/value pair attached to this Protocol Type (format: key=value).',
+    metavar='ATTRIBUTE',
+    type=str,
+    help='The name of a Protocol attribute that will be used to filter the results.',
     multiple=True,
-    callback=callbacks.transform_attributes,
 )
 @click.option(
-    '-e',
+    '-d',
     '--description',
     metavar='DESCRIPTION',
     type=str,
     help='Filter by Protocol Type matching this description.',
 )
 @click.option(
-    '-g',
-    '--grep',
-    is_flag=True,
-    help='Display list results in a grep-friendly format.',
-    default=False,
-    show_default=True,
-)
-@click.option(
-    '-I',
+    '-i',
     '--id',
     metavar='ID',
+    type=types.NATURAL_KEY,
     help='Unique ID of the Protocol Type being retrieved.',
 )
 @click.option(
@@ -167,7 +154,7 @@ def add(ctx, required_attributes, description, id, name, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, required_attributes, description, grep, id, name, site_id):
+def list(ctx, required_attributes, description, id, name, site_id):
     """
     List existing Protocol Types for a Site.
 
@@ -180,7 +167,7 @@ def list(ctx, required_attributes, description, grep, id, name, site_id):
     data = ctx.params
 
     # If we provide ID, show more fields
-    if id is not None or name:
+    if any([id, name]):
         display_fields = VERBOSE_FIELDS
     else:
         display_fields = DISPLAY_FIELDS
@@ -205,9 +192,10 @@ def protocols(ctx, *args, **kwargs):
 # Remove
 @cli.command()
 @click.option(
-    '-I',
+    '-i',
     '--id',
     metavar='ID',
+    type=types.NATURAL_KEY,
     help='Unique ID of the Protocol Type being deleted.',
     required=True,
 )
@@ -244,20 +232,21 @@ def remove(ctx, id, site_id):
 @click.option(
     '-r',
     '--required_attributes',
-    metavar='REQUIRED ATTRIBUTES',
-    help='A key/value pair attached to this Protocol Type (format: key=value).',
+    metavar='ATTRIBUTE',
+    type=str,
+    help='The name of a Protocol attribute. This option can be provided multiple times, once per attribute.',
     multiple=True,
     callback=callbacks.transform_attributes,
 )
 @click.option(
-    '-e',
+    '-d',
     '--description',
     metavar='DESCRIPTION',
     type=str,
     help='The description for this Protocol Type.',
 )
 @click.option(
-    '-I',
+    '-i',
     '--id',
     metavar='ID',
     type=types.NATURAL_KEY,
@@ -280,37 +269,8 @@ def remove(ctx, id, site_id):
     callback=callbacks.process_site_id,
     required=True,
 )
-@click.option(
-    '--add-attributes',
-    'attr_action',
-    flag_value='add',
-    default=True,
-    help=(
-        'Causes attributes to be added. This is the default and providing it '
-        'will have no effect.'
-    )
-)
-@click.option(
-    '--delete-attributes',
-    'attr_action',
-    flag_value='delete',
-    help=(
-        'Causes attributes to be deleted instead of updated. If combined with'
-        'with --multi the attribute will be deleted if either no value is '
-        'provided, or if attribute no longer has an valid values.'
-    ),
-)
-@click.option(
-    '--replace-attributes',
-    'attr_action',
-    flag_value='replace',
-    help=(
-        'Causes attributes to be replaced instead of updated. If combined '
-        'with --multi, the entire list will be replaced.'
-    ),
-)
 @click.pass_context
-def update(ctx, required_attributes, description, id, name, site_id, attr_action):
+def update(ctx, required_attributes, description, id, name, site_id):
     """
     Update an Protocol Type.
 

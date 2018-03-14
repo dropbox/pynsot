@@ -28,7 +28,7 @@ def protocol(site_client, device_a, interface_a, circuit, protocol_type):
 
 @pytest.fixture
 def protocol_attribute(site_client, protocol):
-    obj = site_client.sites(site_client.default_site).attributes.post(
+    return site_client.sites(site_client.default_site).attributes.post(
         {
             'name':'boo',
             'value': 'test_attribute',

@@ -30,10 +30,8 @@ DISPLAY_FIELDS = (
     ('id', 'ID'),
     ('attributes', 'Attributes'),
     ('circuit', 'Circuit'),
-    ('description', 'Description'),
     ('device', 'Device'),
     ('interface', 'Interface'),
-    ('site', 'Site'),
     ('type', 'Type'),
 )
 
@@ -58,7 +56,7 @@ def cli(ctx):
     """
     Protocol objects.
 
-    An Protocol resource can represent a network routing protocol.
+    A Protocol resource can represent a network routing protocol.
 
     """
 
@@ -213,13 +211,13 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     show_default=True,
 )
 @click.option(
-    '-I',
+    '-i',
     '--id',
     metavar='ID',
     help='Unique ID of the Protocol being retrieved.',
 )
 @click.option(
-    '-i',
+    '-I',
     '--interface',
     metavar='INTERFACE',
     type=types.NATURAL_KEY,
@@ -251,7 +249,7 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
 )
 @click.pass_context
 def list(ctx, attributes, auth_string, circuit, delimited, description, device, grep, id,
- 		 interface, query, site_id, type):
+         interface, query, site_id, type):
     """
     List existing Protocols for a Site.
 
@@ -274,27 +272,21 @@ def list(ctx, attributes, auth_string, circuit, delimited, description, device, 
     else:
         display_fields = DISPLAY_FIELDS
 
-    # FIXME(jathan): If it's not a digit, it's a hostname? This is a hack for
-    # the mixed use of natural_key vs id. We can do better "somehow".
-    if device and not device.isdigit():
-        log.debug('Device is hostname! Converting device => device_hostname')
-        data['device_hostname'] = data.pop('device')
-
     # If we aren't passing a sub-command, just call list(), otherwise let it
     # fallback to default behavior.
     if ctx.invoked_subcommand is None:
         if query is not None:
             ctx.obj.natural_keys_by_query(data, delimited)
         else:
-			ctx.obj.list(
-				data, display_fields=display_fields,
-				verbose_fields=VERBOSE_FIELDS
-			)
+            ctx.obj.list(
+                data, display_fields=display_fields,
+                verbose_fields=VERBOSE_FIELDS
+            )
 
 # Remove
 @cli.command()
 @click.option(
-    '-I',
+    '-i',
     '--id',
     metavar='ID',
     help='Unique ID of the Protocol being deleted.',
@@ -307,7 +299,7 @@ def list(ctx, attributes, auth_string, circuit, delimited, description, device, 
     type=int,
     help='Unique ID of the Site this Protocol is under.',
     callback=callbacks.process_site_id,
-	required=True,
+    required=True,
 )
 @click.pass_context
 def remove(ctx, id, site_id):
@@ -370,21 +362,21 @@ def remove(ctx, id, site_id):
     required=True,
 )
 @click.option(
-    '-I',
+    '-i',
     '--id',
     metavar='ID',
-    type=types.NATURAL_KEY,
+    type=int,
     help='Unique ID or natural key of the Protocol being updated.',
 )
 @click.option(
-	'-i',
-	'--interface',
-	metavar='INTERFACE',
-	type=types.NATURAL_KEY,
-	help=(
-		'The Interface this Protocol is running on. Either interface'
+    '-I',
+    '--interface',
+    metavar='INTERFACE',
+    type=types.NATURAL_KEY,
+    help=(
+        'The Interface this Protocol is running on. Either interface'
         'or circuit must be populated.'
-	),
+    ),
 )
 @click.option(
     '-s',
