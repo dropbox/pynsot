@@ -25,3 +25,13 @@ def protocol(site_client, device_a, interface_a, circuit, protocol_type):
             'description': 'protocols are the bizness',
         }
     )
+
+@pytest.fixture
+def protocol_attribute(site_client, protocol):
+    obj = site_client.sites(site_client.default_site).attributes.post(
+        {
+            'name':'boo',
+            'value': 'test_attribute',
+            'resource_name': 'Protocol',
+        }
+    )

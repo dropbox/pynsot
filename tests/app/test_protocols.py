@@ -13,7 +13,7 @@ from tests.fixtures import (attribute, attributes, client, config, device,
                             interface, network, protocol_type, site, site_client)
 from tests.fixtures.circuits import (circuit, circuit_attributes, interface_a,
                                     interface_z, device_a, device_z)
-from tests.fixtures.protocols import protocol
+from tests.fixtures.protocols import (protocol, protocol_attribute)
 
 from tests.util import CliRunner, assert_output
 
@@ -87,7 +87,7 @@ def test_protocols_list(site_client, device_a, interface_a, site, circuit, proto
         assert protocol['id'] in result.output
 
 
-def test_protocols_update(site_client, interface_a, device_a, site, circuit, protocol):
+def test_protocols_update(site_client, interface_a, device_a, site, circuit, protocol, protocol_attribute):
     site_id = str(protocol['site'])
 
     runner = CliRunner(site_client.config)
@@ -105,12 +105,12 @@ def test_protocols_update(site_client, interface_a, device_a, site, circuit, pro
 
         # Add an attribute
         result = runner.run('protocols update -t bgp -D %s --add-attributes -a boo=test_attribute' % device_a['hostname'])
-        # assert result.exit_code == 0
-        # assert 'Updated protocol!' in result.output
+        assert result.exit_code == 0
+        assert 'Updated protocol!' in result.output
 
         result = runner.run('protocols list -t bgp')
         assert result.exit_code == 0
-        # assert 'test_attribute' in result.output
+        assert 'test_attribute' in result.output
 
         # Edit an attribute
         result = runner.run('protocols update -t bgp -D %s -a foo=test_attribute' % device_a['hostname'])
