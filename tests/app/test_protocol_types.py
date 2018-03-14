@@ -10,7 +10,7 @@ import logging
 import pytest
 
 from tests.fixtures import (attribute, attributes, client, config, device,
-                            interface, network, protocol, protocol_type, site, site_client)
+                            interface, network, protocol_type, site, site_client)
 
 from tests.fixtures.circuits import circuit
 
