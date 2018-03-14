@@ -10,16 +10,18 @@ import logging
 import pytest
 
 from tests.fixtures import (attribute, attributes, client, config, device,
-                            interface, network, protocol_type, site, site_client)
+                            interface, network, site, site_client)
 
 from tests.fixtures.circuits import circuit
+
+from tests.fixtures.protocol_types import (protocol_type, protocol_attribute, protocol_attribute2)
 
 from tests.util import CliRunner, assert_output
 
 log = logging.getLogger(__name__)
 
 
-def test_protocol_types_add(site_client):
+def test_protocol_types_add(site_client, protocol_attribute):
     """Test ``nsot protocol_types add``."""
 
     runner = CliRunner(site_client.config)
@@ -35,7 +37,6 @@ def test_protocol_types_add(site_client):
         result = runner.run('protocol_types list')
         assert result.exit_code == 0
         assert 'bgp' in result.output
-        assert '1' in result.output
 
         # Add a protocol with same name and fail.
         result = runner.run(
@@ -47,19 +48,29 @@ def test_protocol_types_add(site_client):
 
         # Add second protocol_type by name.
         result = runner.run(
-            "protocol_types add -n ospf -e 'OSPF is the best'"
+            "protocol_types add -n ospf -d 'OSPF is the best'"
         )
         assert result.exit_code == 0
         assert 'Added protocol_type!' in result.output
 
-        # Verify default site is assigned and verify description..
-        result = runner.run('protocol_types list -I 2')
+        # Verify default site is assigned and verify description.
+        result = runner.run('protocol_types list -i 2')
         assert result.exit_code == 0
         assert '1' in result.output
         assert 'OSPF is the best' in result.output
 
+        # Add a third protocol type with required_attribute.
+        result = runner.run('protocol_types add -n tcp -r %s' % protocol_attribute['name'])
+        assert result.exit_code == 0
+        assert 'Added protocol_type!' in result.output
 
-def test_protocol_types_list(site_client, protocol_type):
+        # Verify protocol attribute is assigned.
+        result = runner.run('protocol_types list -n tcp')
+        assert result.exit_code == 0
+        assert protocol_attribute['name'] in result.output
+
+
+def test_protocol_types_list(site_client, protocol_type, protocol_attribute, protocol_attribute2):
     """Test ``nsot protocol_types list``"""
 
     runner = CliRunner(site_client.config)
@@ -68,6 +79,11 @@ def test_protocol_types_list(site_client, protocol_type):
         result = runner.run('protocol_types list')
         assert result.exit_code == 0
         assert protocol_type['name'] in result.output
+
+        # Test -d/--description
+        result = runner.run('protocol_types list -d "%s"' % protocol_type['description'])
+        assert result.exit_code == 0
+        assert protocol_type['description'] in result.output
 
         # Test -n/--name
         result = runner.run('protocol_types list -n %s' % protocol_type['name'])
@@ -79,12 +95,23 @@ def test_protocol_types_list(site_client, protocol_type):
         assert result.exit_code == 0
         assert protocol_type['name'] in result.output
 
-        # Test -I/--id
-        result = runner.run('protocol_types list -I %s' % protocol_type['id'])
+        # Test -i/--id
+        result = runner.run('protocol_types list -i %s' % protocol_type['id'])
         assert result.exit_code == 0
         assert protocol_type['name'] in result.output
 
-def test_protocol_types_update(site_client, protocol_type):
+        # Test -r/--required_attributes
+        result = runner.run('protocol_types list -r %s -r %s' % (
+                protocol_attribute['name'],
+                protocol_attribute2['name'],
+            )
+        )
+        assert result.exit_code == 0
+        assert protocol_attribute['name'] in result.output
+        assert protocol_attribute2['name'] in result.output
+
+
+def test_protocol_types_update(site_client, protocol_type, protocol_attribute):
     """Test ``nsot protocol_types update``"""
 
     pt_id = protocol_type['id']
@@ -94,23 +121,38 @@ def test_protocol_types_update(site_client, protocol_type):
     with runner.isolated_filesystem():
         # Try to change the name
         result = runner.run(
-            'protocol_types update -n Cake -I %s -s %s' % (pt_id, str(pt_site))
+            'protocol_types update -n Cake -i %s -s %s' % (pt_id, str(pt_site))
         )
         assert result.exit_code == 0
         assert 'Updated protocol_type!' in result.output
 
         # Update the description
         result = runner.run(
-            'protocol_types update -e Rise -I %s -s %s' % (pt_id, str(pt_site))
+            'protocol_types update -d Rise -i %s -s %s' % (pt_id, str(pt_site))
         )
         assert result.exit_code == 0
         assert 'Updated protocol_type!' in result.output
 
         # Assert the Cake Rises
-        result = runner.run('protocol_types list -I %s' % pt_id)
+        result = runner.run('protocol_types list -i %s' % pt_id)
         assert result.exit_code == 0
-        assert 'Cake'  in result.output
+        assert 'Cake' in result.output
         assert 'Rise' in result.output
+
+        # Test add attributes
+        result = runner.run('protocol_types update -r %s -i %s -s %s' % (
+                protocol_attribute ['name'],
+                pt_id,
+                pt_site
+            )
+        )
+        assert result.exit_code == 0
+        assert 'Updated protocol_type!' in result.output
+
+        # Assert the attribute was added
+        result = runner.run('protocol_types list -i %s' % pt_id)
+        assert result.exit_code == 0
+        assert protocol_attribute['name'] in result.output
 
 
 def test_protocol_types_remove(site_client, protocol_type):
