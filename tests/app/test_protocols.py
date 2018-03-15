@@ -102,9 +102,12 @@ def test_protocols_list(site_client, device_a, interface_a, site, circuit, proto
         assert result.exit_code == 0
         assert protocol_id in result.output
 
-        # Test -q/--query  NOT WORKING. ERROR: KeyError(u'protocols',)
-        # result = runner.run('protocols list -t bgp -q foo=test_protocol')
-        # assert result.exit_code == 0
+        # Test -q/--query
+        slug = '{device}:{type}:{id}'.format(**protocol)
+        result = runner.run('protocols list -t bgp -q foo=test_protocol')
+        assert result.exit_code == 0
+        assert slug in result.output
+
 
 def test_protocols_update(site_client, interface_a, device_a, site, circuit, protocol, protocol_attribute):
     site_id = str(protocol['site'])

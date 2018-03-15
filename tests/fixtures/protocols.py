@@ -35,3 +35,4 @@ def protocol_attribute(site_client, protocol):
             'resource_name': 'Protocol',
         }
     )
+
