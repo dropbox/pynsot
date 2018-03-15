@@ -22,7 +22,7 @@ def protocol(site_client, device_a, interface_a, circuit, protocol_type):
             'interface': interface_slug,
             'attributes': {'foo': 'test_protocol'},
             'circuit': circuit['name'],
-            'description': 'protocols are the bizness',
+            'description': 'bgp is the best',
         }
     )
 
