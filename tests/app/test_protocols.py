@@ -36,11 +36,26 @@ def test_protocols_add(site_client, device, interface, site, protocol_type):
         assert 'Added protocol!' in result.output
 
         # Verify addition.
-        result = runner.run('protocols list -t bgp')
+        result = runner.run('protocols list -t bgp -i 1' )
         assert result.exit_code == 0
         assert 'bgp' in result.output
         assert device_id in result.output
         assert 'my new proto' in result.output
+
+        # Add a second protocol with attributes.
+        attributes = 'foo=test_attribute'
+        result = runner.run(
+            "protocols add -t bgp -D %s -i %s -a %s" % (device_id, interface_id, attributes)
+        )
+        assert result.exit_code == 0
+        assert 'Added protocol!' in result.output
+
+        # Verify addition.
+        result = runner.run('protocols list -t bgp')
+        assert result.exit_code == 0
+        assert 'bgp' in result.output
+        assert device_id in result.output
+        assert attributes in result.output
 
 
 def test_protocols_list(site_client, device_a, interface_a, site, circuit, protocol):
@@ -48,10 +63,11 @@ def test_protocols_list(site_client, device_a, interface_a, site, circuit, proto
 
     device_id = str(device_a['id'])
     interface_id = str(interface_a['id'])
+    protocol_id = str(protocol['id'])
 
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
-
+        # test -t/--type
         result = runner.run('protocols list -t bgp')
         assert result.exit_code == 0
         assert 'bgp' in result.output
@@ -61,8 +77,8 @@ def test_protocols_list(site_client, device_a, interface_a, site, circuit, proto
         assert result.exit_code == 0
         assert device_a['hostname'] in result.output
 
-        # Test -i/--interface
-        result = runner.run('protocols list -t bgp -i %s' % interface_id)
+        # Test -I/--interface
+        result = runner.run('protocols list -t bgp -I %s' % interface_id)
         assert result.exit_code == 0
         assert interface_id in result.output
 
@@ -77,15 +93,18 @@ def test_protocols_list(site_client, device_a, interface_a, site, circuit, proto
         assert circuit['name'] in result.output
 
         # Test -e/--description
-        result = runner.run('protocols list -t bgp -e %s' % protocol['description'])
+        result = runner.run('protocols list -t bgp -e "%s"' % protocol['description'])
         assert result.exit_code == 0
         assert protocol['description'] in result.output
 
         # Test -I/--id
-        result = runner.run('protocols list -t bgp -I 1')
+        result = runner.run('protocols list -t bgp -i %s' % protocol_id)
         assert result.exit_code == 0
-        assert protocol['id'] in result.output
+        assert protocol_id in result.output
 
+        # Test -q/--query  NOT WORKING. ERROR: KeyError(u'protocols',)
+        # result = runner.run('protocols list -t bgp -q foo=test_protocol')
+        # assert result.exit_code == 0
 
 def test_protocols_update(site_client, interface_a, device_a, site, circuit, protocol, protocol_attribute):
     site_id = str(protocol['site'])
@@ -113,7 +132,7 @@ def test_protocols_update(site_client, interface_a, device_a, site, circuit, pro
         assert 'test_attribute' in result.output
 
         # Edit an attribute
-        result = runner.run('protocols update -t bgp -D %s -a foo=test_attribute' % device_a['hostname'])
+        result = runner.run('protocols update -t bgp -D %s -a boo=test_attribute' % device_a['hostname'])
         assert result.exit_code == 0
         assert 'Updated protocol!' in result.output
 
@@ -141,13 +160,11 @@ def test_protocols_update(site_client, interface_a, device_a, site, circuit, pro
         assert 'test_replace' in result.output
 
 
-
 def test_protocols_remove(site_client, protocol):
-    site_id = protocol['site']
     runner = CliRunner(site_client.config)
 
     with runner.isolated_filesystem():
-        result = runner.run('protocols remove -I %s -s %s' % (site_id, protocol['site']))
+        result = runner.run('protocols remove -i %s -s %s' % (protocol['id'], protocol['site']))
         assert result.exit_code == 0
 
         result = runner.run('protocols list -t bgp')
