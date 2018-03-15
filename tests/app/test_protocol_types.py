@@ -161,7 +161,7 @@ def test_protocol_types_remove(site_client, protocol_type):
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
         result = runner.run(
-            'protocol_types remove -I %s -s %s' % (protocol_type['id'], protocol_type['site'])
+            'protocol_types remove -i %s -s %s' % (protocol_type['id'], protocol_type['site'])
         )
         assert result.exit_code == 0
         assert 'Removed protocol_type!' in result.output
