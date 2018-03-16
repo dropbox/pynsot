@@ -20,11 +20,11 @@ from tests.util import CliRunner, assert_output
 log = logging.getLogger(__name__)
 
 
-def test_protocols_add(site_client, device, interface, site, protocol_type):
+def test_protocols_add(site_client, device_a, interface_a, site, protocol_type):
     """Test ``nsot protocol add``."""
 
-    device_id = str(device['id'])
-    interface_id = str(interface['id'])
+    device_id = str(device_a['id'])
+    interface_id = str(interface_a['id'])
 
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
@@ -39,7 +39,7 @@ def test_protocols_add(site_client, device, interface, site, protocol_type):
         result = runner.run('protocols list -t bgp -i 1' )
         assert result.exit_code == 0
         assert 'bgp' in result.output
-        assert device_id in result.output
+        assert device_a['hostname'] in result.output
         assert 'my new proto' in result.output
 
         # Add a second protocol with attributes.
@@ -54,7 +54,7 @@ def test_protocols_add(site_client, device, interface, site, protocol_type):
         result = runner.run('protocols list -t bgp')
         assert result.exit_code == 0
         assert 'bgp' in result.output
-        assert device_id in result.output
+        assert device_a['hostname'] in result.output
         assert attributes in result.output
 
 
@@ -80,7 +80,7 @@ def test_protocols_list(site_client, device_a, interface_a, site, circuit, proto
         # Test -I/--interface
         result = runner.run('protocols list -t bgp -I %s' % interface_id)
         assert result.exit_code == 0
-        assert interface_id in result.output
+        assert interface_a['name_slug'] in result.output
 
         # Test -a/--attributes
         result = runner.run('protocols list -t bgp -a foo=test_protocol')
