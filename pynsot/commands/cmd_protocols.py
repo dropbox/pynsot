@@ -18,7 +18,6 @@ import logging
 
 from ..vendor import click
 from . import callbacks, types
-from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
 
 
 # Logger
@@ -28,24 +27,24 @@ log = logging.getLogger(__name__)
 # field names oto their human-readable form when calling .print_list().
 DISPLAY_FIELDS = (
     ('id', 'ID'),
-    ('attributes', 'Attributes'),
-    ('circuit', 'Circuit'),
     ('device', 'Device'),
-    ('interface', 'Interface'),
     ('type', 'Type'),
+    ('interface', 'Interface'),
+    ('circuit', 'Circuit'),
+    ('attributes', 'Attributes'),
 )
 
 # Fields to display when viewing a single record.
 VERBOSE_FIELDS = (
     ('id', 'ID'),
-    ('type', 'Type'),
-    ('attributes', 'Attributes'),
     ('auth_string', 'Auth_String'),
-    ('circuit', 'Circuit'),
-    ('device', 'Device'),
     ('description', 'Description'),
+    ('device', 'Device'),
+    ('type', 'Type'),
     ('interface', 'Interface'),
+    ('circuit', 'Circuit'),
     ('site', 'Site'),
+    ('attributes', 'Attributes'),
 )
 
 
@@ -245,7 +244,6 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     metavar='TYPE',
     type=types.NATURAL_KEY,
     help='The protocol type',
-    required=True,
 )
 @click.pass_context
 def list(ctx, attributes, auth_string, circuit, delimited, description, device, grep, id,
@@ -359,7 +357,6 @@ def remove(ctx, id, site_id):
         'Unique ID of the Device to which this Protocol is '
         'running on.'
     ),
-    required=True,
 )
 @click.option(
     '-i',
@@ -392,7 +389,6 @@ def remove(ctx, id, site_id):
     metavar='TYPE',
     type=types.NATURAL_KEY,
     help='The Protocol type ID.',
-    required=True,
 )
 @click.option(
     '--add-attributes',
@@ -458,7 +454,7 @@ def update(ctx, attributes, auth_string, circuit, description, device, id, inter
     replaced. If combined with --multi and multiple attributes of the same
     name are provided, only the last value provided will be used.
     """
-    if not any([attributes, description, type]):
+    if not any([attributes, description, type, auth_string, circuit, interface]):
         msg = 'You must supply at least one of the optional arguments.'
         raise click.UsageError(msg)
     ctx.obj.update(ctx.params)

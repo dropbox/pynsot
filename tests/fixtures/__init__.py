@@ -120,7 +120,6 @@ def attributes(site_client):
         'Interface',
         'Network',
         'Protocol',
-        'Protocol Type',
     )
 
     for r in resources:

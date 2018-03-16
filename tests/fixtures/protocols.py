@@ -36,3 +36,13 @@ def protocol_attribute(site_client, protocol):
         }
     )
 
+@pytest.fixture
+def protocol_attribute2(site_client, protocol):
+    return site_client.sites(site_client.default_site).attributes.post(
+        {
+            'name':'foo',
+            'value': 'test_protocol',
+            'resource_name': 'Protocol',
+        }
+    )
+

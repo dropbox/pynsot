@@ -14,7 +14,7 @@ def protocol_type(site_client, protocol_attribute, protocol_attribute2):
     return site_client.sites(site_client.default_site).protocol_types.post(
         {
             'name': 'bgp',
-            'required_attributes': ['boo', 'foo',],
+            'required-attributes': ['boo', 'foo',],
             'description': 'bgp is my bestie',
         }
     )

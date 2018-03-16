@@ -60,7 +60,7 @@ def cli(ctx):
 @cli.command()
 @click.option(
     '-r',
-    '--required_attributes',
+    '--required-attributes',
     metavar='ATTRIBUTE',
     type=str,
     help='The name of a Protocol attribute. This option can be provided multiple times, once per attribute.',
@@ -101,7 +101,7 @@ def add(ctx, required_attributes, description, name, site_id):
 
     Examples: OSPF, BGP, etc.
 
-    You may also provide required Protocol attributes, you may specify the -r/--required_attributes
+    You may also provide required Protocol attributes, you may specify the -r/--required-attributes
     option once for each attribute. The Protocol attributes must exist before adding them to a
     protocol type.
 
@@ -118,14 +118,6 @@ def add(ctx, required_attributes, description, name, site_id):
 
 # List
 @cli.group(invoke_without_command=True)
-@click.option(
-    '-r',
-    '--required_attributes',
-    metavar='ATTRIBUTE',
-    type=str,
-    help='The name of a Protocol attribute that will be used to filter the results.',
-    multiple=True,
-)
 @click.option(
     '-d',
     '--description',
@@ -154,7 +146,7 @@ def add(ctx, required_attributes, description, name, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, required_attributes, description, id, name, site_id):
+def list(ctx, description, id, name, site_id):
     """
     List existing Protocol Types for a Site.
 
@@ -206,7 +198,6 @@ def protocols(ctx, *args, **kwargs):
     type=int,
     help='Unique ID of the Site this Protocol Type is under.',
     callback=callbacks.process_site_id,
-    required=True,
 )
 @click.pass_context
 def remove(ctx, id, site_id):
@@ -231,7 +222,7 @@ def remove(ctx, id, site_id):
 @cli.command()
 @click.option(
     '-r',
-    '--required_attributes',
+    '--required-attributes',
     metavar='ATTRIBUTE',
     type=str,
     help='The name of a Protocol attribute. This option can be provided multiple times, once per attribute.',
@@ -267,7 +258,6 @@ def remove(ctx, id, site_id):
     type=int,
     help='Unique ID of the Site this Protocol Type is under.',
     callback=callbacks.process_site_id,
-    required=True,
 )
 @click.pass_context
 def update(ctx, required_attributes, description, id, name, site_id):
