@@ -27,9 +27,7 @@ def test_protocol_types_add(site_client, protocol_attribute):
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
         # Add a protocol_type by name.
-        result = runner.run(
-            "protocol_types add -n bgp"
-        )
+        result = runner.run("protocol_types add -n bgp")
         assert result.exit_code == 0
         assert 'Added protocol_type!' in result.output
 
@@ -39,17 +37,13 @@ def test_protocol_types_add(site_client, protocol_attribute):
         assert 'bgp' in result.output
 
         # Add a protocol with same name and fail.
-        result = runner.run(
-            "protocol_types add -n bgp"
-        )
+        result = runner.run("protocol_types add -n bgp")
         expected_output = 'The fields site, name must make a unique set.'
         assert result.exit_code != 0
         assert expected_output in result.output
 
         # Add second protocol_type by name.
-        result = runner.run(
-            "protocol_types add -n ospf -d 'OSPF is the best'"
-        )
+        result = runner.run("protocol_types add -n ospf -d 'OSPF is the best'")
         assert result.exit_code == 0
         assert 'Added protocol_type!' in result.output
 
@@ -101,36 +95,20 @@ def test_protocol_types_list(site_client, protocol_type, protocol_attribute, pro
         assert result.exit_code == 0
         assert protocol_type['name'] in result.output
 
-        # Test -r/--required_attributes
-        result = runner.run('protocol_types list -r %s -r %s' % (
-                protocol_attribute['name'],
-                protocol_attribute2['name'],
-            )
-        )
-        assert result.exit_code == 0
-        assert protocol_attribute['name'] in result.output
-        assert protocol_attribute2['name'] in result.output
-
-
 def test_protocol_types_update(site_client, protocol_type, protocol_attribute):
     """Test ``nsot protocol_types update``"""
 
     pt_id = protocol_type['id']
-    pt_site = protocol_type['site']
 
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
         # Try to change the name
-        result = runner.run(
-            'protocol_types update -n Cake -i %s -s %s' % (pt_id, str(pt_site))
-        )
+        result = runner.run('protocol_types update -n Cake -i %s' % (pt_id))
         assert result.exit_code == 0
         assert 'Updated protocol_type!' in result.output
 
         # Update the description
-        result = runner.run(
-            'protocol_types update -d Rise -i %s -s %s' % (pt_id, str(pt_site))
-        )
+        result = runner.run('protocol_types update -d Rise -i %s' % (pt_id))
         assert result.exit_code == 0
         assert 'Updated protocol_type!' in result.output
 
@@ -141,10 +119,9 @@ def test_protocol_types_update(site_client, protocol_type, protocol_attribute):
         assert 'Rise' in result.output
 
         # Test add attributes
-        result = runner.run('protocol_types update -r %s -i %s -s %s' % (
+        result = runner.run('protocol_types update -r %s -i %s' % (
                 protocol_attribute ['name'],
                 pt_id,
-                pt_site
             )
         )
         assert result.exit_code == 0
@@ -162,7 +139,7 @@ def test_protocol_types_remove(site_client, protocol_type):
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
         result = runner.run(
-            'protocol_types remove -i %s -s %s' % (protocol_type['id'], protocol_type['site'])
+            'protocol_types remove -i %s' % (protocol_type['id'])
         )
         assert result.exit_code == 0
         assert 'Removed protocol_type!' in result.output
