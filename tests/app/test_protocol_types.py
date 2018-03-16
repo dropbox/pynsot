@@ -54,9 +54,10 @@ def test_protocol_types_add(site_client, protocol_attribute):
         assert 'Added protocol_type!' in result.output
 
         # Verify default site is assigned and verify description.
+        site_id = str(protocol_attribute['site_id'])
         result = runner.run('protocol_types list -i 2')
         assert result.exit_code == 0
-        assert '1' in result.output
+        assert site_id in result.output
         assert 'OSPF is the best' in result.output
 
         # Add a third protocol type with required_attribute.
