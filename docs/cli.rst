@@ -1693,6 +1693,7 @@ Protocols also support attributes:
 
 	$ nsot attributes add --resource-name protocol --name foo
 	[SUCCESS] Added attribute!
+
 	$ nsot protocols update -i 1 -a foo=test_attribute
 	[SUCCESS] Updated protocol!
 
