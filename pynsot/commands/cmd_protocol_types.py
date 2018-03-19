@@ -175,15 +175,6 @@ def list(ctx, description, id, name, site_id):
         )
 
 
-@list.command()
-@click.pass_context
-def protocols(ctx, *args, **kwargs):
-    """Recursively get all protocols of an Protocol Type."""
-    callbacks.list_subcommand(
-        ctx, display_fields=PROTOCOL_DISPLAY_FIELDS, my_name=ctx.info_name
-    )
-
-
 # Remove
 @cli.command()
 @click.option(
