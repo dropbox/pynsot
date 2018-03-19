@@ -369,6 +369,7 @@ def remove(ctx, id, site_id):
     metavar='ID',
     type=int,
     help='Unique ID or natural key of the Protocol being updated.',
+    required=True,
 )
 @click.option(
     '-I',

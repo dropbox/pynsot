@@ -37,8 +37,11 @@ Each object type is assigned a positional command argument:
     Commands:
       attributes  Attribute objects.
       changes     Change events.
+      circuits        Circuit objects.
       devices     Device objects.
       interfaces  Interface objects.
+      protocol_types  Protocol Type objects.
+      protocols       Protocol objects.
       networks    Network objects.
       sites       Site objects.
       values      Value objects.
@@ -132,7 +135,7 @@ Resource Types
 
 NSoT refers internally to any object that can have attributes as *Resource
 Types* or just *Resources* for short. As of this writing this includes Device,
-Network, and Interfaces objects.
+Network, Interfaces, and Protocols objects.
 
 You will also see command-line arguments referencing *Resource Name* to
 indicate the name of a Resource Type.
@@ -414,6 +417,12 @@ Interfaces
 
 Bulk addition of Interfaces via CLI is not supported at this time.
 
+
+Protocols
+---------
+
+Bulk addition of Protocols via CLI is not supported at this time.
+
 .. _working_with_objects:
 
 Working with Objects
@@ -437,7 +446,7 @@ Adding a Site:
 .. code-block:: bash
 
     $ nsot sites add --name Spam --description 'Spam Site'
-    [SUCCESS] added site with args: name=Space, description=Spam Site!
+    [SUCCESS] added site with args: name=Spam, description=Spam Site!
 
 Listing all Sites:
 
@@ -1516,8 +1525,124 @@ to remote).
 
 .. _working_with_values:
 
+
+Protocols
+---------
+
+A Protocol represents a network routing protocol.
+
+Protocols, like all other :ref:`resource_types`, support arbitrary attributes.
+
+Adding a Protocols is done by specifying the protocol type, device id, and interface id. You can also optionally provide a description for the protocol, as shown below.
+
+
+.. code-block:: bash
+
+    $ nsot protocols add -t ospf -D 1 -i 1 -e 'my new proto'
+    [SUCCESS] Added protocol!
+
+It's important to note that you must create the :ref:`protocol_type` before you can add a protocol of that type. For example, see what happens if I try to create a new protocol of type `bgp` without having adding this protocol_type first:
+
+.. code-block:: bash
+
+    $ nsot protocols add -t bgp -D 1 -i 1 -e 'this wont work'
+    [FAILURE] type:  Object with name=bgp does not exist.
+
+If I add the protocol_type and rerun the above command:
+
+.. code-block:: bash
+
+    $ nsot protocol_types add -n bgp
+    [SUCCESS] Added protocol_type!
+    $ nsot protocols add -t bgp -D 1 -i 1 -e 'this wont work'
+    [SUCCESS] Added protocol!
+
+We can see both protocols by running list:
+
+
+.. code-block:: bash
+
+    $ nsot protocols list
+	+----------------------------------------------------------------+
+	| ID   Device      Type   Interface         Circuit   Attributes |
+	+----------------------------------------------------------------+
+	| 1    foo-bar01   ospf   foo-bar01:etho0   None                 |
+	| 2    foo-bar01   bgp    foo-bar01:etho0   None                 |
+	+----------------------------------------------------------------+
+
+Listing a single Protocol by name:
+
+.. code-block:: bash
+
+	$ nsot protocols list -t bgp
+	+----------------------------------------------------------------+
+	| ID   Device      Type   Interface         Circuit   Attributes |
+	+----------------------------------------------------------------+
+	| 2    foo-bar01   bgp    foo-bar01:etho0   None                 |
+	+----------------------------------------------------------------+
+
+Protocols also support attributes:
+
+.. code-block:: bash
+
+	$ nsot attributes add --resource-name protocol --name foo
+	[SUCCESS] Added attribute!
+	$ nsot protocols update -i 1 -a foo=test_attribute
+	[SUCCESS] Updated protocol!
+
+	$ nsot protocols list -i 1
+	+------------------------------------------------------------------------------------------------------------+
+	| ID   Device      Type   Interface         Circuit   Auth_String   Description    Site   Attributes         |
+	+------------------------------------------------------------------------------------------------------------+
+	| 1    foo-bar01   ospf   foo-bar01:etho0   None                    my new proto   1      foo=test_attribute |
+	+------------------------------------------------------------------------------------------------------------+
+
+
+Performing a set query on Protocols by attribute/value displays by natural key:
+
+.. code-block:: bash
+
+	$ nsot protocols list -q foo=test_attribute
+	foo-bar01:ospf:3
+
+Replacing an attribute can be done using --replace-attributes
+
+.. code-block:: bash
+
+	$ nsot protocols update -i 1 --replace-attributes -a foo=test_replace
+	[SUCCESS] Updated protocol!
+	$ nsot protocols list
+	+----------------------------------------------------------------------+
+	| ID   Device      Type   Interface         Circuit   Attributes       |
+	+----------------------------------------------------------------------+
+	| 1    foo-bar01   ospf   foo-bar01:etho0   None      foo=test_replace |
+	| 2    foo-bar01   bgp    foo-bar01:etho0   None                       |
+	+----------------------------------------------------------------------+
+
+Removing an attribute can be done using --delete-attributes
+
+.. code-blcok:: bash
+
+	$ nsot protocols update -i 1 --delete-attributes -a foo=test_replace
+	[SUCCESS] Updated protocol!
+	$ nsot protocols list
+	+----------------------------------------------------------------+
+	| ID   Device      Type   Interface         Circuit   Attributes |
+	+----------------------------------------------------------------+
+	| 1    foo-bar01   ospf   foo-bar01:etho0   None                 |
+	| 2    foo-bar01   bgp    foo-bar01:etho0   None                 |
+	+----------------------------------------------------------------+
+
+Removing a Protocol can be done by ID and site-id:
+
+.. code-block:: bash
+
+    $ nsot protocols remove -i 1 -s
+    [SUCCESS] Removed protocol!
+
+
 Values
-------
+======
 
 Values represent attribute values and cannot be directly manipulated. They can
 be viewed, however, and this command allows you to do that.
@@ -1544,7 +1669,7 @@ You might have an Attribute with the same name (e.g. ``metro``) across multiple
 .. _working_with_changes:
 
 Changes
--------
+=======
 
 All Create/Update/Delete events are logged as a Change. A Change includes
 information such as the change time, user, and the full resource after

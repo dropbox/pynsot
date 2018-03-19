@@ -67,8 +67,12 @@ def test_protocols_list(site_client, device_a, interface_a, site, circuit, proto
 
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
-        # test -t/--type
         result = runner.run('protocols list')
+        assert result.exit_code == 0
+        assert 'bgp' in result.output
+
+        # test -t/--type
+        result = runner.run('protocols list -t bgp')
         assert result.exit_code == 0
         assert 'bgp' in result.output
 
@@ -111,11 +115,11 @@ def test_protocols_list(site_client, device_a, interface_a, site, circuit, proto
 
 def test_protocols_update(site_client, interface_a, device_a, site, circuit, protocol, protocol_attribute):
     site_id = str(protocol['site'])
-
+    proto_id = protocol['id']
     runner = CliRunner(site_client.config)
     with runner.isolated_filesystem():
         # Update description
-        result = runner.run('protocols update -e "bees buzz"')
+        result = runner.run('protocols update -i %s -e "bees buzz"' % proto_id)
         assert result.exit_code == 0
         assert 'Updated protocol!' in result.output
 
@@ -126,7 +130,9 @@ def test_protocols_update(site_client, interface_a, device_a, site, circuit, pro
         assert 'bizness' not in result.output
 
         # Add an attribute
-        result = runner.run('protocols update --add-attributes -a boo=test_attribute')
+        result = runner.run(
+            'protocols update -i %s --add-attributes -a boo=test_attribute' % proto_id
+        )
         assert result.exit_code == 0
         assert 'Updated protocol!' in result.output
 
@@ -134,8 +140,10 @@ def test_protocols_update(site_client, interface_a, device_a, site, circuit, pro
         assert result.exit_code == 0
         assert 'test_attribute' in result.output
 
-        # Edit an attribute
-        result = runner.run('protocols update -a boo=test_attribute')
+        # Add an attribute without using --add-attributes.
+        result = runner.run(
+            'protocols update -i %s -a boo=test_attribute' % proto_id
+        )
         assert result.exit_code == 0
         assert 'Updated protocol!' in result.output
 
@@ -144,7 +152,9 @@ def test_protocols_update(site_client, interface_a, device_a, site, circuit, pro
         assert 'test_attribute' in result.output
 
         # Delete an attribute
-        result = runner.run('protocols update --delete-attributes -a foo=test_protocol')
+        result = runner.run(
+            'protocols update -i %s --delete-attributes -a foo=test_protocol' % proto_id
+        )
         assert result.exit_code == 0
         assert 'Updated protocol!' in result.output
 
@@ -153,7 +163,9 @@ def test_protocols_update(site_client, interface_a, device_a, site, circuit, pro
         assert 'test_protocol' not in result.output
 
         # Replace an attribute
-        result = runner.run('protocols update --replace-attributes -a foo=test_replace')
+        result = runner.run(
+            'protocols update -i %s --replace-attributes -a foo=test_replace' % proto_id
+        )
         assert result.exit_code == 0
         assert 'Updated protocol!' in result.output
 
