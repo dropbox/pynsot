@@ -62,7 +62,7 @@ need a Site:
    $ nsot sites add --name 'My Site'
 
 These examples also assume the use of a ``default_site`` so that you don't have
-to provide the ``-s/--sit-id`` argument on every query. If this is your only
+to provide the ``-s/--site-id`` argument on every query. If this is your only
 site, just add ``default_site = 1`` to your ``pynsotrc`` file.
 
 If you're throughoughly lost already, check out the :ref:`example_config`.
