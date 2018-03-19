@@ -1718,7 +1718,8 @@ Replacing an attribute can be done using ``--replace-attributes``:
 
 	$ nsot protocols update -i 1 --replace-attributes -a foo=test_replace
 	[SUCCESS] Updated protocol!
-	$ nsot protocols list
+
+    $ nsot protocols list
 	+----------------------------------------------------------------------+
 	| ID   Device      Type   Interface         Circuit   Attributes       |
 	+----------------------------------------------------------------------+
@@ -1732,6 +1733,7 @@ Removing an attribute can be done using ``--delete-attributes``:
 
 	$ nsot protocols update -i 1 --delete-attributes -a foo=test_replace
 	[SUCCESS] Updated protocol!
+
 	$ nsot protocols list
 	+----------------------------------------------------------------+
 	| ID   Device      Type   Interface         Circuit   Attributes |
