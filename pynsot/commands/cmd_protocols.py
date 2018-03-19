@@ -147,8 +147,10 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface,
     data = ctx.params
 
     if interface is None and circuit is None:
-        raise click.UsageError('''Must have interface "-i" / "--interface" or
-                circuit "-c" / "--circuit" populated''')
+        raise click.UsageError(
+            '''Must have interface "-i" / "--interface" or
+               circuit "-c" / "--circuit" populated'''
+        )
 
     if description is None:
         data.pop('description')
