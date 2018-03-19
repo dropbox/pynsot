@@ -36,7 +36,7 @@ def test_protocols_add(site_client, device_a, interface_a, site, protocol_type):
         assert 'Added protocol!' in result.output
 
         # Verify addition.
-        result = runner.run('protocols list -i %s' % interface_id)
+        result = runner.run('protocols list')
         assert result.exit_code == 0
         assert 'bgp' in result.output
         assert device_a['hostname'] in result.output
