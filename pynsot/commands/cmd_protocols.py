@@ -37,12 +37,12 @@ DISPLAY_FIELDS = (
 # Fields to display when viewing a single record.
 VERBOSE_FIELDS = (
     ('id', 'ID'),
-    ('auth_string', 'Auth_String'),
-    ('description', 'Description'),
     ('device', 'Device'),
     ('type', 'Type'),
     ('interface', 'Interface'),
     ('circuit', 'Circuit'),
+    ('auth_string', 'Auth_String'),
+    ('description', 'Description'),
     ('site', 'Site'),
     ('attributes', 'Attributes'),
 )
