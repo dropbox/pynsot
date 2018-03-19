@@ -1153,7 +1153,7 @@ Performing a set query on Interfaces by attribute/value displays by natural key
     foo-bar1:eth0
     foo-bar1:eth1
 
-You may also display the results comma-delimted:
+You may also display the results comma-delimited:
 
 .. code-block:: bash
 
@@ -1525,6 +1525,112 @@ to remote).
 
 .. _working_with_values:
 
+Protocol Types
+--------------
+
+A Protocol Type resource represents a network protocol type (e.g. bgp, is-is, ospf, etc.)
+
+Protocol Types can have any number of required attributes.
+
+Adding a Protocol Type is done by specifying the name:
+
+.. code-block:: bash
+
+    $ nsot protocol_types add -n bgp
+    [SUCCESS] Added protocol_type!
+
+Let's add another Protocol Type:
+
+.. code-block:: bash
+
+    $ nsot protocol_types add -n ospf
+    [SUCCESS] Added protocol_type!
+
+Listing all Protocol Types:
+
+.. code-block:: bash
+
+	$ nsot protocol_types list
+	+-----------------------------------------------+
+	| ID   Name   Description   Required Attributes |
+	+-----------------------------------------------+
+	| 1    bgp                                      |
+	| 2    ospf                                     |
+	+-----------------------------------------------+
+
+Protocol Types also allow you to add required attributes for future protocols of this type. This is done by the name of the attribute:
+
+.. code-block:: bash
+
+	$ nsot protocol_types add -n tcp -r foo
+	[SUCCESS] Added protocol_type!
+
+	$ nsot protocol_types list
+	+-----------------------------------------------+
+	| ID   Name   Description   Required Attributes |
+	+-----------------------------------------------+
+	| 1    bgp                                      |
+	| 2    ospf                                     |
+	| 3    tcp                  foo                 |
+	+-----------------------------------------------+
+
+Note that this only works if the attribute has already been created for the Protocol resource. Notice what happens if we try to add the ``bar`` attribute to the Protocol Type:
+
+.. code-block:: bash
+
+	$ nsot protocol_types add -n ip -r bar
+	[FAILURE] required_attributes:  Object with name=bar does not exist.
+
+	$ nsot attributes add -r protocol -n bar
+	[SUCCESS] Added attribute!
+
+Now that ``bar`` has been created, it can be added as a required-attribute on the Protocol Type::
+
+.. code-block:: bash
+	$ nsot protocol_types add -n ip -r bar
+	[SUCCESS] Added protocol_type!
+
+You can also update the name of your protocol_type:
+
+.. code-block:: bash
+
+	$ nsot protocol_types update -i 1 -n test
+	[SUCCESS] Updated protocol_type!
+
+	$ nsot protocol_types list
+	+-----------------------------------------------+
+	| ID   Name   Description   Required Attributes |
+	+-----------------------------------------------+
+	| 1    test                                     |
+	| 2    ospf                                     |
+	| 3    tcp                  foo                 |
+	| 4    ip                   bar                 |
+	+-----------------------------------------------+
+
+You can add required-attributes to a protocol_type that has already been created:
+
+.. code-block:: bash
+
+	$ nsot protocol_types update -i 2 bar
+	[SUCCESS] Updated protocol_type!
+
+	$ nsot protocol_types list
+	+-----------------------------------------------+
+	| ID   Name   Description   Required Attributes |
+	+-----------------------------------------------+
+	| 1    test                                     |
+	| 2    ospf                 bar                 |
+	| 4    tcp                  foo                 |
+	| 5    ip                   bar                 |
+	+-----------------------------------------------+
+
+Removing a Protocol:
+
+.. code-block:: bash
+
+    $ nsot protocol remove -i 1
+    [SUCCESS] Removed protocol_type!
+
 
 Protocols
 ---------
@@ -1548,17 +1654,17 @@ It's important to note that you must create the :ref:`protocol_type` before you 
     $ nsot protocols add -t bgp -D 1 -i 1 -e 'this wont work'
     [FAILURE] type:  Object with name=bgp does not exist.
 
-If I add the protocol_type and rerun the above command:
+If we add the Protocol Type and rerun the above command, it will allow a protocol to be created:
 
 .. code-block:: bash
 
     $ nsot protocol_types add -n bgp
     [SUCCESS] Added protocol_type!
-    $ nsot protocols add -t bgp -D 1 -i 1 -e 'this wont work'
+
+	$ nsot protocols add -t bgp -D 1 -i 1 -e 'this wont work'
     [SUCCESS] Added protocol!
 
 We can see both protocols by running list:
-
 
 .. code-block:: bash
 
@@ -1570,7 +1676,7 @@ We can see both protocols by running list:
 	| 2    foo-bar01   bgp    foo-bar01:etho0   None                 |
 	+----------------------------------------------------------------+
 
-Listing a single Protocol by name:
+Listing a single Protocol by type:
 
 .. code-block:: bash
 
@@ -1605,7 +1711,7 @@ Performing a set query on Protocols by attribute/value displays by natural key:
 	$ nsot protocols list -q foo=test_attribute
 	foo-bar01:ospf:3
 
-Replacing an attribute can be done using --replace-attributes
+Replacing an attribute can be done using ``--replace-attributes``:
 
 .. code-block:: bash
 
@@ -1619,9 +1725,9 @@ Replacing an attribute can be done using --replace-attributes
 	| 2    foo-bar01   bgp    foo-bar01:etho0   None                       |
 	+----------------------------------------------------------------------+
 
-Removing an attribute can be done using --delete-attributes
+Removing an attribute can be done using ``--delete-attributes``:
 
-.. code-blcok:: bash
+.. code-block:: bash
 
 	$ nsot protocols update -i 1 --delete-attributes -a foo=test_replace
 	[SUCCESS] Updated protocol!
@@ -1637,7 +1743,7 @@ Removing a Protocol can be done by ID and site-id:
 
 .. code-block:: bash
 
-    $ nsot protocols remove -i 1 -s
+    $ nsot protocols remove -i 1 -s 1
     [SUCCESS] Removed protocol!
 
 
