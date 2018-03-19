@@ -18,8 +18,6 @@ import logging
 
 from ..vendor import click
 from . import callbacks, types
-from .cmd_protocols import DISPLAY_FIELDS as PROTOCOL_DISPLAY_FIELDS
-
 
 # Logger
 log = logging.getLogger(__name__)
