@@ -18,7 +18,7 @@ import logging
 
 from ..vendor import click
 from . import callbacks, types
-from .cmd_protocols import DISPLAY_FIELDS as PROTOTYPE_DISPLAY_FIELDS
+from .cmd_protocols import DISPLAY_FIELDS as PROTOCOL_DISPLAY_FIELDS
 
 
 # Logger
@@ -50,7 +50,8 @@ def cli(ctx):
     """
     Protocol Type objects.
 
-    A Protocol Type resource can represent a network protocol type (e.g. bgp, is-is, ospf, etc.)
+    A Protocol Type resource can represent a network protocol type (e.g. bgp,
+    is-is, ospf, etc.)
 
     Protocol Types can have any number of required attributes as defined below.
     """
@@ -63,7 +64,8 @@ def cli(ctx):
     '--required-attributes',
     metavar='ATTRIBUTE',
     type=str,
-    help='The name of a Protocol attribute. This option can be provided multiple times, once per attribute.',
+    help=('''The name of a Protocol attribute. This option can be providedi
+           multiple times, once per attribute.'''),
     multiple=True,
 )
 @click.option(
@@ -101,9 +103,9 @@ def add(ctx, required_attributes, description, name, site_id):
 
     Examples: OSPF, BGP, etc.
 
-    You may also provide required Protocol attributes, you may specify the -r/--required-attributes
-    option once for each attribute. The Protocol attributes must exist before adding them to a
-    protocol type.
+    You may also provide required Protocol attributes, you may specify the
+    -r/--required-attributes option once for each attribute. The Protocol
+    attributes must exist before adding them to a protocol type.
 
     You must provide a Site ID using the -s/--site-id option.
     """
@@ -153,8 +155,8 @@ def list(ctx, description, id, name, site_id):
     You must provide a Site ID using the -s/--site-id option.
 
     When listing Protocol Types, all objects are displayed by default. You
-    optionally may lookup a single Protocol Types by ID using the -i/--id option.
-    The ID can either be the numeric ID of the Protocol Type.
+    optionally may lookup a single Protocol Types by ID using the -i/--id
+    option. The ID can either be the numeric ID of the Protocol Type.
     """
     data = ctx.params
 
@@ -171,6 +173,7 @@ def list(ctx, description, id, name, site_id):
             data, display_fields=display_fields,
             verbose_fields=VERBOSE_FIELDS
         )
+
 
 @list.command()
 @click.pass_context
@@ -206,13 +209,13 @@ def remove(ctx, id, site_id):
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When removing an Protocol Type, you must provide the ID of the Protocol Type using
-    -i/--id.
+    When removing an Protocol Type, you must provide the ID of the Protocol
+    Type using -i/--id.
 
     You may retrieve the ID for an Protocol Type by parsing it from the list of
     Protocol Types for a given Site:
 
-        nsot protocol_types list --site-id <site_id> | grep <protocol_type name>
+      nsot protocol_types list --site-id <site_id> | grep <protocol_type name>
     """
     data = ctx.params
     ctx.obj.remove(**data)
@@ -225,7 +228,8 @@ def remove(ctx, id, site_id):
     '--required-attributes',
     metavar='ATTRIBUTE',
     type=str,
-    help='The name of a Protocol attribute. This option can be provided multiple times, once per attribute.',
+    help=('''The name of a Protocol attribute. This option can be provided multiple
+         times, once per attribute.'''),
     multiple=True,
     callback=callbacks.transform_attributes,
 )
@@ -266,8 +270,8 @@ def update(ctx, required_attributes, description, id, name, site_id):
 
     You must provide a Site ID using the -s/--site-id option.
 
-    When updating an Protocol Type you must provide the ID (-i/--id). The ID can either be
-    the numeric ID of the Protocol Type or the name.
+    When updating an Protocol Type you must provide the ID (-i/--id). The ID
+    can either be the numeric ID of the Protocol Type or the name.
 
     The -a/--attributes option may be provided multiple times, once for each
     key-value pair.

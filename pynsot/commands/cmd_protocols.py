@@ -131,7 +131,8 @@ def cli(ctx):
     required=True,
 )
 @click.pass_context
-def add(ctx, auth_string, attributes, circuit, device, description, interface, site_id, type):
+def add(ctx, auth_string, attributes, circuit, device, description, interface,
+        site_id, type):
     """
     Add a new Protocol.
 
@@ -146,7 +147,8 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     data = ctx.params
 
     if interface is None and circuit is None:
-        raise click.UsageError('Must have interface "-i" / "--interface" or circuit "-c" / "--circuit" populated')
+        raise click.UsageError('''Must have interface "-i" / "--interface" or
+                circuit "-c" / "--circuit" populated''')
 
     if description is None:
         data.pop('description')
@@ -246,8 +248,8 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface, s
     help='The protocol type',
 )
 @click.pass_context
-def list(ctx, attributes, auth_string, circuit, delimited, description, device, grep, id,
-         interface, query, site_id, type):
+def list(ctx, attributes, auth_string, circuit, delimited, description, device,
+         grep, id, interface, query, site_id, type):
     """
     List existing Protocols for a Site.
 
@@ -280,6 +282,7 @@ def list(ctx, attributes, auth_string, circuit, delimited, description, device, 
                 data, display_fields=display_fields,
                 verbose_fields=VERBOSE_FIELDS
             )
+
 
 # Remove
 @cli.command()
@@ -425,8 +428,8 @@ def remove(ctx, id, site_id):
     help='Treat the specified attributes as a list type.',
 )
 @click.pass_context
-def update(ctx, attributes, auth_string, circuit, description, device, id, interface,
-           site_id, type, attr_action, multi):
+def update(ctx, attributes, auth_string, circuit, description, device, id,
+           interface, site_id, type, attr_action, multi):
     """
     Update a Protocol.
 
@@ -454,7 +457,8 @@ def update(ctx, attributes, auth_string, circuit, description, device, id, inter
     replaced. If combined with --multi and multiple attributes of the same
     name are provided, only the last value provided will be used.
     """
-    if not any([attributes, description, type, auth_string, circuit, interface]):
+    if not any([attributes, description, type, auth_string, circuit,
+                interface]):
         msg = 'You must supply at least one of the optional arguments.'
         raise click.UsageError(msg)
     ctx.obj.update(ctx.params)
