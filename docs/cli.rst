@@ -1676,7 +1676,7 @@ We can see both protocols by running list:
     | 2    foo-bar01   bgp    foo-bar01:etho0   None                 |
     +----------------------------------------------------------------+
 
-If, however, the Protocol Type has a ``required_attribute``, you will need to provide this when adding a protocol of that type. For example:
+If, however, the Protocol Type has a ``required-attribute``, you will need to provide this when adding a protocol of that type. For example:
 
 .. code-block:: bash
 
