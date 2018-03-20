@@ -329,10 +329,12 @@ The following output modifiers apply to :ref:`resource_types` only.
 
 * ``-g/--grep`` - Display list results in a grep-friendly format. This modifies
   the output in a way where the natural key is displayed first, and then each
-  attribute/value pair (if any) is displayed one per line.
+  attribute/value pair (if any) is displayed one per line. Concrete
+  field/values are also displayed for each resource.
 
 .. note::
-   Objects without any attributes will not be displayed.
+   Objects without any attributes will still be displayed, only with concrete
+   fields listed in grep format.
 
 .. code-block:: bash
    
@@ -341,10 +343,16 @@ The following output modifiers apply to :ref:`resource_types` only.
     lax-r2 metro=lax
     lax-r2 owner=jathan
     lax-r2 vendor=juniper
+    lax-r2 hostname=lax-r2
+    lax-r2 id=311
+    lax-r2 site_id=1
     iad-r1 hw_type=router
     iad-r1 metro=iad
     iad-r1 owner=jathan
     iad-r1 vendor=juniper
+    lax-r1 hostname=lax-r1
+    lax-r1 id=312
+    lax-r1 site_id=1
 
     $ nsot devices list --attributes vendor=juniper --grep | grep metro
     lax-r2 metro=lax
