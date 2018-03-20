@@ -30,7 +30,7 @@ def test_protocols_add(site_client, device_a, interface_a, site, protocol_type):
     with runner.isolated_filesystem():
         # Add a protocol.
         result = runner.run(
-            "protocols add -t bgp -D %s -i %s -e 'my new proto'" % (device_id, interface_id)
+            "protocols add -t bgp -D %s -I %s -e 'my new proto'" % (device_id, interface_id)
         )
         assert result.exit_code == 0
         assert 'Added protocol!' in result.output
@@ -45,7 +45,7 @@ def test_protocols_add(site_client, device_a, interface_a, site, protocol_type):
         # Add a second protocol with attributes.
         attributes = 'foo=test_attribute'
         result = runner.run(
-            "protocols add -t bgp -D %s -i %s -a %s" % (device_id, interface_id, attributes)
+            "protocols add -t bgp -D %s -I %s -a %s" % (device_id, interface_id, attributes)
         )
         assert result.exit_code == 0
         assert 'Added protocol!' in result.output
