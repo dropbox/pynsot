@@ -4,6 +4,22 @@ Changelog
 
 Version History
 ===============
+.. _v1.3.0:
+
+1.3.0 (2018-03-20)
+------------------
+
+* Implements protocols and protocol_types CLI capability (added in NSoT v1.3.0).
+* Enhancement to ``-g/--grep`` to include all object fields.
+
+.. _v1.2.1:
+
+1.2.1 (2017-09-07)
+------------------
+
+* Implements #142: Sorts the ``Attributes`` column in the output of the
+  ``list`` subcommand, similar to the output of the ``list`` subcommand
+  with the ``-g`` flag.
 
 .. _v1.2.1:
 

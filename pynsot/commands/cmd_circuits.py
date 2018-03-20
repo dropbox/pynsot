@@ -216,7 +216,10 @@ def list(ctx, attributes, endpoint_a, endpoint_z, grep, id, limit, name,
 
     # Don't list interfaces if a subcommand is invoked
     if ctx.invoked_subcommand is None:
-        ctx.obj.list(ctx.params, display_fields=DISPLAY_FIELDS)
+        if query is not None:
+            ctx.obj.natural_keys_by_query(ctx.params)
+        else:
+            ctx.obj.list(ctx.params, display_fields=DISPLAY_FIELDS)
 
 
 @list.command()

@@ -37,8 +37,11 @@ Each object type is assigned a positional command argument:
     Commands:
       attributes  Attribute objects.
       changes     Change events.
+      circuits        Circuit objects.
       devices     Device objects.
       interfaces  Interface objects.
+      protocol_types  Protocol Type objects.
+      protocols       Protocol objects.
       networks    Network objects.
       sites       Site objects.
       values      Value objects.
@@ -132,7 +135,7 @@ Resource Types
 
 NSoT refers internally to any object that can have attributes as *Resource
 Types* or just *Resources* for short. As of this writing this includes Device,
-Network, and Interfaces objects.
+Network, Interfaces, and Protocols objects.
 
 You will also see command-line arguments referencing *Resource Name* to
 indicate the name of a Resource Type.
@@ -326,10 +329,12 @@ The following output modifiers apply to :ref:`resource_types` only.
 
 * ``-g/--grep`` - Display list results in a grep-friendly format. This modifies
   the output in a way where the natural key is displayed first, and then each
-  attribute/value pair (if any) is displayed one per line.
+  attribute/value pair (if any) is displayed one per line. Concrete
+  field/values are also displayed for each resource.
 
 .. note::
-   Objects without any attributes will not be displayed.
+   Objects without any attributes will still be displayed, only with concrete
+   fields listed in grep format.
 
 .. code-block:: bash
    
@@ -338,10 +343,16 @@ The following output modifiers apply to :ref:`resource_types` only.
     lax-r2 metro=lax
     lax-r2 owner=jathan
     lax-r2 vendor=juniper
+    lax-r2 hostname=lax-r2
+    lax-r2 id=311
+    lax-r2 site_id=1
     iad-r1 hw_type=router
     iad-r1 metro=iad
     iad-r1 owner=jathan
     iad-r1 vendor=juniper
+    lax-r1 hostname=lax-r1
+    lax-r1 id=312
+    lax-r1 site_id=1
 
     $ nsot devices list --attributes vendor=juniper --grep | grep metro
     lax-r2 metro=lax
@@ -414,6 +425,12 @@ Interfaces
 
 Bulk addition of Interfaces via CLI is not supported at this time.
 
+
+Protocols
+---------
+
+Bulk addition of Protocols via CLI is not supported at this time.
+
 .. _working_with_objects:
 
 Working with Objects
@@ -437,7 +454,7 @@ Adding a Site:
 .. code-block:: bash
 
     $ nsot sites add --name Spam --description 'Spam Site'
-    [SUCCESS] added site with args: name=Space, description=Spam Site!
+    [SUCCESS] added site with args: name=Spam, description=Spam Site!
 
 Listing all Sites:
 
@@ -1144,7 +1161,7 @@ Performing a set query on Interfaces by attribute/value displays by natural key
     foo-bar1:eth0
     foo-bar1:eth1
 
-You may also display the results comma-delimted:
+You may also display the results comma-delimited:
 
 .. code-block:: bash
 
@@ -1516,8 +1533,255 @@ to remote).
 
 .. _working_with_values:
 
+Protocol Types
+--------------
+
+A Protocol Type resource represents a network protocol type (e.g. bgp, is-is, ospf, etc.)
+
+Protocol Types can have any number of required attributes.
+
+Adding a Protocol Type is done by specifying the name:
+
+.. code-block:: bash
+
+    $ nsot protocol_types add --name bgp
+    [SUCCESS] Added protocol_type!
+
+Let's add another Protocol Type:
+
+.. code-block:: bash
+
+    $ nsot protocol_types add --name ospf
+    [SUCCESS] Added protocol_type!
+
+Listing all Protocol Types:
+
+.. code-block:: bash
+
+    $ nsot protocol_types list
+    +-----------------------------------------------+
+    | ID   Name   Description   Required Attributes |
+    +-----------------------------------------------+
+    | 1    bgp                                      |
+    | 2    ospf                                     |
+    +-----------------------------------------------+
+
+Protocol Types also allow you to add required attributes for future protocols of this type. This is done by the name of the attribute:
+
+.. code-block:: bash
+
+    $ nsot protocol_types add --name tcp --required-attribute foo
+    [SUCCESS] Added protocol_type!
+
+    $ nsot protocol_types list
+    +-----------------------------------------------+
+    | ID   Name   Description   Required Attributes |
+    +-----------------------------------------------+
+    | 1    bgp                                      |
+    | 2    ospf                                     |
+    | 3    tcp                  foo                 |
+    +-----------------------------------------------+
+
+Note that this only works if the attribute has already been created for the Protocol resource. Notice what happens if we try to add the ``bar`` attribute to the Protocol Type:
+
+.. code-block:: bash
+
+    $ nsot protocol_types add --name ip --required-attribute bar
+    [FAILURE] required_attributes:  Object with name=bar does not exist.
+
+    $ nsot attributes add --resource-name protocol --name bar
+    [SUCCESS] Added attribute!
+
+Now that ``bar`` has been created, it can be added as a required-attribute on the Protocol Type:
+
+.. code-block:: bash
+
+    $ nsot protocol_types add --name ip -required-attribute bar
+    [SUCCESS] Added protocol_type!
+
+You can also update the name of your protocol_type:
+
+.. code-block:: bash
+
+    $ nsot protocol_types update --id 1 --name test
+    [SUCCESS] Updated protocol_type!
+
+    $ nsot protocol_types list
+    +-----------------------------------------------+
+    | ID   Name   Description   Required Attributes |
+    +-----------------------------------------------+
+    | 1    test                                     |
+    | 2    ospf                                     |
+    | 3    tcp                  foo                 |
+    | 4    ip                   bar                 |
+    +-----------------------------------------------+
+
+You can add required-attributes to a protocol_type that has already been created:
+
+.. code-block:: bash
+
+    $ nsot protocol_types update --id 1 --required-attribute baz
+    [SUCCESS] Updated protocol_type!
+
+    $ nsot protocol_types list
+    +-----------------------------------------------+
+    | ID   Name   Description   Required Attributes |
+    +-----------------------------------------------+
+    | 1    test                 baz                 |
+    | 2    ospf                                     |
+    | 3    tcp                  foo                 |
+    | 4    ip                   bar                 |
+    +-----------------------------------------------+
+
+Removing a Protocol Type:
+
+.. code-block:: bash
+
+    $ nsot protocol_types remove --id 1
+    [SUCCESS] Removed protocol_type!
+
+
+Protocols
+---------
+
+A Protocol represents a network routing protocol.
+
+Protocols, like all other :ref:`resource_types`, support arbitrary attributes.
+
+Adding a Protocol is done by specifying the protocol_type (-t/--type), device id or natural key (-D/--device), and interface id or natural key (-I/--interface). You can also optionally provide a description (-e/--description) for the protocol, as shown below. Since there are many flags to pass infor the `add` operation, we will use the shorter flag option.
+
+.. code-block:: bash
+
+    $ nsot protocols add -t ospf -D foo-bar01 -I foo-bar01:etho0 -e 'my new proto'
+    [SUCCESS] Added protocol!
+
+It's important to note that you must create the :ref:`protocol_type` before you can add a protocol of that type. For example, see what happens if I try to create a new protocol of type `bgp` without having added this protocol_type first:
+
+.. code-block:: bash
+
+    $ nsot protocols add -t bgp -D foo-bar01 -I foo-bar01:etho0 -e 'this wont work'
+    [FAILURE] type:  Object with name=bgp does not exist.
+
+If we add the Protocol Type and rerun the above command, it will allow a protocol to be created:
+
+.. code-block:: bash
+
+    $ nsot protocol_types add -n bgp
+    [SUCCESS] Added protocol_type!
+
+    $ nsot protocols add -t bgp -D foo-bar01 -I foo-bar01:etho0 -e 'this will work'
+    [SUCCESS] Added protocol!
+
+We can see both protocols by running list:
+
+.. code-block:: bash
+
+    $ nsot protocols list
+    +----------------------------------------------------------------+
+    | ID   Device      Type   Interface         Circuit   Attributes |
+    +----------------------------------------------------------------+
+    | 1    foo-bar01   ospf   foo-bar01:etho0   None                 |
+    | 2    foo-bar01   bgp    foo-bar01:etho0   None                 |
+    +----------------------------------------------------------------+
+
+If, however, the Protocol Type has a ``required-attribute``, you will need to provide this when adding a protocol of that type. For example:
+
+.. code-block:: bash
+
+    $ nsot protocol_types list
+    +-----------------------------------------------+
+    | ID   Name   Description   Required Attributes |
+    +-----------------------------------------------+
+    | 2    ospf                                     |
+    | 3    tcp                  my_attr             |
+    | 4    ip                   bar                 |
+    +-----------------------------------------------+
+
+Notice that the protocol_type ``tcp`` has a required attribute named ``my_attr``. This means this if you create a protocol of this type, you will need to provide a key, value pair (format: key=value), where key is the protocol_type's required attribute name. See the example below:
+
+.. code-block:: bash
+
+    $ nsot protocols add -t tcp -D foo-bar01 -I foo-bar01:etho0 -e 'this wont work'
+    [FAILURE] attributes: Missing required attributes: my_attr
+
+    $ nsot protocols add -t tcp -D foo-bar01 -I foo-bar01:etho0 -a my_attr=test -e 'this will work'
+    [SUCCESS] Added protocol!
+
+Listing a single Protocol by type:
+
+.. code-block:: bash
+
+    $ nsot protocols list -t bgp
+    +----------------------------------------------------------------+
+    | ID   Device      Type   Interface         Circuit   Attributes |
+    +----------------------------------------------------------------+
+    | 2    foo-bar01   bgp    foo-bar01:etho0   None                 |
+    +----------------------------------------------------------------+
+
+Protocols also support attributes:
+
+.. code-block:: bash
+
+    $ nsot attributes add --resource-name protocol --name foo
+    [SUCCESS] Added attribute!
+
+    $ nsot protocols update --id 1 --attributes foo=test_attribute
+    [SUCCESS] Updated protocol!
+
+    $ nsot protocols list -i 1
+    +------------------------------------------------------------------------------------------------------------+
+    | ID   Device      Type   Interface         Circuit   Auth_String   Description    Site   Attributes         |
+    +------------------------------------------------------------------------------------------------------------+
+    | 1    foo-bar01   ospf   foo-bar01:etho0   None                    my new proto   1      foo=test_attribute |
+    +------------------------------------------------------------------------------------------------------------+
+
+Performing a set query on Protocols by attribute/value displays by natural key:
+
+.. code-block:: bash
+
+    $ nsot protocols list -q foo=test_attribute
+    foo-bar01:ospf:3
+
+Replacing an attribute can be done using ``--replace-attributes``:
+
+.. code-block:: bash
+
+    $ nsot protocols update -i 1 --replace-attributes -a foo=test_replace
+    [SUCCESS] Updated protocol!
+
+    $ nsot protocols list
+    +----------------------------------------------------------------------+
+    | ID   Device      Type   Interface         Circuit   Attributes       |
+    +----------------------------------------------------------------------+
+    | 1    foo-bar01   ospf   foo-bar01:etho0   None      foo=test_replace |
+    | 2    foo-bar01   bgp    foo-bar01:etho0   None                       |
+    +----------------------------------------------------------------------+
+
+Removing an attribute can be done using ``--delete-attributes``:
+
+.. code-block:: bash
+
+    $ nsot protocols update -i 1 --delete-attributes -a foo=test_replace
+    [SUCCESS] Updated protocol!
+
+    $ nsot protocols list
+    +----------------------------------------------------------------+
+    | ID   Device      Type   Interface         Circuit   Attributes |
+    +----------------------------------------------------------------+
+    | 1    foo-bar01   ospf   foo-bar01:etho0   None                 |
+    | 2    foo-bar01   bgp    foo-bar01:etho0   None                 |
+    +----------------------------------------------------------------+
+
+Removing a Protocol can be done by ID and site-id:
+
+.. code-block:: bash
+
+    $ nsot protocols remove -i 1 -s 1
+    [SUCCESS] Removed protocol!
+
+
 Values
-------
+======
 
 Values represent attribute values and cannot be directly manipulated. They can
 be viewed, however, and this command allows you to do that.
@@ -1544,7 +1808,7 @@ You might have an Attribute with the same name (e.g. ``metro``) across multiple
 .. _working_with_changes:
 
 Changes
--------
+=======
 
 All Create/Update/Delete events are logged as a Change. A Change includes
 information such as the change time, user, and the full resource after

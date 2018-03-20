@@ -309,7 +309,16 @@ def test_devices_list(site_client):
 
         # Grep-friendly output (-g/--grep)
         result = runner.run('devices list -a owner=jathan -g')
-        expected_output = u'foo-bar1 owner=jathan\nfoo-bar2 owner=jathan\n'
+        expected_output = (
+            u'foo-bar1 owner=jathan\n'
+            'foo-bar1 hostname=foo-bar1\n'
+            'foo-bar1 id=5\n'
+            'foo-bar1 site_id=11\n'
+            'foo-bar2 owner=jathan\n'
+            'foo-bar2 hostname=foo-bar2\n'
+            'foo-bar2 id=6\n'
+            'foo-bar2 site_id=11\n')
+
         assert result.exit_code == 0
         assert result.output == expected_output
 
@@ -625,7 +634,27 @@ def test_networks_list(site_client):
         result = runner.run('networks list -a owner=jathan -g')
         expected_output = (
             '10.0.0.0/8 owner=jathan\n'
+            '10.0.0.0/8 cidr=10.0.0.0/8\n'
+            '10.0.0.0/8 id=5\n'
+            '10.0.0.0/8 ip_version=4\n'
+            '10.0.0.0/8 is_ip=False\n'
+            '10.0.0.0/8 network_address=10.0.0.0\n'
+            '10.0.0.0/8 parent=None\n'
+            '10.0.0.0/8 parent_id=None\n'
+            '10.0.0.0/8 prefix_length=8\n'
+            '10.0.0.0/8 site_id=18\n'
+            '10.0.0.0/8 state=allocated\n'
             '10.0.0.0/24 owner=jathan\n'
+            '10.0.0.0/24 cidr=10.0.0.0/24\n'
+            '10.0.0.0/24 id=6\n'
+            '10.0.0.0/24 ip_version=4\n'
+            '10.0.0.0/24 is_ip=False\n'
+            '10.0.0.0/24 network_address=10.0.0.0\n'
+            '10.0.0.0/24 parent=10.0.0.0/8\n'
+            '10.0.0.0/24 parent_id=5\n'
+            '10.0.0.0/24 prefix_length=24\n'
+            '10.0.0.0/24 site_id=18\n'
+            '10.0.0.0/24 state=allocated\n'
         )
         assert result.exit_code == 0
         assert result.output == expected_output
@@ -964,7 +993,33 @@ def test_interfaces_list(site_client, device):
         result = runner.run('interfaces list -a vlan=100 -g')
         expected_output = (
             '{0}:eth0 vlan=100\n'
+            '{0}:eth0 addresses=[u\'10.10.10.1/32\']\n'
+            '{0}:eth0 description=\n'
+            '{0}:eth0 device=16\n'
+            '{0}:eth0 device_hostname=foo-bar1\n'
+            '{0}:eth0 id=8\n'
+            '{0}:eth0 mac_address=00:00:00:00:00:01\n'
+            '{0}:eth0 name=eth0\n'
+            '{0}:eth0 name_slug=foo-bar1:eth0\n'
+            '{0}:eth0 networks=[u\'10.10.10.0/24\']\n'
+            '{0}:eth0 parent=None\n'
+            '{0}:eth0 parent_id=None\n'
+            '{0}:eth0 speed=10000\n'
+            '{0}:eth0 type=6\n'
             '{0}:eth1 vlan=100\n'
+            '{0}:eth1 addresses=[u\'10.10.10.2/32\']\n'
+            '{0}:eth1 description=\n'
+            '{0}:eth1 device=16\n'
+            '{0}:eth1 device_hostname=foo-bar1\n'
+            '{0}:eth1 id=9\n'
+            '{0}:eth1 mac_address=00:00:00:00:00:02\n'
+            '{0}:eth1 name=eth1\n'
+            '{0}:eth1 name_slug=foo-bar1:eth1\n'
+            '{0}:eth1 networks=[u\'10.10.10.0/24\']\n'
+            '{0}:eth1 parent=None\n'
+            '{0}:eth1 parent_id=None\n'
+            '{0}:eth1 speed=20000\n'
+            '{0}:eth1 type=24\n'
         ).format(hostname)
         assert result.exit_code == 0
         assert result.output == expected_output
