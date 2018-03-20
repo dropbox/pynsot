@@ -102,7 +102,7 @@ def cli(ctx):
     help='The description for this Protocol.',
 )
 @click.option(
-    '-i',
+    '-I',
     '--interface',
     metavar='INTERFACE',
     type=str,
