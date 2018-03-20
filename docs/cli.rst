@@ -1625,11 +1625,11 @@ You can add required-attributes to a protocol_type that has already been created
     | 4    ip                   bar                 |
     +-----------------------------------------------+
 
-Removing a Protocol:
+Removing a Protocol Type:
 
 .. code-block:: bash
 
-    $ nsot protocol remove --id 1
+    $ nsot protocol_types remove --id 1
     [SUCCESS] Removed protocol_type!
 
 
@@ -1640,14 +1640,14 @@ A Protocol represents a network routing protocol.
 
 Protocols, like all other :ref:`resource_types`, support arbitrary attributes.
 
-Adding a Protocols is done by specifying the protocol type(-t/--type), device id or natural key (-D/--device), and interface id or natural key (-I/--interface). You can also optionally provide a description (-e/--description) for the protocol, as shown below. Since there are many flags to pass in, we will use the short flags.
+Adding a Protocol is done by specifying the protocol_type (-t/--type), device id or natural key (-D/--device), and interface id or natural key (-I/--interface). You can also optionally provide a description (-e/--description) for the protocol, as shown below. Since there are many flags to pass infor the `add` operation, we will use the shorter flag option.
 
 .. code-block:: bash
 
     $ nsot protocols add -t ospf -D foo-bar01 -I foo-bar01:etho0 -e 'my new proto'
     [SUCCESS] Added protocol!
 
-It's important to note that you must create the :ref:`protocol_type` before you can add a protocol of that type. For example, see what happens if I try to create a new protocol of type `bgp` without having adding this protocol_type first:
+It's important to note that you must create the :ref:`protocol_type` before you can add a protocol of that type. For example, see what happens if I try to create a new protocol of type `bgp` without having added this protocol_type first:
 
 .. code-block:: bash
 
@@ -1717,7 +1717,7 @@ Protocols also support attributes:
     $ nsot attributes add --resource-name protocol --name foo
     [SUCCESS] Added attribute!
 
-    $ nsot protocols update -i 1 -a foo=test_attribute
+    $ nsot protocols update --id 1 --attributes foo=test_attribute
     [SUCCESS] Updated protocol!
 
     $ nsot protocols list -i 1
