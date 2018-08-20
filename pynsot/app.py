@@ -130,8 +130,8 @@ class App(object):
         """Return singular form of resource_name. (e.g. "sites" -> "site")"""
         resource_name = self.resource_name
 
-        # Hot fix so addresses doesn't become `addresse`. The elegant approach of
-        # checking for `es` is not ideal because of `interfaces`. This works for now.
+        # Make sure `addresses` doesn't become `addresse`. The elegant approach
+        # of checking for `es` will affect `interfaces`, so this works for now.
         if resource_name == 'addresses':
             resource_name = 'address'
         elif resource_name.endswith('s'):
