@@ -129,8 +129,10 @@ class App(object):
     def singular(self):
         """Return singular form of resource_name. (e.g. "sites" -> "site")"""
         resource_name = self.resource_name
-        if resource_name.endswith('s'):
+        if resource_name.endswith('s') and resource_name != 'addresses':
             resource_name = resource_name[:-1]
+        elif resource_name == 'addresses':
+            resource_name = 'address'
         return resource_name
 
     @property
