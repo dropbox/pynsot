@@ -9,6 +9,7 @@ way of factory methods.
 
 from __future__ import unicode_literals
 import datetime
+import json
 import logging
 import os
 import sys
@@ -699,9 +700,9 @@ class App(object):
         obj_id = data['id']
         log.debug('removing %s' % obj_id)
         self.rebase(data)
-
         try:
-            result = self.resource(obj_id).delete()
+            log.debug('Retrieving network object.')
+            result = self.resource(obj_id).delete(data=json.dumps(data))
         except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
         else:
