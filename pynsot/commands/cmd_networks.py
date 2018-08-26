@@ -541,7 +541,8 @@ def next_address(ctx, *args, **kwargs):
     metavar='FORCE',
     is_flag=True,
     help=("Enables forceful delete of networks that have child networks, and "
-    "forces a reparenting of the children to the deleted network's parent."),
+          "forces a reparenting of the children to the deleted network's "
+          "parent."),
 )
 @click.pass_context
 def remove(ctx, id, site_id, force):
