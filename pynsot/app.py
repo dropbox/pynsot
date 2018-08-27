@@ -700,9 +700,15 @@ class App(object):
         obj_id = data['id']
         log.debug('removing %s' % obj_id)
         self.rebase(data)
+
+        params = {}
+        force_delete = data.pop('force_delete', None)
+        if force_delete is not None:
+            params['force_delete'] = force_delete
+
         try:
             log.debug('Retrieving network object.')
-            result = self.resource(obj_id).delete(data=json.dumps(data))
+            result = self.resource(obj_id).delete(**params)
         except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
         else:

@@ -537,15 +537,15 @@ def next_address(ctx, *args, **kwargs):
 )
 @click.option(
     '-f',
-    '--force',
-    metavar='FORCE',
+    '--force-delete',
+    metavar='FORCE_DELETE',
     is_flag=True,
     help=("Enables forceful delete of networks that have child networks, and "
           "forces a reparenting of the children to the deleted network's "
           "parent."),
 )
 @click.pass_context
-def remove(ctx, id, site_id, force):
+def remove(ctx, id, site_id, force_delete):
     """
     Remove a Network.
 
