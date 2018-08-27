@@ -9,7 +9,6 @@ way of factory methods.
 
 from __future__ import unicode_literals
 import datetime
-import json
 import logging
 import os
 import sys
