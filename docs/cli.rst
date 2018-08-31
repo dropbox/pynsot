@@ -747,7 +747,7 @@ children, an error is raised. Notice the error if we try to delete ``0.0.0.0/0``
     protected foreign key: 'Network.parent'
 
 In the case where you want to delete the network that has children, take for example the situation
-above where quad0 was mistakably added. You may forcefully delete the network using the
+above where quad0 was mistakably added, you may forcefully delete the network using the
 ``force-delete`` flag:
 
 .. code-block:: bash
