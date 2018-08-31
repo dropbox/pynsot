@@ -748,13 +748,13 @@ children, an error is raised. Notice the error if we try to delete ``0.0.0.0/0``
 
 In the case where you want to delete the network that has children, take for example the situation
 above where quad0 was mistakably added, you may forcefully delete the network using the
-``force-delete`` flag:
+``-f/--force-delete`` flag:
 
 .. code-block:: bash
     $ nsot networks remove -i 17 --force-delete
     [SUCCESS] Removed network!
 
-Forceful delete does not work if the network being deleted does not have a parent and it's child
+Forceful delete does not work if the network being deleted does not have a parent and its child
 networks are leaf nodes. Notice the error if we try to delete ``185.45.19.0/24``:
 
 .. code-block:: bash
