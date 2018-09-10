@@ -27,12 +27,7 @@ project maintainers, who have push access to the parent repository.
 
 #. Create a branch off of the ``develop`` branch called ``release-vX.Y.Z``
    where ``vX.Y.Z`` is the version you are releasing
-#. Use ``bump.sh`` to update the version in ``pynsot/version.py`` and the
-   Dockerfile. Example:
-
-.. code-block:: bash
-
-    $ ./bump.sh -v X.Y.Z
+#. Update the version in ``pynsot/version.py``.
 
 3. Update ``CHANGELOG.rst`` with what has changed since the last version. A
    one-line summary for each change is sufficient, and often the summary from
