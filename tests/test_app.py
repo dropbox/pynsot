@@ -849,8 +849,7 @@ def test_networks_remove(site_client, network):
     with runner.isolated_filesystem():
         # Just delete the network we have by id.
         result = runner.run('networks remove -i %s' % network['id'])
-        assert result.exit_code == 0
-        assert 'Removed network!' in result.output
+        assert_output(result, ['Removed network!'])
 
         # Create a new network and then delete it by CIDR using -i.
         runner.run('networks add -c 10.20.30.0/24')
@@ -861,6 +860,25 @@ def test_networks_remove(site_client, network):
         runner.run('networks add -c 10.20.30.0/24')
         result = runner.run('networks remove -c 10.20.30.0/24')
         assert_output(result, ['Removed network!'])
+
+        # Create three networks, each children of the next.
+        runner.run('networks add -c 10.20.30.0/24')
+        runner.run('networks add -c 10.20.30.5/32')
+        runner.run('networks add -c 10.20.0.0/17')
+
+        # Delete middle parent without force-delete flag.
+        result = runner.run('networks remove -c 10.20.30.0/24')
+        result.exit_code == 1
+        assert "Cannot delete some instances of model 'Network'" in result.output
+
+        # Delete middle parent with force-delete flag.
+        result = runner.run('networks remove -c 10.20.30.0/24 -f')
+        assert_output(result, ['Removed network!'])
+
+        # Delete parent with child nodes using force-delete flag, it will fail.
+        result = runner.run('networks remove -c 10.20.0.0/17 --force-delete')
+        result.exit_code == 1
+        assert "cannot forcefully delete a network that does not have a parent" in result.output
 
 
 ##############

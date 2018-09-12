@@ -535,8 +535,17 @@ def next_address(ctx, *args, **kwargs):
     help='Unique ID of the Site this Network is under.  [required]',
     callback=callbacks.process_site_id,
 )
+@click.option(
+    '-f',
+    '--force-delete',
+    metavar='FORCE_DELETE',
+    is_flag=True,
+    help=("Enables forceful delete of networks that have child networks, and "
+          "forces a reparenting of the children to the deleted network's "
+          "parent."),
+)
 @click.pass_context
-def remove(ctx, id, site_id):
+def remove(ctx, id, site_id, force_delete):
     """
     Remove a Network.
 

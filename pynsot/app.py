@@ -129,7 +129,12 @@ class App(object):
     def singular(self):
         """Return singular form of resource_name. (e.g. "sites" -> "site")"""
         resource_name = self.resource_name
-        if resource_name.endswith('s'):
+
+        # Make sure `addresses` doesn't become `addresse`. The elegant approach
+        # of checking for `es` will affect `interfaces`, so this works for now.
+        if resource_name == 'addresses':
+            resource_name = 'address'
+        elif resource_name.endswith('s'):
             resource_name = resource_name[:-1]
         return resource_name
 
@@ -695,8 +700,14 @@ class App(object):
         log.debug('removing %s' % obj_id)
         self.rebase(data)
 
+        params = {}
+        force_delete = data.pop('force_delete', None)
+        if force_delete is not None:
+            params['force_delete'] = force_delete
+
         try:
-            result = self.resource(obj_id).delete()
+            log.debug('Retrieving network object.')
+            result = self.resource(obj_id).delete(**params)
         except HTTP_ERRORS as err:
             self.handle_error(action, data, err)
         else:

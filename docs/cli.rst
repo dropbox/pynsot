@@ -725,6 +725,55 @@ You may also remove a Network by its CIDR:
     $ nsot networks remove --site-id 1 --cidr 10.20.30.0/24
     [SUCCESS] Removed network!
 
+The deletion of a network will only work if the network does not have any children. If it has
+children, an error is raised. Notice the error if we try to delete ``0.0.0.0/0``:
+
+.. code-block:: bash
+    $ nsot networks list
+    +-----------------------------------------------------------------------------------+
+    | ID   CIDR (Key)        Is IP?   IP Ver.   Parent           State       Attributes |
+    +-----------------------------------------------------------------------------------+
+    | 1    185.45.19.0/24    False    4         0.0.0.0/0        allocated              |
+    | 7    185.45.19.5/32    True     4         185.45.19.0/24   assigned               |
+    | 8    185.45.19.6/32    True     4         185.45.19.0/24   assigned               |
+    | 9    185.45.19.7/32    True     4         185.45.19.0/24   assigned               |
+    | 10   185.45.19.10/32   True     4         185.45.19.0/24   assigned               |
+    | 11   185.45.19.8/32    True     4         185.45.19.0/24   assigned               |
+    | 17   0.0.0.0/0         False    4         None             allocated              |
+    +-----------------------------------------------------------------------------------+v
+
+   $ nsot networks remove -i 17
+    [FAILURE] Cannot delete some instances of model 'Network' because they are referenced through a
+    protected foreign key: 'Network.parent'
+
+In the case where you want to delete the network that has children, take for example the situation
+above where quad0 was mistakably added, you may forcefully delete the network using the
+``-f/--force-delete`` flag:
+
+.. code-block:: bash
+    $ nsot networks remove -i 17 --force-delete
+    [SUCCESS] Removed network!
+
+Forceful delete does not work if the network being deleted does not have a parent and its child
+networks are leaf nodes. Notice the error if we try to delete ``185.45.19.0/24``:
+
+.. code-block:: bash
+    $ nsot networks list
+    +-----------------------------------------------------------------------------------+
+    | ID   CIDR (Key)        Is IP?   IP Ver.   Parent           State       Attributes |
+    +-----------------------------------------------------------------------------------+
+    | 1    185.45.19.0/24    False    4         None             allocated              |
+    | 7    185.45.19.5/32    True     4         185.45.19.0/24   assigned               |
+    | 8    185.45.19.6/32    True     4         185.45.19.0/24   assigned               |
+    | 9    185.45.19.7/32    True     4         185.45.19.0/24   assigned               |
+    | 10   185.45.19.10/32   True     4         185.45.19.0/24   assigned               |
+    | 11   185.45.19.8/32    True     4         185.45.19.0/24   assigned               |
+    +-----------------------------------------------------------------------------------+
+
+    $ nsot networks remove -i 1 --force-delete
+    [FAILURE] You cannot forcefully delete a network that does not have a parent, and whose children
+    are leaf nodes.
+
 Ancestors
 ~~~~~~~~~
 
