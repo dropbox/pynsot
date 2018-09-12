@@ -5,6 +5,15 @@ Changelog
 Version History
 ===============
 
+.. _v1.3.1:
+
+1.3.1 (2018-09-11)
+------------------
+
+* Fixes NSoT Issue #121: Enabling `force_delete` flag for deleting parent networks.
+* Adds `development` section to docs to explain versioning and the release process.
+* Fixes miscellaneous typos.
+
 .. _v1.3.0:
 
 1.3.0 (2018-03-20)
