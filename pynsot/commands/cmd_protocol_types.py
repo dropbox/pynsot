@@ -133,10 +133,23 @@ def add(ctx, required_attributes, description, name, site_id):
     help='Unique ID of the Protocol Type being retrieved.',
 )
 @click.option(
+    '-l',
+    '--limit',
+    metavar='LIMIT',
+    type=int,
+    help='Limit result to N resources.',
+)
+@click.option(
     '-n',
     '--name',
     metavar='NAME',
     help='Filter to Protocol Type matching this name.'
+)
+@click.option(
+    '-o',
+    '--offset',
+    metavar='OFFSET',
+    help='Skip the first N resources.',
 )
 @click.option(
     '-s',
@@ -146,7 +159,7 @@ def add(ctx, required_attributes, description, name, site_id):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def list(ctx, description, id, name, site_id):
+def list(ctx, description, id, limit, name, offset, site_id):
     """
     List existing Protocol Types for a Site.
 
