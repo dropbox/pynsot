@@ -39,3 +39,20 @@ def protocol_attribute2(site_client):
             'resource_name': 'Protocol',
         }
     )
+
+
+@pytest.fixture
+def protocol_types(site_client):
+    """
+    A group of ProtocolTypes for testing limit/offset/etc.
+    """
+    protocol_types = []
+    site = site_client.sites(site_client.default_site)
+
+    for i in range(1, 6):
+        protocol_type = site.protocol_types.post({
+            'name': 'type{}'.format(i),
+        })
+        protocol_types.append(protocol_type)
+
+    return protocol_types

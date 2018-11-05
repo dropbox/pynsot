@@ -10,10 +10,12 @@ import logging
 import pytest
 
 from tests.fixtures import (attribute, attributes, client, config, device,
-                            interface, network, protocol_type, site, site_client)
+                            interface, network, protocol_type, site,
+                            site_client)
 from tests.fixtures.circuits import (circuit, circuit_attributes, interface_a,
-                                    interface_z, device_a, device_z)
-from tests.fixtures.protocols import (protocol, protocol_attribute, protocol_attribute2)
+                                     interface_z, device_a, device_z)
+from tests.fixtures.protocols import (protocol, protocols, protocol_attribute,
+                                      protocol_attribute2)
 
 from tests.util import CliRunner, assert_output
 
@@ -111,6 +113,48 @@ def test_protocols_list(site_client, device_a, interface_a, site, circuit, proto
         result = runner.run('protocols list -q foo=test_protocol')
         assert result.exit_code == 0
         assert slug in result.output
+
+
+def test_protocols_list_limit(site_client, protocols):
+    """
+    If ``--limit 2`` is used, we should only see the first two Protocol objects
+    """
+    limit = 2
+    runner = CliRunner(site_client.config)
+
+    with runner.isolated_filesystem():
+        result = runner.run('protocols list -l {}'.format(limit))
+        assert result.exit_code == 0
+
+        expected_protocols = protocols[:limit]
+        unexpected_protocols = protocols[limit:]
+
+        for p in expected_protocols:
+            assert p['device'] in result.output
+        for p in unexpected_protocols:
+            assert p['device'] not in result.output
+
+
+def test_protocols_list_offset(site_client, protocols):
+    """
+    If ``--limit 2`` and ``--offset 2`` are used, we should only see the third
+    and fourth Protocol objects that were created
+    """
+    limit = 2
+    offset = 2
+    runner = CliRunner(site_client.config)
+
+    with runner.isolated_filesystem():
+        result = runner.run('protocols list -l {} -o {}'.format(limit, offset))
+        assert result.exit_code == 0
+
+        expected_protocols = protocols[offset:limit+offset]
+        unexpected_protocols = protocols[limit+offset:]
+
+        for p in expected_protocols:
+            assert p['device'] in result.output
+        for p in unexpected_protocols:
+            assert p['device'] not in result.output
 
 
 def test_protocols_update(site_client, interface_a, device_a, site, circuit, protocol, protocol_attribute):
