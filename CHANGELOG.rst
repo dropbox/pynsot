@@ -5,6 +5,13 @@ Changelog
 Version History
 ===============
 
+.. _v1.3.2:
+
+1.3.2 (2019-03-11)
+
+* Update pynsot to use Click 7.x and explicitly name subcommands with
+  underscores as such so they don't get updated to use hyphens.
+
 .. _v1.3.1:
 
 1.3.1 (2018-09-11)

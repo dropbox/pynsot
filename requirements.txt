@@ -1,4 +1,4 @@
-click~=6.2.0
+click~=7.0.0
 PTable~=0.9.2
 netaddr~=0.7.18
 rcfile~=0.1.4
