@@ -230,6 +230,19 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface,
     ),
 )
 @click.option(
+    '-l',
+    '--limit',
+    metavar='LIMIT',
+    type=int,
+    help='Limit result to N resources.',
+)
+@click.option(
+    '-o',
+    '--offset',
+    metavar='OFFSET',
+    help='Skip the first N resources.',
+)
+@click.option(
     '-q',
     '--query',
     metavar='QUERY',
@@ -251,7 +264,7 @@ def add(ctx, auth_string, attributes, circuit, device, description, interface,
 )
 @click.pass_context
 def list(ctx, attributes, auth_string, circuit, delimited, description, device,
-         grep, id, interface, query, site_id, type):
+         grep, id, interface, limit, offset, query, site_id, type):
     """
     List existing Protocols for a Site.
 

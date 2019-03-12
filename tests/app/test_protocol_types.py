@@ -14,7 +14,9 @@ from tests.fixtures import (attribute, attributes, client, config, device,
 
 from tests.fixtures.circuits import circuit
 
-from tests.fixtures.protocol_types import (protocol_type, protocol_attribute, protocol_attribute2)
+from tests.fixtures.protocol_types import (protocol_type, protocol_types,
+                                           protocol_attribute,
+                                           protocol_attribute2)
 
 from tests.util import CliRunner, assert_output
 
@@ -94,6 +96,51 @@ def test_protocol_types_list(site_client, protocol_type, protocol_attribute, pro
         result = runner.run('protocol_types list -i %s' % protocol_type['id'])
         assert result.exit_code == 0
         assert protocol_type['name'] in result.output
+
+
+def test_protocol_types_list_limit(site_client, protocol_types):
+    """
+    If ``--limit 2`` is used, we should only see the first two Protocol objects
+    """
+    limit = 2
+    runner = CliRunner(site_client.config)
+
+    with runner.isolated_filesystem():
+        result = runner.run('protocol_types list -l {}'.format(limit))
+        assert result.exit_code == 0
+
+        expected_types = protocol_types[:limit]
+        unexpected_types = protocol_types[limit:]
+
+        for t in expected_types:
+            assert t['name'] in result.output
+        for t in unexpected_types:
+            assert t['name'] not in result.output
+
+
+def test_protocol_types_list_offset(site_client, protocol_types):
+    """
+    If ``--limit 2`` and ``--offset 2`` are used, we should only see the third
+    and fourth Protocol objects that were created
+    """
+    limit = 2
+    offset = 2
+    runner = CliRunner(site_client.config)
+
+    with runner.isolated_filesystem():
+        result = runner.run(
+            'protocol_types list -l {} -o {}'.format(limit, offset)
+        )
+        assert result.exit_code == 0
+
+        expected_types = protocol_types[offset:limit+offset]
+        unexpected_types = protocol_types[limit+offset:]
+
+        for t in expected_types:
+            assert t['name'] in result.output
+        for t in unexpected_types:
+            assert t['name'] not in result.output
+
 
 def test_protocol_types_update(site_client, protocol_type, protocol_attribute):
     """Test ``nsot protocol_types update``"""
