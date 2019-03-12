@@ -11,6 +11,10 @@ Version History
 
 * Update pynsot to use Click 7.x and explicitly name subcommands with
   underscores as such so they don't get updated to use hyphens.
+* Fix #159 - Add ``--limit`` and ``--offset`` to ``Protocol`` and
+  ``ProtocolType`` CLI. These CLI opt ions are standard across all resource
+  types with their ``list`` subcommands, but they were forgotten with the new
+  ``Protocol`` and ``ProtocolType`` objects.
 
 .. _v1.3.1:
 
