@@ -396,6 +396,7 @@ def siblings(ctx, *args, **kwargs):
 
 
 @list.command(
+    name='closest_parent',
     short_help='Get the closest matching parent of a network.'
 )
 @click.pass_context
@@ -454,7 +455,7 @@ def reserved(ctx, *args, **kwargs):
 
 
 # Allocation methods
-@list.command()
+@list.command(name='next_network')
 @click.option(
     '-n',
     '--num',
@@ -486,7 +487,7 @@ def next_network(ctx, *args, **kwargs):
     click.echo('\n'.join(results))
 
 
-@list.command()
+@list.command(name='next_address')
 @click.option(
     '-n',
     '--num',
