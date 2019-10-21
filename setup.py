@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-execfile('pynsot/version.py')
+exec(open('pynsot/version.py').read())
 
 with open('requirements.txt') as requirements:
     required = requirements.read().splitlines()
