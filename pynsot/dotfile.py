@@ -6,7 +6,7 @@ Handle the read, write, and generation of the .pynsotrc config file.
 
 from __future__ import unicode_literals
 from __future__ import absolute_import
-from configparser import ConfigParser
+from configparser import RawConfigParser
 import copy
 import logging
 import os
@@ -124,7 +124,7 @@ class Dotfile(object):
         """
         if filepath is None:
             filepath = self.filepath
-        config = ConfigParser()
+        config = RawConfigParser()
         section = constants.SECTION_NAME
         config.add_section(section)
 

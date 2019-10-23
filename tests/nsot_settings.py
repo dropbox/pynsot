@@ -10,9 +10,9 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 
 
-SECRET_KEY = u'fMK68NKgazLCjjTXjDtthhoRUS8IV4lwD-9G7iVd2Xs='
 from nsot.conf.settings import *  # noqa
 import os.path
+import django
 
 
 # Path where the config is found.
@@ -71,6 +71,7 @@ SERVE_STATIC_FILES = True
 # encryption/decryption of sessions and auth tokens. A unique key is randomly
 # generated for you when you utilize ``nsot-server init``
 # https://cryptography.io/en/latest/fernet/#cryptography.fernet.Fernet.generate_key
+SECRET_KEY = u'fMK68NKgazLCjjTXjDtthhoRUS8IV4lwD-9G7iVd2Xs='
 
 # Header to check for Authenticated Email. This is intended for use behind an
 # authenticating reverse proxy.
@@ -87,3 +88,8 @@ AUTH_TOKEN_EXPIRY = 600  # 10 minutes
 # under many seemingly-safe web server configurations.
 # https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ['*']
+
+# Force django setup to finish before executing tests. This is needed because we don't
+# set DJANGO_SETTINGS_MODULE in pytest.ini.
+django.setup() 
+django.setup() 
