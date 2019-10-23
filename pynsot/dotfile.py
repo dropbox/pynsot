@@ -6,13 +6,12 @@ Handle the read, write, and generation of the .pynsotrc config file.
 
 from __future__ import unicode_literals
 from __future__ import absolute_import
-from configparser import RawConfigParser
+from configparser import RawConfigParser, ConfigParser
 import copy
 import logging
 import os
 
 from .vendor import click
-from .vendor import rcfile
 from . import constants
 import six
 
@@ -45,30 +44,30 @@ class Dotfile(object):
         """
         Read ``~/.pynsotrc`` and return it as a dict.
         """
-        config = rcfile.rcfile(
-            constants.SECTION_NAME, args={'config': self.filepath}
-        )
-        config.pop('config', None)  # We don't need this field in here.
+        config = ConfigParser()
+        config.read(self.filepath)
 
         # If there is *no* config data so far and...
-        if not config and not os.path.exists(self.filepath):
+        if constants.SECTION_NAME in config:
+            self.config = config[constants.SECTION_NAME]
+        elif not os.path.exists(self.filepath):
             p = '%s not found; would you like to create it?' % (self.filepath,)
             if click.confirm(p, default=True, abort=True):
                 config_data = self.get_config_data(**kwargs)
                 self.write(config_data)  # Write config to disk
-                config = config_data  # Return the contents
-
-        self.config = config
+                self.config = config_data  # Return the contents
+        else:
+            self.config = {}
 
         # If we have configuration values, validate the permissions and
         # presence of fields in the dotfile.
-        auth_method = config.get('auth_method')
+        auth_method = self.config.get('auth_method')
         if auth_method == 'auth_token':
             self.validate_perms()
             required_fields = self.get_required_fields(auth_method)
-            self.validate_fields(config, required_fields)
+            self.validate_fields(self.config, required_fields)
 
-        return config
+        return self.config
 
     def validate_perms(self):
         """Make sure dotfile ownership and permissions are correct."""

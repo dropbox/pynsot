@@ -1,6 +1,5 @@
 click~=7.0.0
 PTable~=0.9.2
 netaddr~=0.7.18
-rcfile~=0.1.4
 requests~=2.20.0
 slumber~=0.7.1
