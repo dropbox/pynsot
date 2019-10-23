@@ -13,11 +13,9 @@ fundamentally simplified to this::
     getattr(ctx.obj, ctx.info_name)(ctx.params)
 """
 from __future__ import unicode_literals
-
 import logging
 
 from six import string_types
-
 from ..vendor import click
 from . import callbacks
 

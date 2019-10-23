@@ -4,13 +4,11 @@
 Callbacks used in handling command plugins.
 """
 from __future__ import unicode_literals
-
 import ast
 import csv
 import logging
 
 from six import string_types
-
 from ..vendor import click
 
 
