@@ -92,4 +92,3 @@ ALLOWED_HOSTS = ['*']
 # Force django setup to finish before executing tests. This is needed because we don't
 # set DJANGO_SETTINGS_MODULE in pytest.ini.
 django.setup() 
-django.setup() 
