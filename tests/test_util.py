@@ -4,6 +4,7 @@
 Test the utils lib.
 """
 
+from __future__ import absolute_import
 import pytest  # noqa
 
 from pynsot.util import slugify, validate_cidr

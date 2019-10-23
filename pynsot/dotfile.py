@@ -5,7 +5,8 @@ Handle the read, write, and generation of the .pynsotrc config file.
 """
 
 from __future__ import unicode_literals
-from ConfigParser import RawConfigParser
+from __future__ import absolute_import
+from configparser import ConfigParser
 import copy
 import logging
 import os
@@ -13,6 +14,7 @@ import os
 from .vendor import click
 from .vendor import rcfile
 from . import constants
+import six
 
 
 __author__ = 'Jathan McCollum'
@@ -122,15 +124,15 @@ class Dotfile(object):
         """
         if filepath is None:
             filepath = self.filepath
-        config = RawConfigParser()
+        config = ConfigParser()
         section = constants.SECTION_NAME
         config.add_section(section)
 
         # Set the config settings
-        for key, val in config_data.iteritems():
+        for key, val in six.iteritems(config_data):
             config.set(section, key, val)
 
-        with open(filepath, 'wb') as dotfile:
+        with open(filepath, 'w') as dotfile:
             config.write(dotfile)
 
         self.enforce_perms()
@@ -227,7 +229,7 @@ class Dotfile(object):
         :param kwargs:
             Keyword arguments of prepared values
         """
-        for field, default_value in field_items.iteritems():
+        for field, default_value in six.iteritems(field_items):
             prompt = 'Please enter %s' % (field,)
 
             # If it's already in the config data, move on.
@@ -248,7 +250,7 @@ class Dotfile(object):
 
                 # If the default_value is a string, prompt for it, but present
                 # it as a default.
-                elif isinstance(default_value, basestring):
+                elif isinstance(default_value, six.string_types):
                     value = click.prompt(
                         prompt, type=str, default=default_value
                     )
