@@ -8,6 +8,8 @@ way of factory methods.
 """
 
 from __future__ import unicode_literals
+from __future__ import absolute_import
+from __future__ import print_function
 import datetime
 import logging
 import os
@@ -20,6 +22,7 @@ from .util import get_result
 
 from .vendor import click, netaddr, prettytable
 from .vendor.slumber.exceptions import (HttpClientError, HttpServerError)
+import six
 
 
 # Constants/Globals
@@ -96,7 +99,7 @@ class NsotCLI(click.MultiCommand):
             mod = __import__('pynsot.commands.cmd_' + name,
                              None, None, ['app'])
         except ImportError as err:
-            print err
+            print(err)
             return None
         return mod.cli  # Each cmd_ plugin defines top-level "cli" command
 
@@ -164,7 +167,7 @@ class App(object):
         """
         log.debug('PRETTY DICT INCOMING DATA = %r', data)
         pretty = ''
-        for key, val in sorted(data.iteritems()):
+        for key, val in sorted(six.iteritems(data)):
             if isinstance(val, list):
                 # Sort, add a newline and indent so that nested value items
                 # look better.
@@ -814,7 +817,7 @@ class App(object):
         log.debug('PAYLOAD [in]: %r', payload)
 
         # Update the payload from the CLI params if the value isn't null.
-        for key, val in data.iteritems():
+        for key, val in six.iteritems(data):
             # If we're updating attributes, reconcile with existing attributes
             if key == 'attributes':
                 attrs = payload['attributes']

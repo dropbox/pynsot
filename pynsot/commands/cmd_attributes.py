@@ -12,10 +12,10 @@ fundamentally simplified to this::
 
     getattr(ctx.obj, ctx.info_name)(ctx.params)
 """
-
 from __future__ import unicode_literals
 import logging
 
+from six import string_types
 from ..vendor import click
 from . import callbacks
 
@@ -406,7 +406,7 @@ def update(ctx, allow_empty, description, display, id, multi, name, pattern,
         # it's a tuple with 1 or more item, it's been provided.
         if any([
             val in (True, False),
-            isinstance(val, basestring),
+            isinstance(val, string_types),
             (isinstance(val, tuple) and len(val) > 0)
         ]):
             provided.append(opt)
@@ -421,7 +421,7 @@ def update(ctx, allow_empty, description, display, id, multi, name, pattern,
     # them alone.
     if any([
         allow_empty is not None,
-        isinstance(pattern, basestring),
+        isinstance(pattern, string_types),
         valid_values
     ]):
         log.debug('Constraint field provided; updating constraints...')

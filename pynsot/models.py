@@ -279,7 +279,7 @@ class Resource(collections.MutableMapping):
             x = '%s:%s' % (self.identifier, self._site_id)
             y = '%s:%s' % (other.identifier, other._site_id)
             return x == y
-        except:
+        except Exception:
             raise TypeError('Other object is not a Resource type')
 
     def log_error(self, error):
@@ -291,7 +291,7 @@ class Resource(collections.MutableMapping):
         if hasattr(error, 'response') and hasattr(error.response, 'json'):
             try:
                 meta = error.response.json()
-            except:
+            except Exception:
                 meta = error.response
         else:
             meta = error

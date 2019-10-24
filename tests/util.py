@@ -5,6 +5,8 @@ Utilities for testing.
 """
 
 from __future__ import unicode_literals
+from __future__ import absolute_import
+from __future__ import print_function
 import collections
 import contextlib
 from itertools import islice
@@ -21,6 +23,8 @@ from pynsot.app import app
 from pynsot import client
 from pynsot import dotfile
 from pynsot.vendor.click.testing import CliRunner as BaseCliRunner
+import six
+from six.moves import range
 
 
 log = logging.getLogger(__name__)
@@ -67,7 +71,7 @@ class CliRunner(BaseCliRunner):
         cwd = os.getcwd()
         t = tempfile.mkdtemp()
         os.chdir(t)
-        rcfile = dotfile.Dotfile('.pynsotrc')
+        rcfile = dotfile.Dotfile(config_path)
         rcfile.write(self.client_config)
         try:
             yield t
@@ -228,7 +232,7 @@ def generate_attributes(attributes=None, as_dict=True):
         attributes = ATTRIBUTE_DATA
 
     attrs = []
-    for attr_name, attr_values in attributes.iteritems():
+    for attr_name, attr_values in six.iteritems(attributes):
         if random.choice((True, False)):
             attr_value = random.choice(attr_values)
             attrs.append(Attribute(attr_name, attr_value))
@@ -371,11 +375,11 @@ def populate_sites(site_data):
         try:
             result = api.sites.post(d)
         except Exception as err:
-            print err, d['name']
+            print(err, d['name'])
         else:
             results.append(result)
 
-    print 'Created', len(results), 'sites.'
+    print('Created', len(results), 'sites.')
 
 
 def rando_set_action():
@@ -387,5 +391,5 @@ def rando_set_query():
     """Return a random set theory query string."""
     action = rando_set_action()
     return ' '.join(
-        action + '%s=%s' % (k, v) for k, v in generate_attributes().iteritems()
+        action + '%s=%s' % (k, v) for k, v in six.iteritems(generate_attributes())
     )

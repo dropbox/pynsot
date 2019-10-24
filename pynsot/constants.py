@@ -5,6 +5,7 @@ Constant values used across the project.
 """
 
 from __future__ import unicode_literals
+from __future__ import absolute_import
 import os
 
 
@@ -45,7 +46,7 @@ OPTIONAL_FIELDS = {
 USER_HOME = os.path.expanduser('~')
 DOTFILE_NAME = '.pynsotrc'
 DOTFILE_PATH = os.path.join(USER_HOME, DOTFILE_NAME)
-DOTFILE_PERMS = 0600  # -rw-------
+DOTFILE_PERMS = 0o600  # -rw-------
 
 # Config section name
 SECTION_NAME = 'pynsot'

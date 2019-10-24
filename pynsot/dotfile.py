@@ -5,14 +5,15 @@ Handle the read, write, and generation of the .pynsotrc config file.
 """
 
 from __future__ import unicode_literals
-from ConfigParser import RawConfigParser
+from __future__ import absolute_import
+from configparser import RawConfigParser, ConfigParser
 import copy
 import logging
 import os
 
 from .vendor import click
-from .vendor import rcfile
 from . import constants
+import six
 
 
 __author__ = 'Jathan McCollum'
@@ -43,20 +44,18 @@ class Dotfile(object):
         """
         Read ``~/.pynsotrc`` and return it as a dict.
         """
-        config = rcfile.rcfile(
-            constants.SECTION_NAME, args={'config': self.filepath}
-        )
-        config.pop('config', None)  # We don't need this field in here.
-
-        # If there is *no* config data so far and...
-        if not config and not os.path.exists(self.filepath):
+        config = {}
+        if not os.path.exists(self.filepath):
             p = '%s not found; would you like to create it?' % (self.filepath,)
             if click.confirm(p, default=True, abort=True):
                 config_data = self.get_config_data(**kwargs)
                 self.write(config_data)  # Write config to disk
                 config = config_data  # Return the contents
-
-        self.config = config
+        else:
+            parser = ConfigParser()
+            parser.read(self.filepath)
+            if constants.SECTION_NAME in parser:
+                config = parser[constants.SECTION_NAME]
 
         # If we have configuration values, validate the permissions and
         # presence of fields in the dotfile.
@@ -127,10 +126,10 @@ class Dotfile(object):
         config.add_section(section)
 
         # Set the config settings
-        for key, val in config_data.iteritems():
+        for key, val in six.iteritems(config_data):
             config.set(section, key, val)
 
-        with open(filepath, 'wb') as dotfile:
+        with open(filepath, 'w') as dotfile:
             config.write(dotfile)
 
         self.enforce_perms()
@@ -227,7 +226,7 @@ class Dotfile(object):
         :param kwargs:
             Keyword arguments of prepared values
         """
-        for field, default_value in field_items.iteritems():
+        for field, default_value in six.iteritems(field_items):
             prompt = 'Please enter %s' % (field,)
 
             # If it's already in the config data, move on.
@@ -248,7 +247,7 @@ class Dotfile(object):
 
                 # If the default_value is a string, prompt for it, but present
                 # it as a default.
-                elif isinstance(default_value, basestring):
+                elif isinstance(default_value, six.string_types):
                     value = click.prompt(
                         prompt, type=str, default=default_value
                     )
