@@ -8,6 +8,7 @@ There is a limitation with dependencies that use absolute imports in their
 packages as they will not be imported under the pynsot.vendor namespace.
 """
 
+from __future__ import absolute_import
 import sys
 import os
 

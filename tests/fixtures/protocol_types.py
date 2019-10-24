@@ -5,6 +5,7 @@ from __future__ import absolute_import, unicode_literals
 import pytest
 
 from tests.fixtures import site_client
+from six.moves import range
 
 @pytest.fixture
 def protocol_type(site_client, protocol_attribute, protocol_attribute2):

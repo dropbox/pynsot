@@ -4,12 +4,14 @@
 Callbacks used in handling command plugins.
 """
 from __future__ import unicode_literals
+from __future__ import absolute_import
 import ast
 import csv
 import logging
 
 from six import string_types
 from ..vendor import click
+import six
 
 
 log = logging.getLogger(__name__)
@@ -162,7 +164,7 @@ def process_bulk_add(ctx, param, value):
 
         # Transform True, False into booleans
         log.debug('FILE ROW: %r', row)
-        for key, val in row.iteritems():
+        for key, val in six.iteritems(row):
             # Don't evaluate dicts
             if isinstance(val, dict):
                 continue

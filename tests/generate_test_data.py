@@ -5,10 +5,12 @@ from __future__ import unicode_literals
 Generate fixtures for NSoT dev/testing.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import netaddr
 
 # from . import util as fx
-import util as fx
+from . import util as fx
 from pynsot import client
 
 
@@ -35,7 +37,7 @@ for resource_name in resource_names:
 
 # Create Attribute objects
 site.attributes.post(attributes)
-print 'Populated Attributes.'
+print('Populated Attributes.')
 
 
 ############
@@ -61,7 +63,7 @@ for net in supernet.subnet(24):
 # Create Network objects
 for items in (parents, networks, addresses):
     site.networks.post(items)
-print 'Populated Networks.'
+print('Populated Networks.')
 
 
 ###########
@@ -72,7 +74,7 @@ devices = fx.generate_devices(16 * len(networks))
 
 # Create Device objects
 site.devices.post(devices)
-print 'Populated Devices.'
+print('Populated Devices.')
 
 
 ##############
@@ -95,4 +97,4 @@ for device_id in device_ids:
 
 # Create Interface objects
 site.interfaces.post(interfaces)
-print 'Populated Interfaces.'
+print('Populated Interfaces.')
