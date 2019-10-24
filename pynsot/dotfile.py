@@ -44,30 +44,28 @@ class Dotfile(object):
         """
         Read ``~/.pynsotrc`` and return it as a dict.
         """
-        config = ConfigParser()
-        config.read(self.filepath)
-
-        # If there is *no* config data so far and...
-        if constants.SECTION_NAME in config:
-            self.config = config[constants.SECTION_NAME]
-        elif not os.path.exists(self.filepath):
+        config = {}
+        if not os.path.exists(self.filepath):
             p = '%s not found; would you like to create it?' % (self.filepath,)
             if click.confirm(p, default=True, abort=True):
                 config_data = self.get_config_data(**kwargs)
                 self.write(config_data)  # Write config to disk
-                self.config = config_data  # Return the contents
+                config = config_data  # Return the contents
         else:
-            self.config = {}
+            parser = ConfigParser()
+            parser.read(self.filepath)
+            if constants.SECTION_NAME in parser:
+                config = parser[constants.SECTION_NAME]
 
         # If we have configuration values, validate the permissions and
         # presence of fields in the dotfile.
-        auth_method = self.config.get('auth_method')
+        auth_method = config.get('auth_method')
         if auth_method == 'auth_token':
             self.validate_perms()
             required_fields = self.get_required_fields(auth_method)
-            self.validate_fields(self.config, required_fields)
+            self.validate_fields(config, required_fields)
 
-        return self.config
+        return config
 
     def validate_perms(self):
         """Make sure dotfile ownership and permissions are correct."""

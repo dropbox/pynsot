@@ -71,7 +71,7 @@ class CliRunner(BaseCliRunner):
         cwd = os.getcwd()
         t = tempfile.mkdtemp()
         os.chdir(t)
-        rcfile = dotfile.Dotfile('.pynsotrc')
+        rcfile = dotfile.Dotfile(config_path)
         rcfile.write(self.client_config)
         try:
             yield t
