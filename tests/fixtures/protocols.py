@@ -7,6 +7,7 @@ import pytest
 from tests.fixtures import (protocol_type, site_client)
 
 from .circuits import (circuit, device_a, interface_a)
+from six.moves import range
 
 @pytest.fixture
 def protocol(site_client, device_a, interface_a, circuit, protocol_type):

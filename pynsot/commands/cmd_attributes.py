@@ -13,6 +13,7 @@ fundamentally simplified to this::
     getattr(ctx.obj, ctx.info_name)(ctx.params)
 """
 from __future__ import unicode_literals
+from __future__ import absolute_import
 import logging
 
 from six import string_types

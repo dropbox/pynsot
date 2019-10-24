@@ -5,6 +5,7 @@ Test the Models
 """
 
 from __future__ import unicode_literals
+from __future__ import absolute_import
 import pytest
 
 from pytest import raises
@@ -105,8 +106,8 @@ def test_dict():
     n['site_id'] = 2
     assert n['site_id'] == 2
 
-    assert n.keys()
-    assert n.items()
+    assert list(n.keys())
+    assert list(n.items())
     assert dict(n)
 
 
@@ -130,8 +131,8 @@ def test_payload_not_none_raw_and_not(client, site):
     # Test some magic methods on raw-init'd instance
     assert len(n2)
     assert n == n2
-    assert n2.keys()
-    assert n2.items()
+    assert list(n2.keys())
+    assert list(n2.items())
 
 
 def test_clear_cache_on_change(client, site):
