@@ -5,6 +5,14 @@ Changelog
 Version History
 ===============
 
+.. _v1.4.1:
+
+1.4.1 (2019-10-25)
+
+* Fix bugs introduced in v1.4.0:
+    * Add in python3 backport of configparser to requirements.txt
+    * Support global pynsotrc in /etc
+
 .. _v1.4.0:
 
 1.4.0 (2019-10-24)
