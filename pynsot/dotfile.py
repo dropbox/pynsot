@@ -37,7 +37,7 @@ class DotfileError(Exception):
 
 class Dotfile(object):
     """Create, read, and write a dotfile."""
-    def __init__(self, filepath=constants.DOTFILE_PATH, **kwargs):
+    def __init__(self, filepath=constants.DOTFILE_USER_PATH, **kwargs):
         self.filepath = filepath
 
     def read(self, **kwargs):
@@ -45,7 +45,8 @@ class Dotfile(object):
         Read ``~/.pynsotrc`` and return it as a dict.
         """
         config = {}
-        if not os.path.exists(self.filepath):
+        if (not os.path.exists(self.filepath) and 
+                not os.path.exists(constants.DOTFILE_GLOBAL_PATH)):
             p = '%s not found; would you like to create it?' % (self.filepath,)
             if click.confirm(p, default=True, abort=True):
                 config_data = self.get_config_data(**kwargs)
@@ -53,7 +54,11 @@ class Dotfile(object):
                 config = config_data  # Return the contents
         else:
             parser = ConfigParser()
-            parser.read(self.filepath)
+            if os.path.exists(constants.DOTFILE_GLOBAL_PATH):
+                parser.read(constants.DOTFILE_GLOBAL_PATH)
+            if os.path.exists(self.filepath):
+                # these settings will override any settings from global file
+                parser.read(self.filepath)
             if constants.SECTION_NAME in parser:
                 config = parser[constants.SECTION_NAME]
 

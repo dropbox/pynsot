@@ -45,7 +45,8 @@ OPTIONAL_FIELDS = {
 # Path stuff
 USER_HOME = os.path.expanduser('~')
 DOTFILE_NAME = '.pynsotrc'
-DOTFILE_PATH = os.path.join(USER_HOME, DOTFILE_NAME)
+DOTFILE_USER_PATH = os.path.join(USER_HOME, DOTFILE_NAME)
+DOTFILE_GLOBAL_PATH = '/etc/pynsotrc'
 DOTFILE_PERMS = 0o600  # -rw-------
 
 # Config section name
