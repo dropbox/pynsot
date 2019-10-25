@@ -5,6 +5,7 @@ from __future__ import absolute_import, unicode_literals
 import pytest
 
 from tests.fixtures import site_client
+from six.moves import map
 
 
 @pytest.fixture
@@ -16,7 +17,7 @@ def circuit_attributes(site_client):
 
     attrs = ({'name': a, 'resource_name': 'Circuit'} for a in attr_names)
     client = site_client.sites(site_client.default_site).attributes
-    return map(client.post, attrs)
+    return list(map(client.post, attrs))
 
 
 @pytest.fixture

@@ -3,7 +3,6 @@
 """
 Custom Click parameter types.
 """
-
 from __future__ import unicode_literals
 
 from ..vendor import click
@@ -23,7 +22,7 @@ class NetworkIdParamType(click.ParamType):
         for test in tests:
             try:
                 win = test(value)
-            except:
+            except Exception:
                 pass
             else:
                 if not win:
@@ -50,7 +49,7 @@ class NaturalKeyParamType(click.ParamType):
         for test in tests:
             try:
                 win = test(value)
-            except:
+            except Exception:
                 pass
             else:
                 if not win:

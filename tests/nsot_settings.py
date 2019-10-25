@@ -10,8 +10,10 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 
 
+from __future__ import absolute_import
 from nsot.conf.settings import *  # noqa
 import os.path
+import django
 
 
 # Path where the config is found.
@@ -87,3 +89,7 @@ AUTH_TOKEN_EXPIRY = 600  # 10 minutes
 # under many seemingly-safe web server configurations.
 # https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ['*']
+
+# Force django setup to finish before executing tests. This is needed because we don't
+# set DJANGO_SETTINGS_MODULE in pytest.ini.
+django.setup() 

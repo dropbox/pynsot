@@ -59,15 +59,17 @@ True
 '''
 
 from __future__ import unicode_literals
+from __future__ import absolute_import
 import logging
 import collections
 from abc import abstractproperty, abstractmethod, ABCMeta
 from netaddr import IPNetwork
 from pynsot.util import get_result
 from pynsot.client import get_api_client
+import six
 
 
-class Resource(collections.MutableMapping):
+class Resource(six.with_metaclass(ABCMeta, collections.MutableMapping)):
     '''Base API Abstraction Models Class
 
     Instances of an API abstraction model represent a single NSoT resource and
@@ -105,8 +107,6 @@ class Resource(collections.MutableMapping):
         directly to payload
     :type raw: dict
     '''
-
-    __metaclass__ = ABCMeta
 
     def __init__(
         self,
@@ -279,7 +279,7 @@ class Resource(collections.MutableMapping):
             x = '%s:%s' % (self.identifier, self._site_id)
             y = '%s:%s' % (other.identifier, other._site_id)
             return x == y
-        except:
+        except Exception:
             raise TypeError('Other object is not a Resource type')
 
     def log_error(self, error):
@@ -291,7 +291,7 @@ class Resource(collections.MutableMapping):
         if hasattr(error, 'response') and hasattr(error.response, 'json'):
             try:
                 meta = error.response.json()
-            except:
+            except Exception:
                 meta = error.response
         else:
             meta = error

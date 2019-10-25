@@ -5,6 +5,12 @@ Changelog
 Version History
 ===============
 
+.. _v1.4.0:
+
+1.4.0 (2019-10-24)
+
+* Add alpha Python3 support
+
 .. _v1.3.2:
 
 1.3.2 (2019-03-11)

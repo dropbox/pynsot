@@ -15,6 +15,7 @@ return objects instead of dicts::
 
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from .vendor.slumber.serialize import JsonSerializer
 from .import models
 

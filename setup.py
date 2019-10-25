@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 from setuptools import find_packages, setup
 
-execfile('pynsot/version.py')
+exec(open('pynsot/version.py').read())
 
 with open('requirements.txt') as requirements:
     required = requirements.read().splitlines()
