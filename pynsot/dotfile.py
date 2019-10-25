@@ -45,7 +45,7 @@ class Dotfile(object):
         Read ``~/.pynsotrc`` and return it as a dict.
         """
         config = {}
-        if (not os.path.exists(self.filepath) and 
+        if (not os.path.exists(self.filepath) and
                 not os.path.exists(constants.DOTFILE_GLOBAL_PATH)):
             p = '%s not found; would you like to create it?' % (self.filepath,)
             if click.confirm(p, default=True, abort=True):
