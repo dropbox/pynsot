@@ -15,7 +15,7 @@ fundamentally simplified to this::
 
 from __future__ import unicode_literals
 
-from ..vendor import click
+import click
 
 
 __author__ = 'Jathan McCollum'

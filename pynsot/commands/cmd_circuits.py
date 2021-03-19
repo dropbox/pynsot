@@ -5,10 +5,10 @@ Sub-command for Circuits
 """
 
 from __future__ import absolute_import, unicode_literals
+import click
 import logging
 
 from pynsot.util import slugify
-from pynsot.vendor import click
 from . import callbacks, types
 from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
 from .cmd_interfaces import DISPLAY_FIELDS as INTERFACE_DISPLAY_FIELDS

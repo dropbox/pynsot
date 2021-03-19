@@ -15,9 +15,9 @@ fundamentally simplified to this::
 
 from __future__ import unicode_literals
 from __future__ import absolute_import
+import click
 import logging
 
-from ..vendor import click
 from . import callbacks, types
 from .cmd_networks import DISPLAY_FIELDS as NETWORK_DISPLAY_FIELDS
 
