@@ -5,7 +5,7 @@ Custom Click parameter types.
 """
 from __future__ import unicode_literals
 
-from ..vendor import click
+import click
 from ..util import validate_cidr
 
 

@@ -14,10 +14,10 @@ fundamentally simplified to this::
 """
 from __future__ import unicode_literals
 from __future__ import absolute_import
+import click
 import logging
 
 from six import string_types
-from ..vendor import click
 from . import callbacks
 
 

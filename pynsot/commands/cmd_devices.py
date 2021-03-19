@@ -16,7 +16,7 @@ fundamentally simplified to this::
 from __future__ import unicode_literals
 
 from __future__ import absolute_import
-from ..vendor import click
+import click
 from . import callbacks
 
 

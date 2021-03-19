@@ -7,11 +7,11 @@ Handle the read, write, and generation of the .pynsotrc config file.
 from __future__ import unicode_literals
 from __future__ import absolute_import
 from configparser import RawConfigParser, ConfigParser
+import click
 import copy
 import logging
 import os
 
-from .vendor import click
 from . import constants
 import six
 

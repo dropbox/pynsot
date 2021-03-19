@@ -22,7 +22,8 @@ import tempfile
 from pynsot.app import app
 from pynsot import client
 from pynsot import dotfile
-from pynsot.vendor.click.testing import CliRunner as BaseCliRunner
+
+from click.testing import CliRunner as BaseCliRunner
 import six
 from six.moves import range
 
