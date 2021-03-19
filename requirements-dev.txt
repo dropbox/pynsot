@@ -2,7 +2,7 @@
 fake-factory~=0.5.0
 flake8~=3.7.8
 ipdb~=0.9.3
-ipython~=5.0
+ipython>=3.1.0
 nsot>=1.4.6
 py~=1.5.2
 pytest~=3.4.1
