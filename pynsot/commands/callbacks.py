@@ -220,7 +220,7 @@ def get_resource_by_natural_key(ctx, data, resource_name, resource=None):
 
 
 def list_subcommand(ctx, display_fields=None, my_name=None, grep_name=None,
-                    with_parent=True, return_results=False):
+                    with_parent=True, return_results=False, is_post=False):
     """
     Determine params and a resource object to pass to ``ctx.obj.list()``
 
@@ -315,6 +315,6 @@ def list_subcommand(ctx, display_fields=None, my_name=None, grep_name=None,
     # If return_results, just pass data to my_resource.get() and return
     # whatever comes back.
     if return_results:
-        return app.detail(data, resource=my_resource)
+        return app.detail(data, resource=my_resource, is_post=is_post)
 
     app.list(data, display_fields=display_fields, resource=my_resource)

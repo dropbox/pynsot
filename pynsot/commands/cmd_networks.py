@@ -79,7 +79,7 @@ def cli(ctx):
 
 
 # Add
-@cli.command()
+@cli.group(cls=DeprecatedAliasGroup, invoke_without_command=True)
 @click.option(
     '-a',
     '--attributes',
@@ -103,6 +103,13 @@ def cli(ctx):
     help='A network or IP address in CIDR notation.  [required]',
 )
 @click.option(
+    '-i',
+    '--id',
+    metavar='ID',
+    type=int,
+    help='Unique ID of the Network being retrieved.',
+)
+@click.option(
     '-S',
     '--state',
     metavar='STATE',
@@ -118,7 +125,7 @@ def cli(ctx):
     callback=callbacks.process_site_id,
 )
 @click.pass_context
-def add(ctx, attributes, bulk_add, cidr, state, site_id):
+def add(ctx, attributes, bulk_add, cidr, id, state, site_id):
     """
     Add a new Network.
 
@@ -131,18 +138,89 @@ def add(ctx, attributes, bulk_add, cidr, state, site_id):
     option once for each key/value pair.
     """
     data = bulk_add or ctx.params
+    # data.pop('delimited')  # We don't want this going to the server.
 
-    # Additional handling for non-bulk requests only, as bulk_add is a list
-    if bulk_add is None:
-        # Required option
-        if cidr is None:
-            raise click.UsageError('Missing option "-c" / "--cidr"')
+    if ctx.invoked_subcommand is None:
+        # Additional handling for non-bulk requests only, as bulk_add is a list
+        if bulk_add is None:
+            # Required option
+            if cidr is None:
+                raise click.UsageError('Missing option "-c" / "--cidr"')
 
-        # Remove if empty; allow default assignment
-        if state is None:
-            data.pop('state', None)
+            # Remove if empty; allow default assignment
+            if state is None:
+                data.pop('state', None)
+        ctx.obj.add(data)
 
-    ctx.obj.add(data)
+
+@add.command()
+@click.option(
+    '-n',
+    '--num',
+    metavar='NUM',
+    type=int,
+    help='Number of Networks to allocate.'
+)
+@click.option(
+    '-p',
+    '--prefix-length',
+    metavar='PREFIX',
+    type=int,
+    help='Allocate Networks with given prefix length',
+    required=True
+)
+@click.option(
+    '-s',
+    '--strict-allocation',
+    metavar='STRICT_ALLOCATION',
+    is_flag=True,
+    help='Use Strict Allocation'
+)
+@click.option(
+    '-r',
+    '--reserve',
+    metavar='RESERVE_NETWORK',
+    is_flag=True,
+    help='Allocate and Reserve returned Networks'
+)
+@click.pass_context
+def next_network(ctx, *args, **kwargs):
+    """
+    Allocate next networks.
+    """
+    results = callbacks.list_subcommand(ctx, return_results=True, is_post=True)
+    click.echo('\n'.join(results))
+
+
+@add.command()
+@click.option(
+    '-n',
+    '--num',
+    metavar='NUM',
+    type=int,
+    help='Number of addresses to return.'
+)
+@click.option(
+    '-s',
+    '--strict-allocation',
+    metavar='STRICT_ALLOCATION',
+    is_flag=True,
+    help='Use Strict Allocation'
+)
+@click.option(
+    '-r',
+    '--reserve',
+    metavar='RESERVE_NETWORK',
+    is_flag=True,
+    help='Allocate and Reserve returned addresses'
+)
+@click.pass_context
+def next_address(ctx, *args, **kwargs):
+    """
+    Allocate next addresses.
+    """
+    results = callbacks.list_subcommand(ctx, return_results=True, is_post=True)
+    click.echo('\n'.join(results))
 
 
 # List (aliased to notify users of deprecated commands)
