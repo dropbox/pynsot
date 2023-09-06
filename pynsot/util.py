@@ -6,7 +6,7 @@ Utilities and stuff.
 
 from __future__ import unicode_literals
 
-from .vendor import netaddr
+import netaddr
 
 
 def get_result(response):

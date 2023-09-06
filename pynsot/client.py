@@ -15,18 +15,18 @@ to the client constructor::
 
 from __future__ import unicode_literals
 from __future__ import absolute_import
+import click
 import getpass
 import json
 import logging
 import os
 
-from .vendor import click
-from .vendor.requests.auth import AuthBase
-from .vendor import slumber
-from .vendor.slumber.exceptions import HttpClientError
-
 from .util import get_result
 from . import constants, dotfile
+
+from requests.auth import AuthBase
+import slumber
+from slumber.exceptions import HttpClientError
 
 
 __author__ = 'Jathan McCollum'

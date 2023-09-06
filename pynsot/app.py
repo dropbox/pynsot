@@ -10,9 +10,13 @@ way of factory methods.
 from __future__ import unicode_literals
 from __future__ import absolute_import
 from __future__ import print_function
+import click
 import datetime
 import logging
+import netaddr
 import os
+import prettytable
+from slumber.exceptions import (HttpClientError, HttpServerError)
 import sys
 import textwrap
 
@@ -20,8 +24,6 @@ import pynsot
 from . import client
 from .util import get_result
 
-from .vendor import click, netaddr, prettytable
-from .vendor.slumber.exceptions import (HttpClientError, HttpServerError)
 import six
 
 
