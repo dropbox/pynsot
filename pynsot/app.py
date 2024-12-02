@@ -19,6 +19,7 @@ import prettytable
 from slumber.exceptions import (HttpClientError, HttpServerError)
 import sys
 import textwrap
+import shutil
 
 import pynsot
 from . import client
@@ -456,7 +457,7 @@ class App(object):
             table.add_row(row)
 
         # Only paginate if table is longer than terminal.
-        _, t_height, = click.get_terminal_size()
+        _, t_height, = shutil.get_terminal_size()
         if len(table_data) > t_height:
             click.echo_via_pager(table)
         else:
