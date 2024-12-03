@@ -2,7 +2,7 @@
 
 '''API Model Classes
 
-These resource models are derrived from collections.MutableMapping and, thus,
+These resource models are derrived from collections.abc.MutableMapping and, thus,
 act like dicts and can instantiate with raw resource output from API as well as
 simplifying by providing site_id and (usually) the natural key (cidr, hostname,
 etc).
@@ -69,7 +69,7 @@ from pynsot.client import get_api_client
 import six
 
 
-class Resource(six.with_metaclass(ABCMeta, collections.MutableMapping)):
+class Resource(six.with_metaclass(ABCMeta, collections.abc.MutableMapping)):
     '''Base API Abstraction Models Class
 
     Instances of an API abstraction model represent a single NSoT resource and
@@ -77,7 +77,7 @@ class Resource(six.with_metaclass(ABCMeta, collections.MutableMapping)):
     instantiated by the raw returned object from NSoT API or more simply by a
     few descriptive kwargs.
 
-    Resource is a subclass of :class:``collections.MutableMapping`` which makes
+    Resource is a subclass of :class:``collections.abc.MutableMapping`` which makes
     it act as a dictionary would. The mapping represents the payload that would
     be accepted by NSoT and can be manipulated as desired like a normal dict.
 
